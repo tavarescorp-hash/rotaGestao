@@ -101,3 +101,30 @@ export async function buscarPdvPorCodigo(codigo: string) {
     return null;
   }
 }
+
+export async function buscarFdsPorCanal(canal: string) {
+  try {
+    const { data, error } = await supabase
+      .from("produtos_fds")
+      .select("produto, pontos, execucao, tipo")
+      .ilike("canal", canal);
+
+    if (error) {
+      console.error("Erro ao buscar dados FDS:", error);
+      return { produtos: [], execucao: [] };
+    }
+
+    const produtos = data
+      .filter((row: any) => row.tipo === "produto")
+      .map((row: any) => ({ nome: row.produto, pontos: row.pontos }));
+
+    const execucao = data
+      .filter((row: any) => row.tipo === "execucao")
+      .map((row: any) => ({ nome: row.execucao, pontos: row.pontos }));
+
+    return { produtos, execucao };
+  } catch (error) {
+    console.error("Erro inesperado ao buscar FDS:", error);
+    return { produtos: [], execucao: [] };
+  }
+}

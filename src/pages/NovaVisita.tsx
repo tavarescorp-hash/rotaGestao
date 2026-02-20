@@ -414,6 +414,7 @@ const NovaVisita = () => {
       {step === 2 && (
         <StepProdutosExecucao
           canalCadastrado={form.canal_cadastrado}
+          tipoVisita={form.tipo_visita}
           onBack={() => setStep(1)}
           onSubmit={handleSubmitFinal}
           loading={loading}

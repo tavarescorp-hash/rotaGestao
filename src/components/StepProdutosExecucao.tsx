@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,19 +6,44 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { canalProdutosExecucao } from "@/lib/canalData";
+import { buscarFdsPorCanal } from "@/lib/api";
 
 interface StepProdutosExecucaoProps {
   canalCadastrado: string;
+  tipoVisita: string;
   onBack: () => void;
   onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number) => void;
   loading: boolean;
 }
 
-const StepProdutosExecucao = ({ canalCadastrado, onBack, onSubmit, loading }: StepProdutosExecucaoProps) => {
+type ConfigType = { produtos: { nome: string; pontos: number }[], execucao: { nome: string; pontos: number }[] } | null;
+
+const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, loading }: StepProdutosExecucaoProps) => {
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
+  const [config, setConfig] = useState<ConfigType>(null);
+  const [isFetchingConfig, setIsFetchingConfig] = useState(true);
 
-  const config = canalProdutosExecucao[canalCadastrado];
+  useEffect(() => {
+    const loadConfig = async () => {
+      setIsFetchingConfig(true);
+      if (tipoVisita === "FDS") {
+        // Busca dinamicamente do Supabase
+        const data = await buscarFdsPorCanal(canalCadastrado);
+        if (data && (data.produtos.length > 0 || data.execucao.length > 0)) {
+          setConfig(data);
+        } else {
+          setConfig(null); // Nenhum dado achado na tabela
+        }
+      } else {
+        // Usa o default local
+        setConfig(canalProdutosExecucao[canalCadastrado] || null);
+      }
+      setIsFetchingConfig(false);
+    };
+
+    loadConfig();
+  }, [canalCadastrado, tipoVisita]);
 
   const pontuacaoProdutos = useMemo(() => {
     if (!config) return 0;
@@ -48,11 +73,22 @@ const StepProdutosExecucao = ({ canalCadastrado, onBack, onSubmit, loading }: St
     );
   };
 
+  if (isFetchingConfig) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center flex flex-col items-center justify-center text-muted-foreground">
+          <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+          <p>Buscando lista de indicadores...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!config) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-muted-foreground">
-          Nenhum dado encontrado para o canal "{canalCadastrado}".
+          Nenhum dado encontrado para o canal "{canalCadastrado}"{tipoVisita === "FDS" ? " no Supabase" : ""}.
           <div className="mt-4">
             <Button variant="outline" onClick={onBack}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar

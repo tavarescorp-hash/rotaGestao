@@ -36,8 +36,11 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
           setConfig(null); // Nenhum dado achado na tabela
         }
       } else {
-        // Usa o default local
-        setConfig(canalProdutosExecucao[canalCadastrado] || null);
+        // Usa o default local buscando de forma insensível a maiúsculas/minúsculas se o canal possuir alguma variação
+        const localCanalKey = Object.keys(canalProdutosExecucao).find(
+          c => c.toLowerCase() === canalCadastrado.toLowerCase()
+        );
+        setConfig(localCanalKey ? canalProdutosExecucao[localCanalKey] : null);
       }
       setIsFetchingConfig(false);
     };
@@ -54,10 +57,21 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
 
   const pontuacaoExecucao = useMemo(() => {
     if (!config) return 0;
+    // Em FDS (do Supabase), os pontos já estão atrelados ao Produto na mesma linha.
+    // Para não duplicar a pontuação de Produtos e Execução, se for FDS,
+    // a execução vale 0 pontos na somatória (pois o produto já pontuou) OU
+    // contamos apenas os pontos de execução se tivermos uma lógica diferente.
+    // Conforme pedido, a somatória total deve ser 100 baseada na pontuação.
+    // Por hora, mantemos a pontuação das execuções zerada se vier do Supabase FDS
+    // (a API já passa os pontos para a execução, mas aqui garantimos que não duplique).
     return config.execucao
       .filter((e) => execucaoSelecionada.includes(e.nome))
-      .reduce((acc, e) => acc + e.pontos, 0);
-  }, [execucaoSelecionada, config]);
+      .reduce((acc, e) => {
+        // Se for FDS, a execução não soma pontos extras (evita duplicar)
+        if (tipoVisita === "FDS") return acc;
+        return acc + e.pontos;
+      }, 0);
+  }, [execucaoSelecionada, config, tipoVisita]);
 
   const pontuacaoTotal = pontuacaoProdutos + pontuacaoExecucao;
 
@@ -75,10 +89,13 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
 
   if (isFetchingConfig) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center flex flex-col items-center justify-center text-muted-foreground">
-          <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
-          <p>Buscando lista de indicadores...</p>
+      <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden min-h-[400px] flex items-center justify-center">
+        <CardContent className="py-10 text-center flex flex-col items-center justify-center text-muted-foreground w-full">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+            <Loader2 className="w-12 h-12 animate-spin mb-4 text-primary relative z-10" />
+          </div>
+          <p className="font-semibold mt-4 text-foreground/80 animate-pulse">Carregando indicadores...</p>
         </CardContent>
       </Card>
     );
@@ -86,12 +103,18 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
 
   if (!config) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-muted-foreground">
-          Nenhum dado encontrado para o canal "{canalCadastrado}"{tipoVisita === "FDS" ? " no Supabase" : ""}.
-          <div className="mt-4">
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+      <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden min-h-[400px] flex items-center justify-center">
+        <CardContent className="py-10 text-center text-muted-foreground w-full space-y-6">
+          <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📋</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground mb-2">Sem Indicadores</h3>
+            <p>Nenhum dado encontrado para o canal <span className="text-primary font-bold">"{canalCadastrado}"</span>{tipoVisita === "FDS" ? " no Supabase" : ""}.</p>
+          </div>
+          <div className="pt-6">
+            <Button variant="outline" onClick={onBack} className="h-12 px-8 font-semibold hover:bg-muted">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar para Identificação
             </Button>
           </div>
         </CardContent>
@@ -100,92 +123,165 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
   }
 
   return (
-    <div className="space-y-4">
-      {/* Score summary */}
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Pontuação Total</span>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="text-xs">
-                Produtos: {pontuacaoProdutos}
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Execução: {pontuacaoExecucao}
-              </Badge>
-              <Badge className="text-lg px-3 py-1">{pontuacaoTotal}</Badge>
+    <div className="space-y-6">
+
+      {/* Score summary - Highlighted Top Bar */}
+      <Card className="glass-card bg-primary/5 border-primary/20 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[40px] rounded-full pointer-events-none" />
+        <CardContent className="py-5 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+              ⭐
+            </div>
+            <div>
+              <span className="text-xs uppercase tracking-widest font-bold text-muted-foreground block">Desempenho</span>
+              <span className="text-lg font-extrabold text-foreground">Pontuação Total</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-background/40 p-2 rounded-xl border border-white/5">
+            <div className="flex flex-col items-center px-3">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground">Produtos</span>
+              <span className="font-bold text-foreground">{pontuacaoProdutos}</span>
+            </div>
+            <div className="w-px h-8 bg-border/50"></div>
+            <div className="flex items-center justify-center px-4 bg-primary text-primary-foreground rounded-lg h-full shadow-inner">
+              <span className="text-xl font-black">{pontuacaoTotal}</span>
+              <span className="text-xs font-semibold ml-1 opacity-80">pts</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Produtos</CardTitle>
-          <CardDescription>Marque os produtos encontrados no PDV</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {config.produtos.map((produto) => (
-              <label
-                key={produto.nome}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted/80 transition-colors"
-              >
-                <Checkbox
-                  checked={produtosSelecionados.includes(produto.nome)}
-                  onCheckedChange={() => toggleProduto(produto.nome)}
-                />
-                <span className="text-sm flex-1">{produto.nome}</span>
-                <Badge variant="outline" className="text-xs shrink-0">
-                  {produto.pontos} pts
-                </Badge>
-              </label>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Products */}
+        <Card className="glass-card bg-card/40 border-primary/10 shadow-xl flex flex-col h-full">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-sm font-bold">📦</div>
+              <div>
+                <CardTitle className="text-lg font-bold">Produtos</CardTitle>
+                <CardDescription className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mix encontrado no PDV</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 flex-1 overflow-y-auto max-h-[500px]">
+            {config.produtos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">Nenhum produto listado para este canal.</div>
+            ) : (
+              <div className="space-y-3">
+                {config.produtos.map((produto) => {
+                  const isChecked = produtosSelecionados.includes(produto.nome);
+                  return (
+                    <label
+                      key={produto.nome}
+                      className={`
+                          flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                          ${isChecked
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-border/40 bg-background/30 hover:border-primary/50 hover:bg-muted/30'
+                        }
+                        `}
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={() => toggleProduto(produto.nome)}
+                        className={`w-5 h-5 rounded ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
+                      />
+                      <span className={`text-sm font-semibold flex-1 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
+                        {produto.nome}
+                      </span>
+                      <Badge
+                        variant={isChecked ? "default" : "secondary"}
+                        className={`text-xs shrink-0 font-bold ${isChecked ? 'shadow-sm shadow-primary/20' : 'opacity-70'}`}
+                      >
+                        +{produto.pontos} <span className="opacity-70 ml-1 font-normal text-[10px]">pts</span>
+                      </Badge>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Execution */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Execução</CardTitle>
-          <CardDescription>Marque os itens de execução encontrados no PDV</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {config.execucao.map((item) => (
-              <label
-                key={item.nome}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted/80 transition-colors"
-              >
-                <Checkbox
-                  checked={execucaoSelecionada.includes(item.nome)}
-                  onCheckedChange={() => toggleExecucao(item.nome)}
-                />
-                <span className="text-sm flex-1">{item.nome}</span>
-                <Badge variant="outline" className="text-xs shrink-0">
-                  {item.pontos} pts
-                </Badge>
-              </label>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Execution */}
+        <Card className="glass-card bg-card/40 border-primary/10 shadow-xl flex flex-col h-full">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-sm font-bold">🎯</div>
+              <div>
+                <CardTitle className="text-lg font-bold">Execução</CardTitle>
+                <CardDescription className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Itens de execução aferidos</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 flex-1 overflow-y-auto max-h-[500px]">
+            {config.execucao.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">Nenhuma regra de execução para este canal.</div>
+            ) : (
+              <div className="space-y-3">
+                {config.execucao.map((item) => {
+                  const isChecked = execucaoSelecionada.includes(item.nome);
+                  return (
+                    <label
+                      key={item.nome}
+                      className={`
+                          flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                          ${isChecked
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-border/40 bg-background/30 hover:border-primary/50 hover:bg-muted/30'
+                        }
+                        `}
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={() => toggleExecucao(item.nome)}
+                        className={`w-5 h-5 rounded ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
+                      />
+                      <span className={`text-sm font-semibold flex-1 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
+                        {item.nome}
+                      </span>
+                      <Badge
+                        variant={isChecked ? "default" : "secondary"}
+                        className={`text-xs shrink-0 font-bold ${isChecked ? 'shadow-sm shadow-primary/20' : 'opacity-70'}`}
+                      >
+                        {tipoVisita === "FDS" ? (
+                          <span className="text-[10px] uppercase font-normal tracking-wider">Vinculado</span>
+                        ) : (
+                          <>+{item.pontos} <span className="opacity-70 ml-1 font-normal text-[10px]">pts</span></>
+                        )}
+                      </Badge>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+      <div className="flex gap-4 pt-6 border-t border-border/40">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          className="w-1/3 h-14 text-base font-semibold hover:bg-muted"
+        >
+          <ArrowLeft className="w-5 h-5 mr-no" /> Voltar
         </Button>
         <Button
           type="button"
           disabled={loading}
           onClick={() => onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal)}
-          className="flex-1"
+          className="flex-1 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >
-          {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          Salvar Visita
+          {loading ? (
+            <><Loader2 className="w-5 h-5 mr-3 animate-spin" /> Registrando Visita...</>
+          ) : (
+            <><Save className="w-5 h-5 mr-3" /> Salvar Visita e Finalizar</>
+          )}
         </Button>
       </div>
     </div>

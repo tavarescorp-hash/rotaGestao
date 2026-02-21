@@ -12,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
@@ -32,33 +33,41 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r-0">
-      <SidebarContent className="bg-sidebar">
-        {/* Brand */}
-        <div className="p-4 pb-3 flex flex-col items-center">
-          <div className="bg-white rounded-xl p-3 mb-2">
-            <img src={logoUnibeer} alt="UniBeer Distribuidora" className="h-10 object-contain" />
-          </div>
-          <p className="text-[10px] text-sidebar-foreground/70 font-medium tracking-wide">Rota Gestão — Visitas de Mercado</p>
+    <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
+      {/* HEADER */}
+      <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
+        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-black/5 mb-3 shadow-sm">
+          <img src={logoUnibeer} alt="UniBeer" className="h-10 object-contain drop-shadow-sm" />
         </div>
+        <div className="text-center mt-2">
+          {/* Replaced text-primary with text-foreground for high contrast, and standardized the font weights */}
+          <h2 className="text-base font-black tracking-widest text-foreground uppercase">Rota Gestão</h2>
+          <p className="text-xs text-muted-foreground font-semibold uppercase mt-0.5">Visitas de Mercado</p>
+        </div>
+      </SidebarHeader>
 
+      {/* CONTENT / MENU */}
+      <SidebarContent className="px-4 py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 text-[10px] uppercase tracking-wider">
-            Menu
+          <SidebarGroupLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+            Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
                       end
-                      className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      /* Standardized the nav link text and padding */
+                      className="flex items-center w-full px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden text-foreground/80 font-semibold hover:bg-sidebar-accent hover:text-foreground"
+                      activeClassName="bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary hover:text-primary-foreground font-bold"
                     >
-                      <item.icon className="w-4 h-4 mr-3" />
-                      <span>{item.title}</span>
+                      <item.icon className="w-5 h-5 mr-3 z-10 opacity-80 group-[.active]:opacity-100" />
+                      <span className="z-10 text-sm">{item.title}</span>
+                      {/* Active state subtle background glow */}
+                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-[.active]:opacity-100 transition-opacity" />
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -68,30 +77,31 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="bg-sidebar border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+      {/* FOOTER */}
+      <SidebarFooter className="p-4 border-t border-sidebar-border bg-sidebar-accent/5">
+        <div className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-sidebar-accent/30 border border-sidebar-border/50">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shadow-sm shrink-0">
             {user?.role === "admin" ? (
-              <Shield className="w-4 h-4 text-sidebar-accent-foreground" />
+              <Shield className="w-5 h-5 text-primary" />
             ) : (
-              <User className="w-4 h-4 text-sidebar-accent-foreground" />
+              <User className="w-5 h-5 text-primary" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.name}</p>
-            <Badge variant="outline" className="text-[10px] border-sidebar-foreground/30 text-sidebar-foreground/70 mt-0.5">
-              {user?.role === "admin" ? "Administrador" : "Usuário"}
+            {/* Standardized user name and role text sizes/colors */}
+            <p className="text-sm font-bold truncate text-foreground">{user?.name}</p>
+            <Badge variant="secondary" className="mt-1 text-xs uppercase font-bold tracking-wider bg-muted text-muted-foreground border-none">
+              {user?.role === "admin" ? "Admin" : "Usuário"}
             </Badge>
           </div>
         </div>
         <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          variant="outline"
+          className="w-full justify-center text-sm font-bold text-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 border-border transition-colors h-12"
           onClick={handleLogout}
         >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sair
+          <LogOut className="w-5 h-5 mr-2 opacity-80" />
+          Encerrar Sessão
         </Button>
       </SidebarFooter>
     </Sidebar>

@@ -6,43 +6,46 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 152 60% 32%;
-    --primary-foreground: 0 0% 100%;
+    /* Unibeer Amber/Gold Primary */
+    --primary: 43 96% 56%;
+    --primary-foreground: 0 0% 9%;
 
-    --secondary: 43 80% 55%;
-    --secondary-foreground: 0 0% 10%;
+    /* Deep secondary for contrast */
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 150 10% 95%;
-    --muted-foreground: 150 10% 45%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45.1%;
 
-    --accent: 43 70% 92%;
-    --accent-foreground: 43 80% 30%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --accent: 43 96% 90%;
+    --accent-foreground: 0 0% 9%;
 
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 152 60% 32%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 43 96% 56%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 152 55% 22%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 43 80% 55%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 152 50% 28%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 152 45% 18%;
-    --sidebar-ring: 43 80% 55%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
@@ -51,33 +54,45 @@
   }
 
   .dark {
-    --background: 215 25% 10%;
-    --foreground: 210 20% 95%;
-    --card: 215 25% 13%;
-    --card-foreground: 210 20% 95%;
-    --popover: 215 25% 13%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 152 55% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 43 70% 45%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 150 15% 18%;
-    --muted-foreground: 150 10% 60%;
-    --accent: 43 50% 22%;
-    --accent-foreground: 43 70% 70%;
-    --destructive: 0 62% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 152 55% 38%;
-    --sidebar-background: 152 50% 14%;
-    --sidebar-foreground: 150 10% 90%;
-    --sidebar-primary: 43 70% 50%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 152 40% 20%;
-    --sidebar-accent-foreground: 150 10% 90%;
-    --sidebar-border: 152 40% 12%;
-    --sidebar-ring: 43 70% 50%;
+    /* Very dark almost black blue */
+    --background: 222.2 84% 4.9%;
+    --foreground: 0 0% 98%;
+
+    /* Slightly lighter dark for cards */
+    --card: 222.2 47% 7%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 222.2 47% 7%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Unibeer Amber/Gold Primary */
+    --primary: 43 96% 56%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 43 96% 56%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 

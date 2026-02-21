@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, ArrowRight, Loader2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import StepProdutosExecucao from "@/components/StepProdutosExecucao";
+import StepProdutosExecucao, { RgbSubmitData } from "@/components/StepProdutosExecucao";
+import StepCoaching, { CoachingSubmitData } from "@/components/StepCoaching";
 
 const canalOptions = [
   "Padaria/Confeitaria",
@@ -185,11 +186,16 @@ const NovaVisita = () => {
     setStep(2);
   };
 
-  const handleSubmitFinal = async (
-    produtosSelecionados: string[],
-    execucaoSelecionada: string[],
-    pontuacaoTotal: number
-  ) => {
+  const handleSubmitFinal = async (payload: {
+    produtosSelecionados?: string[];
+    execucaoSelecionada?: string[];
+    pontuacaoTotal?: number;
+    passos_coaching?: string[];
+    pontos_fortes?: string;
+    pontos_desenvolver?: string;
+    observacoes?: string;
+    rgbData?: RgbSubmitData;
+  }) => {
     setLoading(true);
     const result = await enviarVisita({
       data_visita: form.data_visita,
@@ -197,7 +203,7 @@ const NovaVisita = () => {
       avaliador: user?.name || "",
       cargo: user?.funcao || "",
       indicador_avaliado: form.tipo_visita,
-      observacoes: "",
+      observacoes: payload.observacoes || "",
       codigo_pdv: form.codigo_pdv,
       nome_fantasia_pdv: form.nome_fantasia_pdv,
       potencial_cliente: form.potencial_cliente,
@@ -205,12 +211,20 @@ const NovaVisita = () => {
       canal_cadastrado: form.canal_cadastrado,
       filial: form.filial,
       municipio: form.municipio,
+      codigo_vendedor: form.codigo_vendedor,
       nome_vendedor: form.nome_vendedor,
       coorden_x: form.coorden_x,
       coorden_y: form.coorden_y,
-      produtos_selecionados: produtosSelecionados.join("; "),
-      execucao_selecionada: execucaoSelecionada.join("; "),
-      pontuacao_total: pontuacaoTotal,
+      produtos_selecionados: payload.produtosSelecionados ? payload.produtosSelecionados.join("; ") : "",
+      execucao_selecionada: payload.execucaoSelecionada ? payload.execucaoSelecionada.join("; ") : "",
+      pontuacao_total: payload.pontuacaoTotal || 0,
+      pontos_fortes: payload.pontos_fortes || "",
+      pontos_desenvolver: payload.pontos_desenvolver || "",
+      passos_coaching: payload.passos_coaching ? payload.passos_coaching.join("; ") : "",
+      rgb_foco_visita: payload.rgbData?.rgb_foco_visita || "",
+      rgb_comprando_outras: payload.rgbData?.rgb_comprando_outras || "",
+      rgb_ttc_adequado: payload.rgbData?.rgb_ttc_adequado || "",
+      rgb_acao_concorrencia: payload.rgbData?.rgb_acao_concorrencia || "",
     });
 
     toast({
@@ -272,8 +286,7 @@ const NovaVisita = () => {
       {step === 1 && (
         <div className="space-y-6">
           {/* Top Info: Date and Search */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-card border border-primary/10 shadow-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-card border border-border shadow-sm relative overflow-hidden">
             <div className="space-y-3 relative z-10">
               <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
               <Input
@@ -294,7 +307,7 @@ const NovaVisita = () => {
                     setPdvBuscado(false);
                   }}
                   placeholder="Pesquisar código..."
-                  className="h-12 bg-background/50 font-mono text-base shadow-sm"
+                  className="h-12 bg-background/50 text-base shadow-sm font-semibold"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -352,7 +365,7 @@ const NovaVisita = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>
-                    <Input value={form.codigo_pdv} disabled className="bg-background/20 font-mono text-foreground font-bold border-0" />
+                    <Input value={form.codigo_pdv} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>
@@ -401,7 +414,7 @@ const NovaVisita = () => {
 
                     <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {tipoVisitaOptions.map((option) => {
-                        const isDisabled = option !== "FDS";
+                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(option);
                         return (
                           <div key={option} className={`
                             relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
@@ -461,15 +474,35 @@ const NovaVisita = () => {
 
       {step === 2 && (
         <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-          <StepProdutosExecucao
-            canalCadastrado={form.canal_cadastrado}
-            canalIdentificado={form.canal_identificado}
-            setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
-            tipoVisita={form.tipo_visita}
-            onBack={() => setStep(1)}
-            onSubmit={handleSubmitFinal}
-            loading={loading}
-          />
+          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(form.tipo_visita) && (
+            <StepProdutosExecucao
+              canalCadastrado={form.canal_cadastrado}
+              canalIdentificado={form.canal_identificado}
+              setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
+              tipoVisita={form.tipo_visita}
+              onBack={() => setStep(1)}
+              onSubmit={(produtos, execucoes, pontuacao, rgbData) => handleSubmitFinal({
+                produtosSelecionados: produtos,
+                execucaoSelecionada: execucoes,
+                pontuacaoTotal: pontuacao,
+                rgbData: rgbData
+              })}
+              loading={loading}
+            />
+          )}
+
+          {form.tipo_visita === "COACHING ROTA BASICA COM VENDEDOR" && (
+            <StepCoaching
+              onBack={() => setStep(1)}
+              onSubmit={(data: CoachingSubmitData) => handleSubmitFinal({
+                passos_coaching: data.passos_coaching,
+                pontos_fortes: data.pontos_fortes,
+                pontos_desenvolver: data.pontos_desenvolver,
+                observacoes: data.observacoes,
+              })}
+              loading={loading}
+            />
+          )}
         </div>
       )}
     </div>

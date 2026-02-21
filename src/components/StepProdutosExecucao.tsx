@@ -6,8 +6,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 import { canalProdutosExecucao } from "@/lib/canalData";
 import { buscarFdsPorCanal } from "@/lib/api";
+
+export interface RgbSubmitData {
+  rgb_foco_visita: string;
+  rgb_comprando_outras: string;
+  rgb_ttc_adequado: string;
+  rgb_acao_concorrencia: string;
+}
 
 interface StepProdutosExecucaoProps {
   canalCadastrado: string;
@@ -15,7 +24,7 @@ interface StepProdutosExecucaoProps {
   setCanalIdentificado: (v: string) => void;
   tipoVisita: string;
   onBack: () => void;
-  onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number) => void;
+  onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData) => void;
   loading: boolean;
 }
 
@@ -43,6 +52,31 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
   const [config, setConfig] = useState<ConfigType>(null);
   const [isFetchingConfig, setIsFetchingConfig] = useState(true);
+
+  // RGB States
+  const [rgbFocoVisita, setRgbFocoVisita] = useState("");
+  const [rgbComprandoOutras, setRgbComprandoOutras] = useState("");
+  const [rgbTtcAdequado, setRgbTtcAdequado] = useState("");
+  const [rgbAcaoConcorrencia, setRgbAcaoConcorrencia] = useState("");
+  const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
+
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB";
+  const isRgbValid = isRgb
+    ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== ""))
+    : true;
+
+  const handleFinalizar = () => {
+    let rgbData = undefined;
+    if (isRgb) {
+      rgbData = {
+        rgb_foco_visita: rgbFocoVisita,
+        rgb_comprando_outras: rgbComprandoOutras,
+        rgb_ttc_adequado: rgbTtcAdequado,
+        rgb_acao_concorrencia: rgbAcaoConcorrencia === "Outro" ? `Outro: ${rgbAcaoConcorrenciaOutro}` : rgbAcaoConcorrencia,
+      };
+    }
+    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData);
+  };
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -168,6 +202,87 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
           </div>
         </CardContent>
       </Card>
+
+      {/* FOCO RGB Questions */}
+      {isRgb && (
+        <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+          <CardContent className="pt-6 space-y-8">
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                Qual o foco da visita? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className="grid gap-3">
+                {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbFocoVisita === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                O cliente está comprando nossos produtos de outra fonte? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={rgbComprandoOutras} onValueChange={setRgbComprandoOutras} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {["Sim", "Não", "Não quis informar"].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbComprandoOutras === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                O TTC está de acordo com a régua de preço recomendado? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={rgbTtcAdequado} onValueChange={setRgbTtcAdequado} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {["Sim", "Não"].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbTtcAdequado === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                Há alguma ação vigente da concorrência no PDV? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={rgbAcaoConcorrencia} onValueChange={setRgbAcaoConcorrencia} className="grid gap-3">
+                {[
+                  "Sim, ação de preço para volume.",
+                  "Sim, ação promocional para consumidor final.",
+                  "Sim, contrato de visibilidade/exclusividade.",
+                  "Não.",
+                  "Outro"
+                ].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbAcaoConcorrencia === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt === "Outro" ? "Outro:" : opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+
+              {rgbAcaoConcorrencia === "Outro" && (
+                <div className="pl-8 pt-2 animate-in fade-in slide-in-from-top-2">
+                  <Input
+                    placeholder="Descreva a ação da concorrência..."
+                    value={rgbAcaoConcorrenciaOutro}
+                    onChange={(e) => setRgbAcaoConcorrenciaOutro(e.target.value)}
+                    className="h-12 bg-background/50"
+                  />
+                </div>
+              )}
+            </div>
+
+          </CardContent>
+        </Card>
+      )}
 
       {/* Score summary - Highlighted Top Bar */}
       <Card className="glass-card bg-primary/5 border-primary/20 shadow-lg relative overflow-hidden">
@@ -317,8 +432,8 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
         </Button>
         <Button
           type="button"
-          disabled={loading || !canalIdentificado}
-          onClick={() => onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal)}
+          disabled={loading || !canalIdentificado || !isRgbValid}
+          onClick={handleFinalizar}
           className="flex-1 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >
           {loading ? (

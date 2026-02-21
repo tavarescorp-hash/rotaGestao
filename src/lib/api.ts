@@ -17,12 +17,20 @@ export interface Visita {
   canal_cadastrado: string;
   filial?: string;
   municipio?: string;
+  codigo_vendedor?: string;
   nome_vendedor?: string;
   coorden_x?: string;
   coorden_y?: string;
   produtos_selecionados?: string;
   execucao_selecionada?: string;
   pontuacao_total?: number;
+  pontos_fortes?: string;
+  pontos_desenvolver?: string;
+  passos_coaching?: string;
+  rgb_foco_visita?: string;
+  rgb_comprando_outras?: string;
+  rgb_ttc_adequado?: string;
+  rgb_acao_concorrencia?: string;
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string }> {
@@ -41,12 +49,20 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       canal_cadastrado: visita.canal_cadastrado,
       filial: visita.filial,
       municipio: visita.municipio,
+      codigo_vendedor: visita.codigo_vendedor,
       nome_vendedor: visita.nome_vendedor,
       coorden_x: visita.coorden_x,
       coorden_y: visita.coorden_y,
       produtos_selecionados: visita.produtos_selecionados,
       execucao_selecionada: visita.execucao_selecionada,
       pontuacao_total: visita.pontuacao_total,
+      pontos_fortes: visita.pontos_fortes,
+      pontos_desenvolver: visita.pontos_desenvolver,
+      passos_coaching: visita.passos_coaching,
+      rgb_foco_visita: visita.rgb_foco_visita,
+      rgb_comprando_outras: visita.rgb_comprando_outras,
+      rgb_ttc_adequado: visita.rgb_ttc_adequado,
+      rgb_acao_concorrencia: visita.rgb_acao_concorrencia,
     }]);
 
     if (error) {
@@ -129,30 +145,36 @@ export async function buscarPdvPorCodigo(codigo: string) {
 
 export async function buscarFdsPorCanal(canal: string) {
   try {
-    // Busca exata case-insensitive ignorando espaços soltos que possam existir no cadastro local
-    // Supabase ilike match requires `%` iff we want substring. If we want exact match ignore case, we just pass the string.
+    let canalBusca = canal.trim();
+
+    // Tratamento para discrepância no banco de dados entre tabela pdvs e produtos_fds
+    if (canalBusca.toLowerCase() === "entretenimento espec") {
+      canalBusca = "Entretenimento Espec.";
+    }
+
     const { data, error } = await supabase
       .from("produtos_fds")
       .select('"PRODUTO", "PONTOS", "EXECUCAO"')
-      .ilike("CANAL", canal.trim());
+      .ilike("CANAL", canalBusca);
 
     if (error) {
       console.error("Erro ao buscar dados FDS:", error);
       return { produtos: [], execucao: [] };
     }
 
-    const produtos = data
+    const produtosRaw = data
       .filter((row: any) => row.PRODUTO && row.PRODUTO.trim() !== "")
-      .map((row: any) => ({ nome: row.PRODUTO, pontos: row.PONTOS || 0 }));
+      .map((row: any) => ({ nome: row.PRODUTO.trim(), pontos: row.PONTOS || 0 }));
 
-    // Execuções em FDS frequentemente não têm pontos na planilha (porque
-    // a pontuação é do produto). Porém se quisermos que ela tenha pontos
-    // podemos pegar os pontos ou usar 0 por enquanto,
-    // mas de acordo com os requisitos e prints anteriores, os pontos 
-    // estavam sendo associados aos produtos / exeucoes de acordo com a linha.
-    const execucao = data
+    // Remove produtos duplicados baseados no nome, preservando o objeto
+    const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values());
+
+    const execucaoRaw = data
       .filter((row: any) => row.EXECUCAO && row.EXECUCAO.trim() !== "")
-      .map((row: any) => ({ nome: row.EXECUCAO, pontos: row.PONTOS || 0 }));
+      .map((row: any) => ({ nome: row.EXECUCAO.trim(), pontos: row.PONTOS || 0 }));
+
+    // Remove execuções duplicadas baseadas no nome, preservando o objeto
+    const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values());
 
     return { produtos, execucao };
   } catch (error) {

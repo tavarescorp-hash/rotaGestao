@@ -95,7 +95,7 @@ export async function buscarPdvPorCodigo(codigo: string) {
   try {
     const { data, error } = await supabase
       .from("pdvs")
-      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y"')
+      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y"')
       .eq('"CODIGO"', codigo)
       .single();
 
@@ -113,6 +113,7 @@ export async function buscarPdvPorCodigo(codigo: string) {
       canal_cadastrado: data.CANAL,
       filial: data.FILIAL,
       municipio: data.MUNICIPIO,
+      codigo_vendedor: data.VENDEDOR,
       nome_vendedor: data.NOME_VENDEDOR,
       nome_supervisor: data["NOME _SUPERVISOR"],
       supervisor: data.SUPERVISOR,

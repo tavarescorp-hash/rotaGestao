@@ -54,6 +54,7 @@ const NovaVisita = () => {
     canal_cadastrado: "",
     filial: "",
     municipio: "",
+    codigo_vendedor: "",
     nome_vendedor: "",
     coorden_x: "",
     coorden_y: "",
@@ -114,6 +115,7 @@ const NovaVisita = () => {
           potencial_cliente: pdvData.categoria || "",
           filial: pdvData.filial || "",
           municipio: pdvData.municipio || "",
+          codigo_vendedor: pdvData.codigo_vendedor || "",
           nome_vendedor: pdvData.nome_vendedor || "",
           coorden_x: pdvData.coorden_x || "",
           coorden_y: pdvData.coorden_y || "",
@@ -126,7 +128,7 @@ const NovaVisita = () => {
       } else {
         setPdvBuscado(true);
         setForm(prev => ({
-          ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
+          ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", codigo_vendedor: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
         }));
         toast({
           title: "Cliente não encontrado",
@@ -229,6 +231,7 @@ const NovaVisita = () => {
         canal_cadastrado: "",
         filial: "",
         municipio: "",
+        codigo_vendedor: "",
         nome_vendedor: "",
         coorden_x: "",
         coorden_y: "",
@@ -353,7 +356,7 @@ const NovaVisita = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>
-                    <Input value={form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                    <Input value={form.codigo_vendedor ? `${form.codigo_vendedor} - ${form.nome_vendedor}` : form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nome Fantasia</Label>

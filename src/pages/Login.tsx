@@ -51,8 +51,8 @@ const Login = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="relative z-10">
-          <img src={logoUnibeer} alt="UniBeer Distribuidora" className="h-16 mb-8 drop-shadow-lg" />
+        <div className="relative z-10 mb-4">
+          <img src={logoUnibeer} alt="UniBeer Distribuidora" className="h-24 md:h-28 lg:h-32 mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]" />
         </div>
 
         <div className="relative z-10 space-y-6 max-w-lg">
@@ -84,8 +84,8 @@ const Login = () => {
 
         <div className="w-full max-w-[420px] space-y-8 relative z-10">
           <div className="lg:hidden text-center mb-10 flex flex-col items-center">
-            <div className="w-24 h-24 bg-zinc-950 rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-white/5">
-              <img src={logoUnibeer} alt="UniBeer" className="h-auto w-[70%]" />
+            <div className="w-32 h-32 bg-zinc-950 rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10">
+              <img src={logoUnibeer} alt="UniBeer" className="h-auto w-[85%]" />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Rota Gestão</h1>
           </div>

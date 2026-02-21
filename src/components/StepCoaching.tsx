@@ -14,7 +14,6 @@ export interface CoachingSubmitData {
 }
 
 interface StepCoachingProps {
-    onBack: () => void;
     onSubmit: (data: CoachingSubmitData) => void;
     loading: boolean;
 }
@@ -29,7 +28,7 @@ const PASSOS_OPCOES = [
 
 const NENHUM_PASSO = "Não realizou nenhum dos 5 passos da rotina básica.";
 
-const StepCoaching = ({ onBack, onSubmit, loading }: StepCoachingProps) => {
+const StepCoaching = ({ onSubmit, loading }: StepCoachingProps) => {
     const [passos, setPassos] = useState<string[]>([]);
     const [pontosFortes, setPontosFortes] = useState("");
     const [pontosDesenvolver, setPontosDesenvolver] = useState("");
@@ -159,16 +158,6 @@ const StepCoaching = ({ onBack, onSubmit, loading }: StepCoachingProps) => {
 
             {/* Buttons */}
             <div className="flex gap-4 pt-4 pb-8">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onBack}
-                    disabled={loading}
-                    className="w-1/3 h-14 font-semibold border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Voltar
-                </Button>
                 <Button
                     type="button"
                     disabled={loading || !isFormValid}

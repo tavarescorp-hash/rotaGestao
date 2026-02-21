@@ -42,7 +42,6 @@ const NovaVisita = () => {
   const [loading, setLoading] = useState(false);
   const [isSearchingPdv, setIsSearchingPdv] = useState(false);
   const [pdvBuscado, setPdvBuscado] = useState(false);
-  const [step, setStep] = useState(1);
 
   const [form, setForm] = useState({
     data_visita: new Date().toISOString().split("T")[0],
@@ -142,49 +141,6 @@ const NovaVisita = () => {
     }
   };
 
-  const handleNext1 = () => {
-    if (!form.data_visita || !user?.unidade || !user?.funcao || !form.codigo_pdv) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha a data e o código do cliente.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!pdvBuscado) {
-      toast({
-        title: "Pesquisa necessária",
-        description: "Pesquise o código do cliente antes de prosseguir.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!form.nome_fantasia_pdv) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o nome fantasia do cliente.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!form.canal_cadastrado) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Selecione o canal cadastrado para continuar.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!form.tipo_visita) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Selecione o tipo de visita para continuar.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setStep(2);
-  };
 
   const handleSubmitFinal = async (payload: {
     produtosSelecionados?: string[];
@@ -251,7 +207,6 @@ const NovaVisita = () => {
         coorden_y: "",
       });
       setPdvBuscado(false);
-      setStep(1);
     }
     setLoading(false);
   };
@@ -266,10 +221,7 @@ const NovaVisita = () => {
             variant="outline"
             size="icon"
             className="w-10 h-10 rounded-full border-border/50 hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              if (step === 2) setStep(1);
-              else navigate("/dashboard");
-            }}
+            onClick={() => navigate("/dashboard")}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -281,9 +233,6 @@ const NovaVisita = () => {
           </div>
         </div>
 
-      </div>
-
-      {step === 1 && (
         <div className="space-y-6">
           {/* Top Info: Date and Search */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-card border border-border shadow-sm relative overflow-hidden">
@@ -447,41 +396,19 @@ const NovaVisita = () => {
                     </RadioGroup>
                   </div>
                 )}
-
-                <div className="flex gap-4 pt-8 mt-8 border-t border-border/40">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => navigate("/dashboard")}
-                    className="w-1/3 h-12 text-muted-foreground font-semibold hover:text-foreground hover:bg-muted"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleNext1}
-                    className="flex-1 h-12 text-base font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
-                  >
-                    Próxima Etapa
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
         </div>
-      )}
 
-      {step === 2 && (
-        <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
           {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               canalIdentificado={form.canal_identificado}
               setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
               tipoVisita={form.tipo_visita}
-              onBack={() => setStep(1)}
-              onSubmit={(produtos, execucoes, pontuacao, rgbData) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
@@ -493,7 +420,6 @@ const NovaVisita = () => {
 
           {form.tipo_visita === "COACHING ROTA BASICA COM VENDEDOR" && (
             <StepCoaching
-              onBack={() => setStep(1)}
               onSubmit={(data: CoachingSubmitData) => handleSubmitFinal({
                 passos_coaching: data.passos_coaching,
                 pontos_fortes: data.pontos_fortes,
@@ -504,7 +430,7 @@ const NovaVisita = () => {
             />
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

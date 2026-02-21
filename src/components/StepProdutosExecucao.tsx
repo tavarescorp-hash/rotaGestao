@@ -23,7 +23,6 @@ interface StepProdutosExecucaoProps {
   canalIdentificado: string;
   setCanalIdentificado: (v: string) => void;
   tipoVisita: string;
-  onBack: () => void;
   onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData) => void;
   loading: boolean;
 }
@@ -47,7 +46,7 @@ const canalOptions = [
 
 type ConfigType = { produtos: { nome: string; pontos: number }[], execucao: { nome: string; pontos: number }[] } | null;
 
-const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIdentificado, tipoVisita, onBack, onSubmit, loading }: StepProdutosExecucaoProps) => {
+const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIdentificado, tipoVisita, onSubmit, loading }: StepProdutosExecucaoProps) => {
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
   const [config, setConfig] = useState<ConfigType>(null);
@@ -165,11 +164,6 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
           <div>
             <h3 className="text-lg font-bold text-foreground mb-2">Sem Indicadores</h3>
             <p>Nenhum dado encontrado para o canal <span className="text-primary font-bold">"{canalCadastrado}"</span>{tipoVisita === "FDS" ? " no Supabase" : ""}.</p>
-          </div>
-          <div className="pt-6">
-            <Button variant="outline" onClick={onBack} className="h-12 px-8 font-semibold hover:bg-muted">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar para Identificação
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -422,14 +416,6 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
 
       {/* Actions */}
       <div className="flex gap-4 pt-6 border-t border-border/40">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          className="w-1/3 h-14 text-base font-semibold hover:bg-muted"
-        >
-          <ArrowLeft className="w-5 h-5 mr-no" /> Voltar
-        </Button>
         <Button
           type="button"
           disabled={loading || !canalIdentificado || !isRgbValid}

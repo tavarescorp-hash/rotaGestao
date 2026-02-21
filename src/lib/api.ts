@@ -8,10 +8,7 @@ export interface Visita {
   unidade: string;
   avaliador: string;
   cargo: string;
-  fds: string;
-  coaching: string;
-  rgb: string;
-  compass: string;
+  indicador_avaliado: string;
   observacoes: string;
   codigo_pdv: string;
   nome_fantasia_pdv: string;
@@ -35,10 +32,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       unidade: visita.unidade,
       avaliador: visita.avaliador,
       cargo: visita.cargo,
-      fds: visita.fds,
-      coaching: visita.coaching,
-      rgb: visita.rgb,
-      compass: visita.compass,
+      indicador_avaliado: visita.indicador_avaliado,
       observacoes: visita.observacoes,
       codigo_pdv: visita.codigo_pdv,
       nome_fantasia_pdv: visita.nome_fantasia_pdv,

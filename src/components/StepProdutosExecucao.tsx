@@ -5,20 +5,40 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { canalProdutosExecucao } from "@/lib/canalData";
 import { buscarFdsPorCanal } from "@/lib/api";
 
 interface StepProdutosExecucaoProps {
   canalCadastrado: string;
+  canalIdentificado: string;
+  setCanalIdentificado: (v: string) => void;
   tipoVisita: string;
   onBack: () => void;
   onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number) => void;
   loading: boolean;
 }
 
+const canalOptions = [
+  "Padaria/Confeitaria",
+  "Armazém/Mercearia",
+  "Adega",
+  "Lanchonete",
+  "Restaurante C/D",
+  "Restaurante A/B",
+  "Bar C/D",
+  "Bar A/B",
+  "Entretenimento Espec.",
+  "Loja de Conveniência",
+  "Mini C/D",
+  "Mini A/B",
+  "Super C/D",
+  "Super A/B",
+];
+
 type ConfigType = { produtos: { nome: string; pontos: number }[], execucao: { nome: string; pontos: number }[] } | null;
 
-const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, loading }: StepProdutosExecucaoProps) => {
+const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIdentificado, tipoVisita, onBack, onSubmit, loading }: StepProdutosExecucaoProps) => {
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
   const [config, setConfig] = useState<ConfigType>(null);
@@ -124,6 +144,30 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
 
   return (
     <div className="space-y-6">
+
+      {/* Nova Identificação Select */}
+      <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+              Nova Identificação (Canal) <span className="text-destructive ml-1">*</span>
+            </Label>
+            <p className="text-xs text-muted-foreground font-semibold mb-2">
+              Confirme ou altere o canal do PDV verificado no momento da visita.
+            </p>
+            <Select value={canalIdentificado} onValueChange={setCanalIdentificado}>
+              <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
+                <SelectValue placeholder="Selecione o canal identificado..." />
+              </SelectTrigger>
+              <SelectContent>
+                {canalOptions.map((canal) => (
+                  <SelectItem key={canal} value={canal} className="font-medium cursor-pointer py-3">{canal}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Score summary - Highlighted Top Bar */}
       <Card className="glass-card bg-primary/5 border-primary/20 shadow-lg relative overflow-hidden">
@@ -273,7 +317,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onBack, onSubmit, l
         </Button>
         <Button
           type="button"
-          disabled={loading}
+          disabled={loading || !canalIdentificado}
           onClick={() => onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal)}
           className="flex-1 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >

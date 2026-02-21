@@ -172,14 +172,6 @@ const NovaVisita = () => {
       });
       return;
     }
-    if (!form.canal_identificado) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Selecione o canal identificado para continuar.",
-        variant: "destructive",
-      });
-      return;
-    }
     if (!form.tipo_visita) {
       toast({
         title: "Campo obrigatório",
@@ -202,10 +194,7 @@ const NovaVisita = () => {
       unidade: user?.unidade || "",
       avaliador: user?.name || "",
       cargo: user?.funcao || "",
-      fds: form.tipo_visita === "FDS" ? "Sim" : "Não",
-      coaching: form.tipo_visita === "COACHING ROTA BASICA COM VENDEDOR" ? "Sim" : "Não",
-      rgb: ["FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(form.tipo_visita) ? "Sim" : "Não",
-      compass: ["MAIORES POTENCIAS BASE DE COMPRAS", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(form.tipo_visita) ? "Sim" : "Não",
+      indicador_avaliado: form.tipo_visita,
       observacoes: "",
       codigo_pdv: form.codigo_pdv,
       nome_fantasia_pdv: form.nome_fantasia_pdv,
@@ -278,203 +267,171 @@ const NovaVisita = () => {
       </div>
 
       {step === 1 && (
-        <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden relative">
-          {/* Decorative background gradients */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 blur-[80px] rounded-full pointer-events-none" />
+        <div className="space-y-6">
+          {/* Top Info: Date and Search */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-card border border-primary/10 shadow-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+            <div className="space-y-3 relative z-10">
+              <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
+              <Input
+                type="date"
+                value={form.data_visita}
+                onChange={(e) => handleChange("data_visita", e.target.value)}
+                className="h-12 bg-background/50 focus-visible:ring-primary shadow-sm"
+              />
+            </div>
 
-          <CardHeader className="pb-4 border-b border-border/40 relative z-10">
-            <CardTitle className="text-lg font-bold">1. Dados da Visita e do PDV</CardTitle>
-            <CardDescription className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Os campos com asterisco (*) são obrigatórios</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 relative z-10">
-            <div className="space-y-8">
+            <div className="space-y-3 relative z-10">
+              <Label className="text-sm font-bold text-foreground flex items-center">Código do Cliente <span className="text-destructive ml-1">*</span></Label>
+              <div className="flex gap-2">
+                <Input
+                  value={form.codigo_pdv}
+                  onChange={(e) => {
+                    handleChange("codigo_pdv", e.target.value);
+                    setPdvBuscado(false);
+                  }}
+                  placeholder="Pesquisar código..."
+                  className="h-12 bg-background/50 font-mono text-base shadow-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handlePesquisarPdv();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={handlePesquisarPdv}
+                  disabled={isSearchingPdv || !form.codigo_pdv}
+                  className="h-12 px-6 shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
+                >
+                  {isSearchingPdv ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Search className="w-5 h-5" />
+                  )}
+                  <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
+                </Button>
+              </div>
+            </div>
+          </div>
 
-              {/* Info Avaliador / Readonly */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 p-5 rounded-xl bg-background/50 border border-white/5">
+          {/* 1 - Dados da Visita */}
+          <Card className="glass-card bg-card/40 border-primary/10 shadow-md">
+            <CardHeader className="pb-4 border-b border-border/40">
+              <CardTitle className="text-lg font-bold text-primary">1- Dados da visita</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Técnico / Responsável</Label>
-                  <Input type="text" value={user?.name || ""} disabled className="bg-transparent border-0 px-0 h-auto font-bold text-foreground opacity-100" />
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
+                  <Input type="text" value={user?.name || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Unidade Base</Label>
-                  <Input type="text" value={user?.unidade || ""} disabled className="bg-transparent border-0 px-0 h-auto font-bold text-foreground opacity-100" />
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
+                  <Input type="text" value={user?.unidade || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Cargo / Função</Label>
-                  <Input type="text" value={user?.funcao || ""} disabled className="bg-transparent border-0 px-0 h-auto font-bold text-foreground opacity-100" />
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Cargo</Label>
+                  <Input type="text" value={user?.funcao || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Data and PDV Input */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label className="text-sm font-bold text-foreground flex items-center">
-                    Data da Visita <span className="text-destructive ml-1">*</span>
-                  </Label>
-                  <Input
-                    type="date"
-                    value={form.data_visita}
-                    onChange={(e) => handleChange("data_visita", e.target.value)}
-                    className="h-12 bg-background/50 focus-visible:ring-primary shadow-sm"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-bold text-foreground flex items-center">
-                    Código do Cliente <span className="text-destructive ml-1">*</span>
-                  </Label>
-                  <div className="flex gap-2">
+          {/* 2 - Informações do PDV */}
+          {pdvBuscado && (
+            <Card className="glass-card bg-card/40 border-primary/10 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <CardTitle className="text-lg font-bold text-primary">2- Informações do PDV</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>
+                    <Input value={form.codigo_pdv} disabled className="bg-background/20 font-mono text-foreground font-bold border-0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>
+                    <Input value={form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nome Fantasia</Label>
                     <Input
-                      value={form.codigo_pdv}
-                      onChange={(e) => {
-                        handleChange("codigo_pdv", e.target.value);
-                        setPdvBuscado(false);
-                      }}
-                      placeholder="Identificador do PDV..."
-                      className="h-12 bg-background/50 focus-visible:ring-primary shadow-sm font-mono text-base"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handlePesquisarPdv();
-                        }
-                      }}
+                      value={form.nome_fantasia_pdv}
+                      disabled
+                      className="bg-background/20 text-foreground font-bold border-0"
                     />
-                    <Button
-                      type="button"
-                      onClick={handlePesquisarPdv}
-                      disabled={isSearchingPdv || !form.codigo_pdv}
-                      className="h-12 px-6 shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
-                    >
-                      {isSearchingPdv ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Search className="w-5 h-5" />
-                      )}
-                      <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
-                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Setor</Label>
+                    <Input
+                      value={form.filial || "Não informada"}
+                      disabled
+                      className="bg-background/20 text-foreground font-bold border-0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Potencial</Label>
+                    <Input
+                      value={form.potencial_cliente || "Não definido"}
+                      disabled
+                      className="bg-background/20 text-foreground font-bold border-0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Canal Cadastrado</Label>
+                    <Input
+                      value={form.canal_cadastrado || "Não definido"}
+                      disabled
+                      className="bg-background/20 text-foreground font-bold border-0"
+                    />
                   </div>
                 </div>
-              </div>
 
-              {pdvBuscado && (
-                <div className="pt-8 mt-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="h-px flex-1 bg-border/50"></div>
-                    <h3 className="font-bold text-xs uppercase tracking-widest text-primary">Informações do PDV Localizado</h3>
-                    <div className="h-px flex-1 bg-border/50"></div>
-                  </div>
-
-                  <div className="bg-muted/10 p-6 rounded-2xl border border-border/50 space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código Confirmado *</Label>
-                        <Input value={form.codigo_pdv} disabled className="bg-background/20 font-mono text-foreground font-bold border-0" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor Alocado</Label>
-                        <Input value={form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
-                      </div>
+                {tipoVisitaOptions.length > 0 && (
+                  <div className="space-y-4 pt-6 mt-6 border-t border-border/40">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
+                      <Label className="text-sm font-bold text-foreground">Objetivo / Tipo de Visita <span className="text-destructive">*</span></Label>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Razão / Nome Fantasia *</Label>
-                        <Input
-                          value={form.nome_fantasia_pdv}
-                          disabled
-                          className="bg-background/20 text-foreground font-bold border-0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Filial</Label>
-                        <Input
-                          value={form.filial || "Não informada"}
-                          disabled
-                          className="bg-background/20 text-foreground font-bold border-0"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Potencial</Label>
-                        <Input
-                          value={form.potencial_cliente || "Não definido"}
-                          disabled
-                          className="bg-background/20 text-foreground font-bold border-0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gestão Cadastrada *</Label>
-                        <Input
-                          value={form.canal_cadastrado || "Não definido"}
-                          disabled
-                          className="bg-background/20 text-foreground font-bold border-0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-primary uppercase tracking-widest">Nova Identificação *</Label>
-                        <Select value={form.canal_identificado} onValueChange={(v) => handleChange("canal_identificado", v)}>
-                          <SelectTrigger className="h-10 bg-background focus:ring-primary border-primary/30">
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {canalOptions.map((canal) => (
-                              <SelectItem key={canal} value={canal} className="font-medium cursor-pointer">{canal}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {tipoVisitaOptions.length > 0 && (
-                <div className="space-y-4 pt-6 mt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
-                    <Label className="text-sm font-bold text-foreground">Objetivo / Tipo de Visita <span className="text-destructive">*</span></Label>
-                  </div>
-
-                  <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {tipoVisitaOptions.map((option) => {
-                      const isDisabled = option !== "FDS";
-                      return (
-                        <div key={option} className={`
-                          relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
-                          ${isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30 border-border/40' : 'cursor-pointer'}
-                          ${!isDisabled && form.tipo_visita === option
-                            ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
-                            : ''
-                          }
-                          ${!isDisabled && form.tipo_visita !== option ? 'border-border/40 bg-card hover:border-primary/50 hover:bg-muted/30' : ''}
-                        `}>
-                          <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
-                          <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                               ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
-                             `}>
-                              {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                            </div>
-                            <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {option}
-                            </span>
-                            {isDisabled && (
-                              <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm">
-                                Em Breve
+                    <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {tipoVisitaOptions.map((option) => {
+                        const isDisabled = option !== "FDS";
+                        return (
+                          <div key={option} className={`
+                            relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
+                            ${isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30 border-border/40' : 'cursor-pointer'}
+                            ${!isDisabled && form.tipo_visita === option
+                              ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                              : ''
+                            }
+                            ${!isDisabled && form.tipo_visita !== option ? 'border-border/40 bg-card hover:border-primary/50 hover:bg-muted/30' : ''}
+                          `}>
+                            <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
+                            <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                                 ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
+                               `}>
+                                {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                              </div>
+                              <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {option}
                               </span>
-                            )}
-                          </Label>
-                        </div>
-                      );
-                    })}
-                  </RadioGroup>
-                </div>
-              )}
+                              {isDisabled && (
+                                <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm">
+                                  Em Breve
+                                </span>
+                              )}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                  </div>
+                )}
 
-              {pdvBuscado && (
                 <div className="flex gap-4 pt-8 mt-8 border-t border-border/40">
                   <Button
                     type="button"
@@ -493,17 +450,18 @@ const NovaVisita = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {step === 2 && (
         <div className="animate-in fade-in slide-in-from-right-8 duration-500">
           <StepProdutosExecucao
-            // Aqui garantimos que passamos o canal_cadastrado correto para a busca
             canalCadastrado={form.canal_cadastrado}
+            canalIdentificado={form.canal_identificado}
+            setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
             tipoVisita={form.tipo_visita}
             onBack={() => setStep(1)}
             onSubmit={handleSubmitFinal}

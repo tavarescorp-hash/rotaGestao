@@ -103,6 +103,9 @@ export function AppSidebar() {
           <LogOut className="w-5 h-5 mr-2 opacity-80" />
           Encerrar Sessão
         </Button>
+        <div className="mt-6 mb-1 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity duration-300">
+          <img src="/logo-global.png" alt="Desenvolvido por Global Devs" className="h-6 object-contain" />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

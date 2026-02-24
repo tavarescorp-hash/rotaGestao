@@ -2,16 +2,21 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscarVisitas, excluirVisita, type Visita } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
 import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -19,8 +24,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [loading, setLoading] = useState(false);
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [unidade, setUnidade] = useState("todas");
   const [indicadorFiltro, setIndicadorFiltro] = useState("todos");
   const [cargoFiltro, setCargoFiltro] = useState("todos");
@@ -111,16 +115,28 @@ const Dashboard = () => {
     return unicos.sort((a, b) => a.localeCompare(b));
   }, [minhasVisitas]);
 
+  const unidadesUnicas = useMemo(() => {
+    const unicas = Array.from(new Set(minhasVisitas.map(v => v.unidade).filter(Boolean) as string[]));
+    return unicas.sort((a, b) => a.localeCompare(b));
+  }, [minhasVisitas]);
+
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
-      if (dataInicio && v.data_visita < dataInicio) return false;
-      if (dataFim && v.data_visita > dataFim) return false;
+      if (dateRange?.from) {
+        // Zera o tempo para não dar conflito com o fuso
+        const visitaDate = new Date(v.data_visita + "T00:00:00");
+        if (visitaDate < dateRange.from) return false;
+      }
+      if (dateRange?.to) {
+        const visitaDate = new Date(v.data_visita + "T00:00:00");
+        if (visitaDate > dateRange.to) return false;
+      }
       if (unidade !== "todas" && v.unidade !== unidade) return false;
       if (indicadorFiltro !== "todos" && v.indicador_avaliado !== indicadorFiltro) return false;
       if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return false;
       return true;
     });
-  }, [minhasVisitas, dataInicio, dataFim, unidade, indicadorFiltro, cargoFiltro]);
+  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro]);
 
   const handleExcluir = async (id: string) => {
     const result = await excluirVisita(id);
@@ -346,23 +362,63 @@ const Dashboard = () => {
             <Filter className="w-4 h-4 text-primary shrink-0" />
             <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Filtros de Pesquisa</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data Início</Label>
-              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="bg-background/50 h-9 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data Fim</Label>
-              <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="bg-background/50 h-9 text-sm" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Período</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full h-9 justify-start text-left font-normal bg-background/50 text-sm",
+                      !dateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "dd LLL, y", { locale: ptBR })} -{" "}
+                          {format(dateRange.to, "dd LLL, y", { locale: ptBR })}
+                        </>
+                      ) : (
+                        format(dateRange.from, "dd LLL, y", { locale: ptBR })
+                      )
+                    ) : (
+                      <span>Selecione uma data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={1}
+                    locale={ptBR}
+                  />
+                  {(dateRange?.from || dateRange?.to) && (
+                    <div className="p-3 border-t">
+                      <Button variant="ghost" size="sm" className="w-full" onClick={() => setDateRange(undefined)}>
+                        Limpar Datas
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
               <Select value={unidade} onValueChange={setUnidade}>
-                <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as unidades" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas Unidades</SelectItem>
-                  <SelectItem value="Campos">Polo Campos</SelectItem>
-                  <SelectItem value="Macaé">Polo Macaé</SelectItem>
+                  <SelectItem value="todas">Todas as Unidades</SelectItem>
+                  {unidadesUnicas.map(u => (
+                    <SelectItem key={u} value={u}>{u}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -145,19 +145,24 @@ export async function buscarPdvPorCodigo(codigo: string) {
 
 export async function verificarVisitaMensal(codigoPdv: string, avaliador: string, dataBusca: string): Promise<boolean> {
   try {
-    const dataVisita = new Date(dataBusca);
-    const ano = dataVisita.getFullYear();
-    const mes = dataVisita.getMonth() + 1; // 1 a 12
-    const strMes = mes.toString().padStart(2, '0');
+    // Evita o problema de fuso horário do JS separando a string YYYY-MM-DD
+    const [anoStr, mesStr] = dataBusca.split("-");
+    const ano = parseInt(anoStr, 10);
+    const mes = parseInt(mesStr, 10); // 1 a 12
+    const strMes = mesStr.padStart(2, '0');
 
     // Buscar se existe alguma visita com as mesmas credenciais no mês e ano selecionados
     const prevDate = `${ano}-${strMes}-01`;
     const nextDate = mes === 12 ? `${ano + 1}-01-01` : `${ano}-${(mes + 1).toString().padStart(2, '0')}-01`;
 
+    // Garante que a busca contemple o código com "C" e sem "C" para prevenir falhas de formatação
+    const codigoComC = codigoPdv.toUpperCase().startsWith("C") ? codigoPdv.toUpperCase() : `C${codigoPdv}`;
+    const codigoSemC = codigoComC.substring(1);
+
     const { data, error } = await supabase
       .from("visitas")
       .select("id")
-      .eq("codigo_pdv", codigoPdv)
+      .in("codigo_pdv", [codigoComC, codigoSemC])
       .eq("avaliador", avaliador)
       .gte("data_visita", prevDate)
       .lt("data_visita", nextDate);

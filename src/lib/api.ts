@@ -143,6 +143,38 @@ export async function buscarPdvPorCodigo(codigo: string) {
   }
 }
 
+export async function verificarVisitaMensal(codigoPdv: string, avaliador: string, dataBusca: string): Promise<boolean> {
+  try {
+    const dataVisita = new Date(dataBusca);
+    const ano = dataVisita.getFullYear();
+    const mes = dataVisita.getMonth() + 1; // 1 a 12
+    const strMes = mes.toString().padStart(2, '0');
+
+    // Buscar se existe alguma visita com as mesmas credenciais no mês e ano selecionados
+    const prevDate = `${ano}-${strMes}-01`;
+    const nextDate = mes === 12 ? `${ano + 1}-01-01` : `${ano}-${(mes + 1).toString().padStart(2, '0')}-01`;
+
+    const { data, error } = await supabase
+      .from("visitas")
+      .select("id")
+      .eq("codigo_pdv", codigoPdv)
+      .eq("avaliador", avaliador)
+      .gte("data_visita", prevDate)
+      .lt("data_visita", nextDate);
+
+    if (error) {
+      console.error("Erro ao verificar visita existente:", error);
+      return false; // Em caso de erro, permite o fluxo (não bloqueia injustamente)
+    }
+
+    // Se retornar algum registro, significa que o PDV já foi visitado no mês corrente
+    return data && data.length > 0;
+  } catch (error) {
+    console.error("Erro inesperado ao verificar visita existente:", error);
+    return false;
+  }
+}
+
 export async function buscarFdsPorCanal(canal: string) {
   try {
     let canalBusca = canal.trim();

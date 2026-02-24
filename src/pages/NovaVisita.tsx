@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { enviarVisita, buscarPdvPorCodigo } from "@/lib/api";
+import { enviarVisita, buscarPdvPorCodigo, verificarVisitaMensal } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,10 +78,28 @@ const NovaVisita = () => {
 
     setIsSearchingPdv(true);
     try {
-      const pdvData = await buscarPdvPorCodigo(form.codigo_pdv);
+      // O banco de dados salva o código como "C12171", mas o input agora só aceita "12171".
+      // Vamos adicionar o "C" no início caso o usuário tenha digitado apenas números.
+      const codigoBusca = form.codigo_pdv.match(/^\d+$/) ? `C${form.codigo_pdv}` : form.codigo_pdv;
+
+      const currentUserName = user?.name?.toUpperCase() || "";
+
+      // Verifica se o PDV já foi visitado pelo usuário logado no mês selecionado
+      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita);
+
+      if (jaVisitado) {
+        toast({
+          title: "Ação Bloqueada",
+          description: "Você já realizou uma visita para este PDV neste mês.",
+          variant: "destructive",
+        });
+        setPdvBuscado(false);
+        return;
+      }
+
+      const pdvData = await buscarPdvPorCodigo(codigoBusca);
       if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
-        const currentUserName = user?.name?.toUpperCase() || "";
 
         // Lista de responsáveis vinculados a este PDV no banco
         const responsvaveis = [
@@ -126,13 +144,13 @@ const NovaVisita = () => {
           description: "Dados do PDV preenchidos com sucesso.",
         });
       } else {
-        setPdvBuscado(true);
+        setPdvBuscado(false);
         setForm(prev => ({
           ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", codigo_vendedor: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
         }));
         toast({
           title: "Cliente não encontrado",
-          description: "O código inserido não retornou resultados práticos, preencha manualmente.",
+          description: "O código não foi encontrado na base de dados. Não é possível prosseguir.",
           variant: "destructive",
         });
       }
@@ -252,7 +270,9 @@ const NovaVisita = () => {
                 <Input
                   value={form.codigo_pdv}
                   onChange={(e) => {
-                    handleChange("codigo_pdv", e.target.value);
+                    // Aceita apenas números
+                    const val = e.target.value.replace(/\D/g, '');
+                    handleChange("codigo_pdv", val);
                     setPdvBuscado(false);
                   }}
                   placeholder="Pesquisar código..."
@@ -318,7 +338,7 @@ const NovaVisita = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>
-                    <Input value={form.codigo_vendedor ? `${form.codigo_vendedor} - ${form.nome_vendedor}` : form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                    <Input value={form.codigo_vendedor ? `${form.codigo_vendedor} - ${form.nome_vendedor} ` : form.nome_vendedor || "Não informado"} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nome Fantasia</Label>
@@ -377,8 +397,8 @@ const NovaVisita = () => {
                             <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
                             <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                                 ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
-                               `}>
+                                ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
+                              `}>
                                 {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                               </div>
                               <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>

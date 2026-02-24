@@ -17,7 +17,7 @@ const AppLayout = () => {
             <SidebarTrigger />
             <span className="ml-3 text-sm font-medium text-muted-foreground">UniBeer — Rota Gestão</span>
           </header>
-          <main className="flex-1 p-4 sm:p-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-6 overflow-auto">
             <Outlet />
           </main>
         </div>

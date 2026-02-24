@@ -329,7 +329,7 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
                     <label
                       key={produto.nome}
                       className={`
-                          flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                          flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
                           ${isChecked
                           ? 'border-primary bg-primary/5 shadow-sm'
                           : 'border-border/40 bg-background/30 hover:border-primary/50 hover:bg-muted/30'
@@ -339,9 +339,9 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
                       <Checkbox
                         checked={isChecked}
                         onCheckedChange={() => toggleProduto(produto.nome)}
-                        className={`w-5 h-5 rounded ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
+                        className={`w-5 h-5 rounded shrink-0 ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
                       />
-                      <span className={`text-sm font-semibold flex-1 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
+                      <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {produto.nome}
                       </span>
                       <Badge
@@ -380,7 +380,7 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
                     <label
                       key={item.nome}
                       className={`
-                          flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                          flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
                           ${isChecked
                           ? 'border-primary bg-primary/5 shadow-sm'
                           : 'border-border/40 bg-background/30 hover:border-primary/50 hover:bg-muted/30'
@@ -390,9 +390,9 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
                       <Checkbox
                         checked={isChecked}
                         onCheckedChange={() => toggleExecucao(item.nome)}
-                        className={`w-5 h-5 rounded ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
+                        className={`w-5 h-5 rounded shrink-0 ${isChecked ? 'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground' : ''}`}
                       />
-                      <span className={`text-sm font-semibold flex-1 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
+                      <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {item.nome}
                       </span>
                       <Badge

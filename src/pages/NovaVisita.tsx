@@ -225,6 +225,7 @@ const NovaVisita = () => {
         coorden_y: "",
       });
       setPdvBuscado(false);
+      navigate("/dashboard");
     }
     setLoading(false);
   };
@@ -253,7 +254,7 @@ const NovaVisita = () => {
 
         <div className="space-y-6">
           {/* Top Info: Date and Search */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-card border border-border shadow-sm relative overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-sm relative overflow-hidden">
             <div className="space-y-3 relative z-10">
               <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
               <Input
@@ -303,10 +304,10 @@ const NovaVisita = () => {
 
           {/* 1 - Dados da Visita */}
           <Card className="glass-card bg-card/40 border-primary/10 shadow-md">
-            <CardHeader className="pb-4 border-b border-border/40">
+            <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
               <CardTitle className="text-lg font-bold text-primary">1- Dados da visita</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
@@ -327,10 +328,10 @@ const NovaVisita = () => {
           {/* 2 - Informações do PDV */}
           {pdvBuscado && (
             <Card className="glass-card bg-card/40 border-primary/10 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
-              <CardHeader className="pb-4 border-b border-border/40">
+              <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
                 <CardTitle className="text-lg font-bold text-primary">2- Informações do PDV</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>

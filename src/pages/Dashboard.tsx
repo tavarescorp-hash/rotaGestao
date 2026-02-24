@@ -337,59 +337,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Key Metrics Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="glass-card bg-card/40 hover:bg-card/60 transition-colors duration-300">
-          <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
-              <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight">{filtradas.length}</p>
-              <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Visitas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass-card bg-card/40 hover:bg-card/60 transition-colors duration-300">
-          <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/10 flex items-center justify-center border border-green-500/20 shrink-0">
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight">
-                {filtradas.filter((v) => v.indicador_avaliado === "FDS").length}
-              </p>
-              <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">FDS</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass-card bg-card/40 hover:bg-card/60 transition-colors duration-300">
-          <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
-              <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight">
-                {filtradas.filter((v) => v.indicador_avaliado === "COACHING ROTA BASICA COM VENDEDOR").length}
-              </p>
-              <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">COACHING</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass-card bg-card/40 hover:bg-card/60 transition-colors duration-300">
-          <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shrink-0">
-              <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight">
-                {filtradas.filter((v) => v.indicador_avaliado && v.indicador_avaliado.includes("RGB")).length}
-              </p>
-              <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">RGB</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+
 
       <div className="space-y-6">
         {/* Horizontal Filters Bar */}

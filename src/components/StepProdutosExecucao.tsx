@@ -59,7 +59,7 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
   const [rgbAcaoConcorrencia, setRgbAcaoConcorrencia] = useState("");
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB";
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB";
   const isRgbValid = isRgb
     ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== ""))
     : true;

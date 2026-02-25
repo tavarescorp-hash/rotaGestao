@@ -10,13 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
 import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -24,12 +25,17 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [loading, setLoading] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
+  });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [unidade, setUnidade] = useState("todas");
   const [indicadorFiltro, setIndicadorFiltro] = useState("todos");
   const [cargoFiltro, setCargoFiltro] = useState("todos");
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
+  const [activeTab, setActiveTab] = useState("minhas");
+  const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -42,9 +48,23 @@ const Dashboard = () => {
     carregarVisitas();
   }, []);
 
+  useEffect(() => {
+    if (user?.unidade && user.unidade !== "todas" && unidade === "todas") {
+      setUnidade(user.unidade);
+    }
+  }, [user?.unidade]);
+
   const minhasVisitas = useMemo(() => {
+    if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
+      return visitas.filter(v => v.unidade === user?.unidade);
+    }
     return visitas.filter(v => v.avaliador === user?.name);
-  }, [visitas, user?.name]);
+  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab]);
+
+  const avaliadoresUnicos = useMemo(() => {
+    const unicos = Array.from(new Set(minhasVisitas.map(v => v.avaliador).filter(Boolean) as string[]));
+    return unicos.sort((a, b) => a.localeCompare(b));
+  }, [minhasVisitas]);
 
   const estatisticasMes = useMemo(() => {
     const hoje = new Date();
@@ -53,7 +73,10 @@ const Dashboard = () => {
 
     const visitasMes = minhasVisitas.filter((v) => {
       const dataVisita = new Date(v.data_visita);
-      return dataVisita.getFullYear() === anoAtual && dataVisita.getMonth() === mesAtual;
+      const doMesCorrente = dataVisita.getFullYear() === anoAtual && dataVisita.getMonth() === mesAtual;
+      const doAvaliador = avaliadorFiltro === "todos" || v.avaliador === avaliadorFiltro;
+
+      return doMesCorrente && doAvaliador;
     });
 
     const qtdeFDS = visitasMes.filter(v => v.indicador_avaliado === 'FDS').length;
@@ -68,7 +91,8 @@ const Dashboard = () => {
 
     // Identifica todos os vendedores que o avaliador logado tem histórico
     minhasVisitas.forEach(v => {
-      if (v.nome_vendedor && !mapaVendedores.has(v.nome_vendedor)) {
+      const doAvaliador = avaliadorFiltro === "todos" || v.avaliador === avaliadorFiltro;
+      if (doAvaliador && v.nome_vendedor && !mapaVendedores.has(v.nome_vendedor)) {
         mapaVendedores.set(v.nome_vendedor, 0); // inicializa com 0
       }
     });
@@ -88,8 +112,12 @@ const Dashboard = () => {
       meta: 5 // Meta fixa por vendedor
     })).sort((a, b) => b.atual - a.atual); // Ordena pelos que tem mais visitas
 
-    const META_FDS = 10;
-    const META_RGB = 20;
+    const multi = (user?.nivel === 'Niv3' && activeTab === 'unidade' && avaliadorFiltro === 'todos')
+      ? Math.max(1, avaliadoresUnicos.length)
+      : 1;
+
+    const META_FDS = 10 * multi;
+    const META_RGB = 20 * multi;
     const META_COACHING = Math.max(1, vendedoresUnicos) * 5; // 5 de cada vendedor
 
     // Calcular dias restantes
@@ -104,7 +132,7 @@ const Dashboard = () => {
       detalhesCoaching,
       diasRestantes: dias
     };
-  }, [minhasVisitas]);
+  }, [minhasVisitas, avaliadorFiltro, avaliadoresUnicos, user?.nivel, activeTab]);
 
   const indicadoresUnicos = useMemo(() => {
     const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
@@ -123,6 +151,7 @@ const Dashboard = () => {
 
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
+      if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return false;
       if (dateRange?.from) {
         // Zera o tempo para não dar conflito com o fuso
         const visitaDate = new Date(v.data_visita + "T00:00:00");
@@ -137,7 +166,7 @@ const Dashboard = () => {
       if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return false;
       return true;
     });
-  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro]);
+  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro, avaliadorFiltro]);
 
   const handleExcluir = async (id: string) => {
     const result = await excluirVisita(id);
@@ -219,6 +248,16 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Gerenciamento de Camadas para Gerente (Niv3) */}
+      {user?.nivel === 'Niv3' && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-in fade-in slide-in-from-top-2">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[500px] h-12 bg-background/50 border border-border/40 shadow-sm">
+            <TabsTrigger value="minhas" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Minhas Avaliações</TabsTrigger>
+            <TabsTrigger value="unidade" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Supervisores ({user?.unidade})</TabsTrigger>
+          </TabsList>
+        </Tabs>
       )}
 
       {/* Metas e Progresso Mensal */}
@@ -363,7 +402,7 @@ const Dashboard = () => {
             <Filter className="w-4 h-4 text-primary shrink-0" />
             <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Filtros de Pesquisa</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-1.5 md:col-span-2 lg:col-span-1 min-w-0">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Período</Label>
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -430,18 +469,35 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Função (Cargo)</Label>
-              <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
-                <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as funções" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as Funções</SelectItem>
-                  {cargosUnicos.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Avaliador Select */}
+            {user?.nivel === 'Niv3' && activeTab === 'unidade' && (
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Avaliador</Label>
+                <Select value={avaliadorFiltro} onValueChange={setAvaliadorFiltro}>
+                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os avaliadores" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Avaliadores</SelectItem>
+                    {avaliadoresUnicos.map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {!(user?.nivel === 'Niv3' && activeTab === 'unidade') && (
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Função (Cargo)</Label>
+                <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
+                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as funções" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas as Funções</SelectItem>
+                    {cargosUnicos.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Indicador</Label>
               <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>

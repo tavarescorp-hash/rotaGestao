@@ -109,9 +109,12 @@ const NovaVisita = () => {
       }
 
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
-      const supervisorId = isSupervisor ? user?.funcao?.toUpperCase().replace('SUPERVISOR ', '') : undefined;
+      const isGerente = user?.nivel === 'Niv3';
+      const supervisorId = (!isGerente && user?.funcao?.includes('SUPERVISOR'))
+        ? user.funcao.replace('SUPERVISOR ', '')
+        : undefined;
 
-      const pdvData = await buscarPdvPorCodigo(codigoBusca, isSupervisor ? user?.unidade : undefined, supervisorId);
+      const pdvData = await buscarPdvPorCodigo(codigoBusca, user?.unidade, supervisorId);
       if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
 
@@ -130,7 +133,7 @@ const NovaVisita = () => {
           currentUserName.includes(resp)
         );
 
-        if (!isOwner && currentUserName) {
+        if (!isGerente && !isOwner && currentUserName) {
           toast({
             title: "Acesso Inválido",
             description: "Código não é da sua base.",
@@ -400,7 +403,7 @@ const NovaVisita = () => {
 
                     <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {tipoVisitaOptions.map((option) => {
-                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(option);
+                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS CGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(option);
                         return (
                           <div key={option} className={`
                             relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
@@ -439,7 +442,7 @@ const NovaVisita = () => {
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
-          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB"].includes(form.tipo_visita) && (
+          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               canalIdentificado={form.canal_identificado}

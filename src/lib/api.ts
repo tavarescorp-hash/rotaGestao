@@ -107,13 +107,22 @@ export async function excluirVisita(id: string): Promise<{ success: boolean; mes
   }
 }
 
-export async function buscarPdvPorCodigo(codigo: string) {
+export async function buscarPdvPorCodigo(codigo: string, unidade?: string, supervisorId?: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("pdvs")
       .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y"')
-      .eq('"CODIGO"', codigo)
-      .single();
+      .eq('"CODIGO"', codigo);
+
+    if (unidade) {
+      query = query.ilike('"FILIAL"', `%${unidade}%`);
+    }
+
+    if (supervisorId) {
+      query = query.eq('"SUPERVISOR"', supervisorId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       if (error.code !== "PGRST116") {
@@ -155,14 +164,18 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
     const prevDate = `${ano}-${strMes}-01`;
     const nextDate = mes === 12 ? `${ano + 1}-01-01` : `${ano}-${(mes + 1).toString().padStart(2, '0')}-01`;
 
-    // Garante que a busca contemple o código com "C" e sem "C" para prevenir falhas de formatação
-    const codigoComC = codigoPdv.toUpperCase().startsWith("C") ? codigoPdv.toUpperCase() : `C${codigoPdv}`;
-    const codigoSemC = codigoComC.substring(1);
+    // Recupera a primeira letra (C ou M) se houver
+    const isLetterPrefixed = /^[a-zA-Z]/.test(codigoPdv);
+    const letter = isLetterPrefixed ? codigoPdv.charAt(0).toUpperCase() : "";
+    const numbersOnly = isLetterPrefixed ? codigoPdv.substring(1) : codigoPdv;
+
+    const codigoComPrefixo = letter ? `${letter}${numbersOnly}` : codigoPdv;
+    const codigoSemPrefixo = numbersOnly;
 
     const { data, error } = await supabase
       .from("visitas")
       .select("id")
-      .in("codigo_pdv", [codigoComC, codigoSemC])
+      .in("codigo_pdv", [codigoComPrefixo, codigoSemPrefixo])
       .eq("avaliador", avaliador)
       .gte("data_visita", prevDate)
       .lt("data_visita", nextDate);

@@ -78,9 +78,19 @@ const NovaVisita = () => {
 
     setIsSearchingPdv(true);
     try {
-      // O banco de dados salva o código como "C12171", mas o input agora só aceita "12171".
-      // Vamos adicionar o "C" no início caso o usuário tenha digitado apenas números.
-      const codigoBusca = form.codigo_pdv.match(/^\d+$/) ? `C${form.codigo_pdv}` : form.codigo_pdv;
+      // O banco de dados salva o código com "C" ou "M" no começo, dependendo da filial.
+      let prefixo = "";
+      const isMacae = user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ');
+
+      if (isMacae) {
+        prefixo = "M";
+      } else if (user?.unidade?.toUpperCase().includes('CAMPOS')) {
+        prefixo = "C";
+      } else {
+        prefixo = "C"; // Fallback
+      }
+
+      const codigoBusca = form.codigo_pdv.match(/^\d+$/) ? `${prefixo}${form.codigo_pdv}` : form.codigo_pdv;
 
       const currentUserName = user?.name?.toUpperCase() || "";
 
@@ -97,7 +107,10 @@ const NovaVisita = () => {
         return;
       }
 
-      const pdvData = await buscarPdvPorCodigo(codigoBusca);
+      const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
+      const supervisorId = isSupervisor ? user?.funcao?.toUpperCase().replace('SUPERVISOR ', '') : undefined;
+
+      const pdvData = await buscarPdvPorCodigo(codigoBusca, isSupervisor ? user?.unidade : undefined, supervisorId);
       if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
 

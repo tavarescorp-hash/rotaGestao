@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LogIn } from "lucide-react";
 import logoUnibeer from "@/assets/logo-unibeer.png";
 import { useToast } from "@/hooks/use-toast";
@@ -40,122 +39,103 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left side - Visual branding */}
-      <div
-        className="hidden lg:flex w-1/2 bg-zinc-950 relative overflow-hidden flex-col justify-between p-12 text-white bg-cover bg-center"
-        style={{ backgroundImage: 'url("/restaurant_bg.png")' }}
-      >
-        <div className="absolute inset-0 bg-black/60 z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-black/80 z-0 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
+    <div
+      className="min-h-screen bg-background flex flex-col items-center justify-center relative p-4 bg-cover bg-center"
+      style={{ backgroundImage: 'url("/restaurant_bg.png")' }}
+    >
+      {/* Background Overlays - Lighter touch */}
+      <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/30 blur-[140px] rounded-full pointer-events-none hidden md:block" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointer-events-none hidden md:block" />
 
-        <div className="relative z-10 mb-4">
-          <img src={logoUnibeer} alt="UniBeer Distribuidora" className="h-24 md:h-28 lg:h-32 mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]" />
-        </div>
+      {/* Main Content Card */}
+      <div className="relative z-10 w-full max-w-md bg-zinc-900/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden">
 
-        <div className="relative z-10 space-y-6 max-w-lg">
-          <h1 className="text-5xl font-extrabold tracking-tight leading-tight">
-            Gestão de Visitas <span className="text-primary">Inteligente</span>
-          </h1>
-          <p className="text-lg text-zinc-400 font-medium">
-            Plataforma premium para controle, acompanhamento e execução de mercado Rota Unibeer.
-          </p>
-        </div>
+        {/* Subtle top glow within card */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary/0 via-primary/80 to-primary/0 opacity-70" />
 
-        <div className="relative z-10 mt-auto flex flex-col items-start gap-4">
-          <div className="text-sm text-zinc-500 font-medium tracking-wide">
-            © {new Date().getFullYear()} UniBeer Distribuidora. Todos os direitos reservados.
-          </div>
-          <div className="opacity-30 hover:opacity-100 transition-opacity duration-300">
-            <img
-              src="/logo-global.png"
-              alt="Desenvolvido por Global Devs"
-              className="h-6 object-contain"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
-        <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-primary/5 to-transparent z-0 pointer-events-none lg:hidden" />
-
-        <div className="w-full max-w-[420px] space-y-8 relative z-10">
-          <div className="lg:hidden text-center mb-10 flex flex-col items-center">
-            <div className="w-32 h-32 bg-zinc-950 rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10">
-              <img src={logoUnibeer} alt="UniBeer" className="h-auto w-[85%]" />
+        <div className="text-center mb-8 flex flex-col items-center space-y-5">
+          {/* Logo container - White background in dark mode, subtle in light mode */}
+          <div className="w-28 h-28 bg-white/20 dark:bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
+            {/* Inner specifically for the logo */}
+            <div className="w-full h-full flex items-center justify-center p-2">
+              <img src={logoUnibeer} alt="UniBeer" className="h-auto w-[85%] drop-shadow-sm transition-transform duration-500 hover:scale-105" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Rota Gestão</h1>
           </div>
-
-          <div className="space-y-3">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">
-              Acesse sua conta
-            </h2>
-            <p className="text-muted-foreground text-sm font-medium">
-              Entre com suas credenciais para gerenciar suas rotas.
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white mb-1.5 drop-shadow-md">Rota Gestão</h1>
+            <p className="text-zinc-300 text-sm font-medium">
+              Controle Inteligente de Mercado
             </p>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6 mt-8">
-            <div className="space-y-2.5">
-              <Label htmlFor="email" className="text-sm font-semibold text-foreground/80">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="nome@unibeer.com.br"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 px-4 bg-background border-input focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all duration-200"
-              />
-            </div>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-semibold text-foreground/80">Senha</Label>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-12 px-4 bg-background border-input focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all duration-200"
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 active:scale-[0.98]"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
-                  <span>Entrando...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <LogIn className="w-5 h-5" />
-                  <span>Entrar no Sistema</span>
-                </div>
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-8 relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground font-semibold">
-                Sistema Interno
-              </span>
-            </div>
-          </div>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2.5">
+            <Label htmlFor="email" className="text-sm font-semibold text-zinc-200 ml-1">
+              E-mail corporativo
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="nome@unibeer.com.br"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-12 bg-zinc-800/80 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-zinc-800 transition-all duration-300 rounded-xl px-4"
+            />
+          </div>
+          <div className="space-y-2.5">
+            <Label htmlFor="password" className="text-sm font-semibold text-zinc-200 ml-1">
+              Senha
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-12 bg-zinc-800/80 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-zinc-800 transition-all duration-300 rounded-xl px-4"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-12 text-base font-bold shadow-[0_4px_14px_0_rgba(180,83,9,0.39)] hover:shadow-[0_6px_20px_rgba(180,83,9,0.23)] border border-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 active:scale-[0.98] mt-4 rounded-xl"
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                <span>Entrando...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <LogIn className="w-5 h-5" />
+                <span>Acessar o Sistema</span>
+              </div>
+            )}
+          </Button>
+        </form>
+
+        {/* Footer Area inside the card */}
+        <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-3">
+          <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
+            Acesso Restrito
+          </span>
+          <img
+            src="/logo-global.png"
+            alt="Desenvolvido por Global Devs"
+            className="h-5 object-contain opacity-50 hover:opacity-100 transition-all duration-300"
+          />
+        </div>
+
+      </div>
+
+      {/* Global Footer (mostly for desktop/large screens spacing) */}
+      <div className="absolute bottom-6 text-xs text-zinc-400 font-medium tracking-wide z-10 hidden sm:block backdrop-blur-sm px-4 py-1.5 rounded-full bg-black/20">
+        © {new Date().getFullYear()} UniBeer Distribuidora. Todos os direitos reservados.
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ModeToggle } from "@/components/ModeToggle";
 
 const AppLayout = () => {
   const { user } = useAuth();
@@ -13,9 +14,12 @@ const AppLayout = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b border-border px-4 bg-card">
-            <SidebarTrigger />
-            <span className="ml-3 text-sm font-medium text-muted-foreground">UniBeer — Rota Gestão</span>
+          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card">
+            <div className="flex items-center">
+              <SidebarTrigger />
+              <span className="ml-3 text-sm font-medium text-muted-foreground">UniBeer — Rota Gestão</span>
+            </div>
+            <ModeToggle />
           </header>
           <main className="flex-1 p-3 sm:p-6 overflow-auto">
             <Outlet />

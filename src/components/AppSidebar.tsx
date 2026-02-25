@@ -36,8 +36,8 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
-        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-black/5 mb-3 shadow-sm">
-          <img src={logoUnibeer} alt="UniBeer" className="h-10 object-contain drop-shadow-sm" />
+        <div className="bg-white dark:bg-zinc-100/90 p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors">
+          <img src={logoUnibeer} alt="UniBeer" className="h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300" />
         </div>
         <div className="text-center mt-2">
           {/* Replaced text-primary with text-foreground for high contrast, and standardized the font weights */}

@@ -25,6 +25,7 @@ const Dashboard = () => {
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [unidade, setUnidade] = useState("todas");
   const [indicadorFiltro, setIndicadorFiltro] = useState("todos");
   const [cargoFiltro, setCargoFiltro] = useState("todos");
@@ -363,31 +364,33 @@ const Dashboard = () => {
             <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Filtros de Pesquisa</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+            <div className="space-y-1.5 md:col-span-2 lg:col-span-1 min-w-0">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Período</Label>
-              <Popover>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
                     className={cn(
-                      "w-full h-9 justify-start text-left font-normal bg-background/50 text-sm",
+                      "w-full h-9 justify-start text-left font-normal bg-background/50 text-sm overflow-hidden",
                       !dateRange && "text-muted-foreground"
                     )}
                   >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "dd LLL, y", { locale: ptBR })} -{" "}
-                          {format(dateRange.to, "dd LLL, y", { locale: ptBR })}
-                        </>
+                    <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "dd/MM/yy")} -{" "}
+                            {format(dateRange.to, "dd/MM/yy")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "dd/MM/yy")
+                        )
                       ) : (
-                        format(dateRange.from, "dd LLL, y", { locale: ptBR })
-                      )
-                    ) : (
-                      <span>Selecione uma data</span>
-                    )}
+                        "Selecione uma data"
+                      )}
+                    </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -396,13 +399,18 @@ const Dashboard = () => {
                     mode="range"
                     defaultMonth={dateRange?.from}
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onSelect={(range) => {
+                      setDateRange(range);
+                      if (range?.from && range?.to) {
+                        setIsCalendarOpen(false);
+                      }
+                    }}
                     numberOfMonths={1}
                     locale={ptBR}
                   />
                   {(dateRange?.from || dateRange?.to) && (
                     <div className="p-3 border-t">
-                      <Button variant="ghost" size="sm" className="w-full" onClick={() => setDateRange(undefined)}>
+                      <Button variant="ghost" size="sm" className="w-full" onClick={() => { setDateRange(undefined); setIsCalendarOpen(false); }}>
                         Limpar Datas
                       </Button>
                     </div>

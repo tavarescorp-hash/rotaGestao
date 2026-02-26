@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { LogIn } from "lucide-react";
 import logoUnibeer from "@/assets/logo-unibeer.png";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -124,11 +125,24 @@ const Login = () => {
           <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
             Acesso Restrito
           </span>
-          <img
-            src="/logo-global.png"
-            alt="Desenvolvido por Global Devs"
-            className="h-5 object-contain opacity-50 hover:opacity-100 transition-all duration-300"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <img
+                src="/logo-global.png"
+                alt="Desenvolvido por Global Devs"
+                className="h-5 object-contain opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer"
+              />
+            </PopoverTrigger>
+            <PopoverContent className="w-64 bg-zinc-900 border-white/10 text-white shadow-2xl z-50 p-4" side="top" align="center">
+              <div className="space-y-2 text-left">
+                <h4 className="text-sm font-bold text-primary/90">Carlos Tavares</h4>
+                <div className="text-xs text-zinc-300 space-y-1 font-medium tracking-wide">
+                  <p>📱 (22) 97402-2321</p>
+                  <p>✉️ globalsolucoesrj@gmail.com</p>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
       </div>

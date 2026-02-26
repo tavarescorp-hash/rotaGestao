@@ -3,6 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, PlusCircle, LogOut, Shield, User } from "lucide-react";
 import logoUnibeer from "@/assets/logo-unibeer.png";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -103,8 +108,21 @@ export function AppSidebar() {
           <LogOut className="w-5 h-5 mr-2 opacity-80" />
           Encerrar Sessão
         </Button>
-        <div className="mt-6 mb-1 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity duration-300">
-          <img src="/logo-global.png" alt="Desenvolvido por Global Devs" className="h-6 object-contain" />
+        <div className="mt-6 mb-1 flex items-center justify-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <img src="/logo-global.png" alt="Desenvolvido por Global Devs" className="h-6 object-contain opacity-30 hover:opacity-100 transition-opacity duration-300 cursor-pointer" />
+            </PopoverTrigger>
+            <PopoverContent className="w-64 bg-zinc-900 border-zinc-700/50 text-white shadow-xl z-50 p-4" side="top" align="center">
+              <div className="space-y-2 text-left">
+                <h4 className="text-sm font-bold text-primary">Carlos Tavares</h4>
+                <div className="text-xs text-zinc-300 space-y-1 font-medium tracking-wide">
+                  <p>📱 (22) 97402-2321</p>
+                  <p>✉️ globalsolucoesrj@gmail.com</p>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </SidebarFooter>
     </Sidebar>

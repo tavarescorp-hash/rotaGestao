@@ -62,9 +62,20 @@ const Dashboard = () => {
   }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab]);
 
   const avaliadoresUnicos = useMemo(() => {
-    const unicos = Array.from(new Set(minhasVisitas.map(v => v.avaliador).filter(Boolean) as string[]));
+    const avaliadoresValidos = minhasVisitas
+      .filter(v => {
+        // Se for Gerente vendo a base da Unidade, omitimos outros Gerentes da lista de Avaliadores
+        if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
+          return !v.cargo?.toUpperCase().includes('GERENTE');
+        }
+        return true;
+      })
+      .map(v => v.avaliador)
+      .filter(Boolean) as string[];
+
+    const unicos = Array.from(new Set(avaliadoresValidos));
     return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
+  }, [minhasVisitas, user?.nivel, activeTab]);
 
   const estatisticasMes = useMemo(() => {
     const hoje = new Date();

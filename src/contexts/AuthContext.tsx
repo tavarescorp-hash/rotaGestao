@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({
         id: sessionUser.id,
         email: sessionUser.email || "",
-        name: profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "",
+        name: sessionUser.user_metadata?.name || profile?.Nome || sessionUser.email?.split("@")[0] || "",
         role: (sessionUser.user_metadata?.role as UserRole) || "user",
         unidade: profile?.unidade,
         funcao: profile?.funcao,

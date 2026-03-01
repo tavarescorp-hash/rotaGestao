@@ -137,8 +137,12 @@ const Login = () => {
               <div className="space-y-2 text-left">
                 <h4 className="text-sm font-bold text-primary/90">Carlos Tavares</h4>
                 <div className="text-xs text-zinc-300 space-y-1 font-medium tracking-wide">
-                  <p>📱 (22) 97402-2321</p>
-                  <p>✉️ globalsolucoesrj@gmail.com</p>
+                  <p>
+                    📱 <a href="https://wa.me/5522974022321" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors hover:underline">(22) 97402-2321</a>
+                  </p>
+                  <p>
+                    ✉️ <a href="mailto:globalsolucoesrj@gmail.com" className="hover:text-primary transition-colors hover:underline">globalsolucoesrj@gmail.com</a>
+                  </p>
                 </div>
               </div>
             </PopoverContent>

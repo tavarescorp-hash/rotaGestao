@@ -80,23 +80,21 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
   useEffect(() => {
     const loadConfig = async () => {
       setIsFetchingConfig(true);
-      if (tipoVisita === "FDS") {
-        // Busca dinamicamente do Supabase
-        const data = await buscarFdsPorCanal(canalCadastrado);
-        if (data && (data.produtos.length > 0 || data.execucao.length > 0)) {
-          setConfig(data);
-        } else {
-          setConfig(null); // Nenhum dado achado na tabela
-        }
+      // Busca dinamicamente do Supabase para QUALQUER indicador (FDS ou RGB)
+      // para garantir que use a lógica NFD de blindagem de acentos e o portfólio novo
+      const data = await buscarFdsPorCanal(canalCadastrado);
+      if (data && (data.produtos.length > 0 || data.execucao.length > 0)) {
+        setConfig(data);
       } else {
-        // Usa o default local buscando de forma insensível a maiúsculas/minúsculas se o canal possuir alguma variação
-        const localCanalKey = Object.keys(canalProdutosExecucao).find(
-          c => c.toLowerCase() === canalCadastrado.toLowerCase()
-        );
-        setConfig(localCanalKey ? canalProdutosExecucao[localCanalKey] : null);
+        setConfig(null); // Nenhum dado achado na tabela
       }
       setIsFetchingConfig(false);
     };
+
+    // Reseta as seleções toda vez que o canal ou o tipo de visita mudam
+    // Isso evita que produtos de um PDV anterior fiquem "presos" na memória e somem pontos
+    setProdutosSelecionados([]);
+    setExecucaoSelecionada([]);
 
     loadConfig();
   }, [canalCadastrado, tipoVisita]);
@@ -110,19 +108,14 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
 
   const pontuacaoExecucao = useMemo(() => {
     if (!config) return 0;
-    // Em FDS (do Supabase), os pontos já estão atrelados ao Produto na mesma linha.
-    // Para não duplicar a pontuação de Produtos e Execução, se for FDS,
-    // a execução vale 0 pontos na somatória (pois o produto já pontuou) OU
-    // contamos apenas os pontos de execução se tivermos uma lógica diferente.
-    // Conforme pedido, a somatória total deve ser 100 baseada na pontuação.
-    // Por hora, mantemos a pontuação das execuções zerada se vier do Supabase FDS
-    // (a API já passa os pontos para a execução, mas aqui garantimos que não duplique).
+    // Em FDS ou RGB, os pontos já estão atrelados ao Produto na mesma linha do banco.
+    // Para não duplicar a pontuação de Produtos e Execução na somatória total de 100 pontos,
+    // a execução vale 0 pontos na conta matemática (pois o produto já pontuou).
     return config.execucao
       .filter((e) => execucaoSelecionada.includes(e.nome))
       .reduce((acc, e) => {
-        // Se for FDS, a execução não soma pontos extras (evita duplicar)
-        if (tipoVisita === "FDS") return acc;
-        return acc + e.pontos;
+        // A execução não soma pontos matemáticos extras (evita duplicar teto de 100)
+        return acc;
       }, 0);
   }, [execucaoSelecionada, config, tipoVisita]);
 

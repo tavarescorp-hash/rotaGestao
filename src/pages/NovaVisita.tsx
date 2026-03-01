@@ -60,7 +60,19 @@ const NovaVisita = () => {
     coorden_y: "",
   });
 
-  const tipoVisitaOptions = user?.indicadores || [];
+  let tipoVisitaOptions = user?.indicadores || [];
+
+  // Customizações de Visão baseadas em Nivelamento (Hierarquia)
+  if (user?.nivel === 'Niv1') {
+    // Vendedores comuns
+    tipoVisitaOptions = ["FDS"];
+  } else if (user?.nivel === 'Niv2') {
+    // Supervisores
+    tipoVisitaOptions = ["FDS", "COACHING ROTA BASICA COM VENDEDOR"];
+  } else if (user?.nivel === 'Niv3') {
+    // Gerentes
+    tipoVisitaOptions = ["FDS", "COACHING ROTA BASICA COM VENDEDOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB"];
+  }
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -242,6 +254,7 @@ const NovaVisita = () => {
         coorden_y: "",
       });
       setPdvBuscado(false);
+      window.scrollTo(0, 0);
       navigate("/dashboard");
     }
     setLoading(false);

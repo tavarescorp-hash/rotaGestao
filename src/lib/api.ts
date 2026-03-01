@@ -109,13 +109,33 @@ export async function excluirVisita(id: string): Promise<{ success: boolean; mes
 
 export async function buscarPdvPorCodigo(codigo: string, unidade?: string, supervisorId?: string) {
   try {
+    let codigoBuscado = codigo;
+
+    // Se o código digitado for só números, colocamos a letra da filial automaticamente na frente (Padrão SAP/Kofre)
+    if (/^\d+$/.test(codigoBuscado) && unidade) {
+      if (unidade.toUpperCase().includes('MACA')) {
+        codigoBuscado = `M${codigoBuscado}`;
+      } else if (unidade.toUpperCase().includes('CAMPOS')) {
+        codigoBuscado = `C${codigoBuscado}`;
+      }
+    }
+
     let query = supabase
       .from("pdvs")
       .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y"')
-      .eq('"CODIGO"', codigo);
+      .eq('"CODIGO"', codigoBuscado);
 
     if (unidade) {
-      query = query.ilike('"FILIAL"', `%${unidade}%`);
+      const unidadeUpper = unidade.toUpperCase();
+      if (unidadeUpper.includes("MACA")) {
+        // Matches "M" or anything with MACA in it
+        query = query.or(`"FILIAL".eq.M,"FILIAL".ilike.%${unidade}%`);
+      } else if (unidadeUpper.includes("CAMPOS")) {
+        // Matches "C" or anything with CAMPOS in it
+        query = query.or(`"FILIAL".eq.C,"FILIAL".ilike.%${unidade}%`);
+      } else {
+        query = query.ilike('"FILIAL"', `%${unidade}%`);
+      }
     }
 
     if (supervisorId) {
@@ -195,31 +215,41 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
 
 export async function buscarFdsPorCanal(canal: string) {
   try {
-    let canalBusca = canal.trim();
+    const normalize = (str: string) =>
+      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 
-    // Tratamento para discrepância no banco de dados entre tabela pdvs e produtos_fds
-    if (canalBusca.toLowerCase() === "entretenimento espec") {
-      canalBusca = "Entretenimento Espec.";
+    let canalBusca = normalize(canal);
+
+    // Hardcode fallback em caso extremo que o CSV fuja do padrão da string do banco
+    if (canalBusca === "entretenimento espec") {
+      canalBusca = normalize("Entretenimento Espec.");
     }
 
+    // Buscamos a tabela inteira (é pequena, em torno de 150 linhas) para garantir
+    // que o filtro do frontend seja impecável com NFD (remoção de acentos)
     const { data, error } = await supabase
       .from("produtos_fds")
-      .select('"PRODUTO", "PONTOS", "EXECUCAO"')
-      .ilike("CANAL", canalBusca);
+      .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
 
     if (error) {
       console.error("Erro ao buscar dados FDS:", error);
       return { produtos: [], execucao: [] };
     }
 
-    const produtosRaw = data
+    // Filtra apenas os registros cujo CANAL normalizado bate perfeitamente
+    const dataFiltrada = data.filter((row: any) => {
+      if (!row.CANAL) return false;
+      return normalize(row.CANAL) === canalBusca;
+    });
+
+    const produtosRaw = dataFiltrada
       .filter((row: any) => row.PRODUTO && row.PRODUTO.trim() !== "")
       .map((row: any) => ({ nome: row.PRODUTO.trim(), pontos: row.PONTOS || 0 }));
 
     // Remove produtos duplicados baseados no nome, preservando o objeto
     const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values());
 
-    const execucaoRaw = data
+    const execucaoRaw = dataFiltrada
       .filter((row: any) => row.EXECUCAO && row.EXECUCAO.trim() !== "")
       .map((row: any) => ({ nome: row.EXECUCAO.trim(), pontos: row.PONTOS || 0 }));
 

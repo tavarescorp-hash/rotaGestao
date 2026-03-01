@@ -14,7 +14,8 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud } from "lucide-react";
+import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +38,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("minhas");
   const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
 
+  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
+
   const carregarVisitas = async () => {
     setLoading(true);
     const data = await buscarVisitas();
@@ -54,12 +57,23 @@ const Dashboard = () => {
     }
   }, [user?.unidade]);
 
-  const minhasVisitas = useMemo(() => {
-    if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-      return visitas.filter(v => v.unidade === user?.unidade);
+  useEffect(() => {
+    if (user?.nivel === 'Niv3') {
+      setActiveTab('unidade');
     }
+  }, [user?.nivel]);
+
+  const minhasVisitas = useMemo(() => {
+    if (isAnalista) {
+      return visitas;
+    }
+    // Aba "Supervisores": Exibe os da unidade logada GERAL, EXCETO os relatórios feitos pelos PRÓPRIOS gerentes
+    if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
+      return visitas.filter(v => v.unidade === user?.unidade && !v.cargo?.toUpperCase().includes('GERENTE'));
+    }
+    // Aba "Minhas Avaliações": Exibe EXATAMENTE as que o Logado fez
     return visitas.filter(v => v.avaliador === user?.name);
-  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab]);
+  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab, isAnalista]);
 
   const avaliadoresUnicos = useMemo(() => {
     const avaliadoresValidos = minhasVisitas
@@ -76,89 +90,6 @@ const Dashboard = () => {
     const unicos = Array.from(new Set(avaliadoresValidos));
     return unicos.sort((a, b) => a.localeCompare(b));
   }, [minhasVisitas, user?.nivel, activeTab]);
-
-  const estatisticasMes = useMemo(() => {
-    const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth();
-
-    const visitasMes = minhasVisitas.filter((v) => {
-      const dataVisita = new Date(v.data_visita);
-      const doMesCorrente = dataVisita.getFullYear() === anoAtual && dataVisita.getMonth() === mesAtual;
-      const doAvaliador = avaliadorFiltro === "todos" || v.avaliador === avaliadorFiltro;
-
-      return doMesCorrente && doAvaliador;
-    });
-
-    const qtdeFDS = visitasMes.filter(v => v.indicador_avaliado === 'FDS').length;
-    const qtdeRGB = visitasMes.filter(v => v.indicador_avaliado?.includes('RGB')).length;
-
-    // Coaching detalhado
-    const coachingVisitas = visitasMes.filter(v => v.indicador_avaliado?.includes('COACHING'));
-    const qtdeCoaching = coachingVisitas.length;
-
-    // Calculando base de vendedores e detalhes de progresso por vendedor
-    const mapaVendedores = new Map<string, number>();
-
-    // Identifica todos os vendedores que o avaliador logado tem histórico
-    minhasVisitas.forEach(v => {
-      const doAvaliador = avaliadorFiltro === "todos" || v.avaliador === avaliadorFiltro;
-      if (doAvaliador && v.nome_vendedor && !mapaVendedores.has(v.nome_vendedor)) {
-        mapaVendedores.set(v.nome_vendedor, 0); // inicializa com 0
-      }
-    });
-
-    const vendedoresUnicos = mapaVendedores.size;
-
-    // Contabiliza o coaching feito no mês atual para cada vendedor
-    coachingVisitas.forEach(v => {
-      if (v.nome_vendedor) {
-        mapaVendedores.set(v.nome_vendedor, (mapaVendedores.get(v.nome_vendedor) || 0) + 1);
-      }
-    });
-
-    const detalhesCoaching = Array.from(mapaVendedores.entries()).map(([nome, atual]) => ({
-      nome,
-      atual,
-      meta: 5 // Meta fixa por vendedor
-    })).sort((a, b) => b.atual - a.atual); // Ordena pelos que tem mais visitas
-
-    const multi = (user?.nivel === 'Niv3' && activeTab === 'unidade' && avaliadorFiltro === 'todos')
-      ? Math.max(1, avaliadoresUnicos.length)
-      : 1;
-
-    const META_FDS = 10 * multi;
-    const META_RGB = 20 * multi;
-    const META_COACHING = Math.max(1, vendedoresUnicos) * 5; // 5 de cada vendedor
-
-    // Calcular dias restantes
-    const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
-    const difTempo = ultimoDia.getTime() - hoje.getTime();
-    const dias = Math.ceil(difTempo / (1000 * 3600 * 24));
-
-    return {
-      qtdeFDS, qtdeRGB, qtdeCoaching,
-      META_FDS, META_RGB, META_COACHING,
-      baseVendedores: vendedoresUnicos,
-      detalhesCoaching,
-      diasRestantes: dias
-    };
-  }, [minhasVisitas, avaliadorFiltro, avaliadoresUnicos, user?.nivel, activeTab]);
-
-  const indicadoresUnicos = useMemo(() => {
-    const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
-    return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
-
-  const cargosUnicos = useMemo(() => {
-    const unicos = Array.from(new Set(minhasVisitas.map(v => v.cargo).filter(Boolean) as string[]));
-    return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
-
-  const unidadesUnicas = useMemo(() => {
-    const unicas = Array.from(new Set(minhasVisitas.map(v => v.unidade).filter(Boolean) as string[]));
-    return unicas.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
 
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
@@ -179,6 +110,85 @@ const Dashboard = () => {
     });
   }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro, avaliadorFiltro]);
 
+  const estatisticasMes = useMemo(() => {
+    // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
+    const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
+    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB')).length;
+
+    // Coaching detalhado
+    const coachingVisitas = filtradas.filter(v => v.indicador_avaliado?.includes('COACHING'));
+    const qtdeCoaching = coachingVisitas.length;
+
+    // Calculando base de vendedores
+    // Pegamos a base de TODOS os vendedores que atendem aos filtros de Unidade/Cargo/Avaliador (ignorando o período) 
+    // para que a META seja o total da equipe, mesmo se alguém não foi visitado no período.
+    const mapaVendedores = new Map<string, number>();
+
+    minhasVisitas.forEach(v => {
+      // Ignora registros fora dos filtros de escopo fixo
+      if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return;
+      if (unidade !== "todas" && v.unidade !== unidade) return;
+      if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return;
+
+      if (v.nome_vendedor && !mapaVendedores.has(v.nome_vendedor)) {
+        mapaVendedores.set(v.nome_vendedor, 0); // inicializa com 0
+      }
+    });
+
+    const vendedoresUnicos = mapaVendedores.size;
+
+    // Contabiliza o coaching feito NO PERÍODO ATUAL para cada vendedor da equipe delimitada
+    coachingVisitas.forEach(v => {
+      if (v.nome_vendedor && mapaVendedores.has(v.nome_vendedor)) {
+        mapaVendedores.set(v.nome_vendedor, (mapaVendedores.get(v.nome_vendedor) || 0) + 1);
+      }
+    });
+
+    const detalhesCoaching = Array.from(mapaVendedores.entries()).map(([nome, atual]) => ({
+      nome,
+      atual,
+      meta: 5 // Meta fixa por vendedor (5)
+    })).sort((a, b) => b.atual - a.atual); // Ordena pelos que tem mais visitas
+
+    const multi = (user?.nivel === 'Niv3' && activeTab === 'unidade' && avaliadorFiltro === 'todos')
+      ? Math.max(1, avaliadoresUnicos.length)
+      : 1;
+
+    const META_FDS = 10 * multi;
+    const META_RGB = 20 * multi;
+    const META_COACHING = Math.max(1, vendedoresUnicos) * 5;
+
+    // Calcular dias restantes com base no filtro final
+    const hoje = new Date();
+    // Se há um dateRange.to, calculamos em relação a ele, senão final do mês atual.
+    const fim = dateRange?.to || new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const difTempo = fim.getTime() - hoje.getTime();
+    const dias = Math.max(0, Math.ceil(difTempo / (1000 * 3600 * 24)));
+
+    return {
+      qtdeFDS, qtdeRGB, qtdeCoaching,
+      META_FDS, META_RGB, META_COACHING,
+      baseVendedores: vendedoresUnicos,
+      detalhesCoaching,
+      diasRestantes: dias
+    };
+  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab]);
+
+  const indicadoresUnicos = useMemo(() => {
+    const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
+    return unicos.sort((a, b) => a.localeCompare(b));
+  }, [minhasVisitas]);
+
+  const cargosUnicos = useMemo(() => {
+    const unicos = Array.from(new Set(minhasVisitas.map(v => v.cargo).filter(Boolean) as string[]));
+    return unicos.sort((a, b) => a.localeCompare(b));
+  }, [minhasVisitas]);
+
+  const unidadesUnicas = useMemo(() => {
+    const unicas = Array.from(new Set(minhasVisitas.map(v => v.unidade).filter(Boolean) as string[]));
+    return unicas.sort((a, b) => a.localeCompare(b));
+  }, [minhasVisitas]);
+
   const handleExcluir = async (id: string) => {
     const result = await excluirVisita(id);
     toast({
@@ -187,6 +197,49 @@ const Dashboard = () => {
       variant: result.success ? "default" : "destructive",
     });
     if (result.success) carregarVisitas();
+  };
+
+  const exportarParaExcel = () => {
+    if (filtradas.length === 0) {
+      toast({
+        title: "Atenção",
+        description: "Não há dados para exportar com os filtros atuais.",
+        variant: "default",
+      });
+      return;
+    }
+
+    // Prepare data for Excel
+    const dadosExportacao = filtradas.map(v => ({
+      "Data da Visita": format(new Date(v.data_visita + "T00:00:00"), "dd/MM/yyyy"),
+      "Unidade": v.unidade || "-",
+      "Avaliador": v.avaliador || "-",
+      "Cargo": v.cargo || "-",
+      "Código PDV": v.codigo_pdv || "-",
+      "Nome Fantasia": v.nome_fantasia_pdv || "-",
+      "Vendedor": v.nome_vendedor || "-",
+      "Canal": v.canal_cadastrado || v.canal_identificado || "-",
+      "Indicador Avaliado": v.indicador_avaliado || "-",
+      "Pontuação Obtida": v.pontuacao_total ?? "-",
+      "Produtos Selecionados": v.produtos_selecionados || "-",
+      "Execução Selecionada": v.execucao_selecionada || "-",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Visitas");
+
+    // Adjust column widths automatically
+    const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["Nome Fantasia"]?.length || 0), 10);
+    worksheet["!cols"] = [{ wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: max_width }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 40 }, { wch: 40 }];
+
+    XLSX.writeFile(workbook, `Relatorio_Visitas_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);
+
+    toast({
+      title: "Exportação Concluída",
+      description: "O arquivo Excel foi gerado e baixado com sucesso.",
+      variant: "default",
+    });
   };
 
   return (
@@ -198,6 +251,16 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground font-semibold">Acompanhe e gerencie as visitas da Rota Unibeer.</p>
         </div>
         <div className="flex items-center gap-3">
+          {isAnalista && (
+            <Button
+              variant="default"
+              onClick={exportarParaExcel}
+              className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-green-900/20 transition-all duration-300 active:scale-95 border-none"
+            >
+              <DownloadCloud className="w-4 h-4 mr-2" />
+              Exportar Excel
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={carregarVisitas}
@@ -207,18 +270,20 @@ const Dashboard = () => {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Sincronizar
           </Button>
-          <Button
-            onClick={() => navigate("/nova-visita")}
-            className="shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nova Visita
-          </Button>
+          {!isAnalista && (
+            <Button
+              onClick={() => navigate("/nova-visita")}
+              className="shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Nova Visita
+            </Button>
+          )}
         </div>
       </div>
 
       {/* User Info Highlight Card */}
-      {user && (
+      {user && !isAnalista && (
         <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20 shadow-lg shadow-primary/5 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
           <CardContent className="p-6 relative z-10">
@@ -272,11 +337,11 @@ const Dashboard = () => {
       )}
 
       {/* Metas e Progresso Mensal */}
-      {user && (
+      {user && !isAnalista && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> Metas do Mês Atual
+              <Calendar className="w-4 h-4 text-primary" /> Metas do Período Selecionado
             </h3>
             <span className="text-[10px] sm:text-xs font-bold text-amber-500 bg-amber-500/10 px-2 sm:px-3 py-1 rounded-full flex items-center border border-amber-500/20 shadow-sm">
               <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Faltam {estatisticasMes.diasRestantes} dias

@@ -33,12 +33,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("unidade, funcao, nivel, Nome")
+        .select("unidade, funcao, nivel, Nome, ativo")
         .eq("id", sessionUser.id)
         .single();
 
       if (error && error.code !== "PGRST116") {
         console.error("Error fetching profile", error);
+      }
+
+      if (profile && profile.ativo === false) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
       setUser({
@@ -82,11 +89,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return !error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return false;
+
+      if (data?.user) {
+        const { data: profile } = await supabase.from("profiles").select("ativo").eq("id", data.user.id).single();
+        if (profile && profile.ativo === false) {
+          await supabase.auth.signOut();
+          throw new Error("Usuário desativado ou bloqueado.");
+        }
+      }
+
+      return true;
     } catch (err) {
       console.error("Login failed", err);
-      return false;
+      throw err;
     }
   }, []);
 

@@ -26,17 +26,26 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login(email, password);
-    if (success) {
-      navigate("/dashboard");
-    } else {
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate("/dashboard");
+      } else {
+        toast({
+          title: "Erro de autenticação",
+          description: "Email ou senha incorretos, ou credenciais não encontradas no Supabase.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
       toast({
-        title: "Erro de autenticação",
-        description: "Email ou senha incorretos, ou credenciais não encontradas no Supabase.",
+        title: "Acesso Negado",
+        description: err.message || "Email ou senha incorretos.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

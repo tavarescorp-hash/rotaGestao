@@ -130,6 +130,13 @@ const NovaVisita = () => {
       if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
 
+        // Dicionário de Correção de Nomes (Login -> Banco de Dados)
+        const nameMap: Record<string, string> = {
+          'CARLOS JUNIOR': 'CARLOS TAVARES',
+          'GUILHERME CHAGAS': 'GUILHERME DAS CHAGAS',
+        };
+        const mappedUserName = nameMap[currentUserName] || currentUserName;
+
         // Lista de responsáveis vinculados a este PDV no banco
         const responsvaveis = [
           pdvData.nome_vendedor?.toUpperCase(),
@@ -142,7 +149,11 @@ const NovaVisita = () => {
         const isOwner = responsvaveis.some(resp =>
           resp === currentUserName ||
           resp.includes(currentUserName) ||
-          currentUserName.includes(resp)
+          currentUserName.includes(resp) ||
+          resp === mappedUserName ||
+          resp.includes(mappedUserName) ||
+          mappedUserName.includes(resp) ||
+          (supervisorId && resp === supervisorId) // Permite bater pelo código do supervisor (ex: "200")
         );
 
         if (!isGerente && !isOwner && currentUserName) {

@@ -334,3 +334,266 @@ export async function buscarVendedoresAtivos(unidade?: string): Promise<Vendedor
     return [];
   }
 }
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES DE ADMINISTRAÇÃO (UPLOAD EM MASSA)
+// -----------------------------------------------------------------------------
+
+export async function uploadBasePDVs(dados: any[]): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. Limpar a tabela inteira (segurança usando uma exclusão virtual nula)
+    // Usamos um filtro que sempre será verdadeiro mas força o client postgres a aceitar o DELETE sem WHERE explícito de ID único
+    const { error: errorDel } = await supabase.from("pdvs").delete().neq('CODIGO', 'FORCE_DELETE_ALL_IMPOSSIBLE_CODE');
+
+    // Fallback: se o banco restringir exclusão total assim, tentamos neq na role
+    if (errorDel) {
+      console.warn("Retentativa de Deleção total pdvs com outro filtro:", errorDel);
+      await supabase.from("pdvs").delete().not('created_at', 'is', null);
+    }
+
+    // 2. Inserir em lotes (chunks) para não estourar o limite de payload da API REST do Supabase (max 1000)
+    const chunkSize = 500;
+    for (let i = 0; i < dados.length; i += chunkSize) {
+      const chunk = dados.slice(i, i + chunkSize);
+
+      // Sanitizar chaves que vem do Excel vazias ou indefinidas
+      const cleanChunk = chunk.map(row => {
+        const cleanRow: any = {};
+        for (const key in row) {
+          // Ignorar colunas auto-geradas pelo banco de dados (que também vem no Download)
+          const lowerKey = key.toLowerCase();
+          if (['id', 'tipo', 'created_at', 'updated_at'].includes(lowerKey)) continue;
+
+          if (row[key] !== undefined && row[key] !== null) {
+            cleanRow[key] = String(row[key]);
+          }
+        }
+        return cleanRow;
+      });
+
+      const { error: errorIns } = await supabase.from("pdvs").insert(cleanChunk);
+      if (errorIns) throw errorIns;
+    }
+
+    return { success: true, message: `Base atualizada com sucesso! ${dados.length} PDVs sincronizados com o banco de dados.` };
+  } catch (error: any) {
+    console.error("Erro técnico no upload de PDVs:", error);
+    return { success: false, message: error.message || "Erro desconhecido ao atualizar tabela de PDVs." };
+  }
+}
+
+export async function uploadProdutosFDS(dados: any[]): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. Limpar tabela produtos
+    const { error: errorDel } = await supabase.from("produtos_fds").delete().neq('id', -1);
+
+    if (errorDel) {
+      await supabase.from("produtos_fds").delete().not('id', 'is', null);
+    }
+
+    // 2. Inserir em lotes (chunks)
+    const chunkSize = 500;
+    for (let i = 0; i < dados.length; i += chunkSize) {
+      const chunk = dados.slice(i, i + chunkSize);
+
+      const cleanChunk = chunk.map(row => {
+        const cleanRow: any = {};
+        for (const key in row) {
+          // Ignorar colunas auto-geradas pelo banco de dados (que também vem no Download)
+          const lowerKey = key.toLowerCase();
+          if (['id', 'tipo', 'created_at', 'updated_at'].includes(lowerKey)) continue;
+
+          if (row[key] !== undefined && row[key] !== null) {
+            // Se for cotação numerica da planilha
+            if (key.toUpperCase() === 'PONTOS') {
+              cleanRow[key] = parseInt(row[key]) || 0;
+            } else {
+              cleanRow[key] = String(row[key]);
+            }
+          }
+        }
+        return cleanRow;
+      });
+
+      const { error: errorIns } = await supabase.from("produtos_fds").insert(cleanChunk);
+      if (errorIns) throw errorIns;
+    }
+
+    return { success: true, message: `Matriz de Produtos atualizada! ${dados.length} itens sincronizados.` };
+  } catch (error: any) {
+    console.error("Erro técnico no upload de Produtos:", error);
+    return { success: false, message: error.message || "Erro desconhecido ao atualizar Produtos FDS." };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES DE EXPORTAÇÃO (DOWNLOAD DE BANCO)
+// -----------------------------------------------------------------------------
+
+export async function downloadBasePDVs() {
+  try {
+    let allData: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let fetchMore = true;
+
+    while (fetchMore) {
+      const { data, error } = await supabase
+        .from('pdvs')
+        .select('*')
+        .range(from, from + step - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = [...allData, ...data];
+        from += step;
+      } else {
+        fetchMore = false;
+      }
+    }
+    return allData;
+  } catch (error) {
+    console.error("Erro ao baixar base de PDVs:", error);
+    return null;
+  }
+}
+
+export async function downloadProdutosFDS() {
+  try {
+    let allData: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let fetchMore = true;
+
+    while (fetchMore) {
+      const { data, error } = await supabase
+        .from('produtos_fds')
+        .select('*')
+        .range(from, from + step - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = [...allData, ...data];
+        from += step;
+      } else {
+        fetchMore = false;
+      }
+    }
+    return allData;
+  } catch (error) {
+    console.error("Erro ao baixar base de Produtos FDS:", error);
+    return null;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FUNÇÕES DE ADMINISTRAÇÃO (USUÁRIOS)
+// -----------------------------------------------------------------------------
+
+/** Busca a lista completa de usuários do sistema */
+export async function getUsers() {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("Nome", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return [];
+  }
+}
+
+/** Habilita ou desabilita o acesso de um usuário */
+export async function toggleUserStatus(userId: string, currentStatus: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ ativo: !currentStatus })
+      .eq("id", userId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Erro ao alterar status do usuário:", error);
+    return false;
+  }
+}
+
+/** 
+ * Cria um usuário sem deslogar o analista atual.
+ * Como o auth.signUp comum sobrescreve a sessão local, precisamos instanciar um client isolado secundário para a requisição.
+ */
+import { createClient } from '@supabase/supabase-js';
+
+export async function createUserAdmin(userData: any): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Chaves do Supabase não encontradas.");
+    }
+
+    // Instancia um client secundário (isolate auth session)
+    const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false, // Fundamental: não salvar a sessão localmente
+        autoRefreshToken: false,
+      }
+    });
+
+    // 1. Cria a conta no Identity (Authentication)
+    const { data: authData, error: authError } = await tempClient.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.Nome,
+          role: 'user' // Default db role
+        }
+      }
+    });
+
+    if (authError) {
+      return { success: false, message: `Erro ao criar conta: ${authError.message}` };
+    }
+
+    const newUserId = authData.user?.id;
+    if (!newUserId) {
+      return { success: false, message: "Falha ao obter ID do novo usuário criado." };
+    }
+
+    // 2. Imediatamente força a atualização da tabela Public profiles com os níveis do sistema
+    // (O trigger do banco pode ter criado uma linha base, então usamos upsert ou update)
+    const { error: profileError } = await tempClient.from("profiles").update({
+      Nome: userData.Nome,
+      nivel: userData.nivel,
+      unidade: userData.unidade,
+      funcao: userData.funcao,
+      ativo: true
+    }).eq("id", newUserId);
+
+    if (profileError) {
+      // Tentar upsert se update falhar (caso trigger delay fallback)
+      await tempClient.from("profiles").upsert({
+        id: newUserId,
+        Nome: userData.Nome,
+        nivel: userData.nivel,
+        unidade: userData.unidade,
+        funcao: userData.funcao,
+        ativo: true
+      });
+    }
+
+    return { success: true, message: `O usuário ${userData.Nome} foi cadastrado com sucesso!` };
+
+  } catch (error: any) {
+    console.error("Erro inesperado ao criar usuário admin:", error);
+    return { success: false, message: error.message || "Erro desconhecido ao cadastrar funcionário." };
+  }
+}

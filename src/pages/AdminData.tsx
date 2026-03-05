@@ -1,0 +1,533 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { UploadCloud, FileSpreadsheet, AlertTriangle, Loader2, Database, Users, UserPlus, Shield, ShieldOff, Lock, Unlock, CheckCircle2, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import * as XLSX from 'xlsx';
+import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS } from '@/lib/api';
+
+const AdminData = () => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    // Estados Bases
+    const [loadingPdvs, setLoadingPdvs] = useState(false);
+    const [loadingProdutos, setLoadingProdutos] = useState(false);
+
+    // Estados Usuários
+    const [usuarios, setUsuarios] = useState<any[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [loadingAction, setLoadingAction] = useState<string | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Form Novo Usuário
+    const [newUser, setNewUser] = useState({
+        Nome: '',
+        email: '',
+        password: '',
+        unidade: '',
+        funcao: '',
+        nivel: ''
+    });
+
+    const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
+
+    useEffect(() => {
+        if (isAnalista) {
+            fetchUsers();
+        }
+    }, [isAnalista]);
+
+    const fetchUsers = async () => {
+        setLoadingUsers(true);
+        const data = await getUsers();
+        setUsuarios(data);
+        setLoadingUsers(false);
+    };
+
+    if (!isAnalista) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                    <AlertTriangle className="w-10 h-10 text-destructive" />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight text-foreground">Acesso Negado</h2>
+                <p className="text-muted-foreground max-w-md">
+                    Esta área é restrita para o perfil de Analista de Inteligência. Você não tem permissão para gerenciar a base de dados do sistema.
+                </p>
+            </div>
+        );
+    }
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'pdvs' | 'produtos') => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const isLoading = type === 'pdvs' ? setLoadingPdvs : setLoadingProdutos;
+        const uploadFunc = type === 'pdvs' ? uploadBasePDVs : uploadProdutosFDS;
+
+        isLoading(true);
+
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            // Converte a planilha para JSON, pulando linhas vazias
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            if (jsonData.length === 0) {
+                toast({
+                    title: "Planilha Vazia",
+                    description: "Não encontramos dados na primeira aba da planilha.",
+                    variant: "destructive"
+                });
+                isLoading(false);
+                return;
+            }
+
+            toast({
+                title: "Processando Planilha...",
+                description: `Lemos ${jsonData.length} linhas. Iniciando sincronização pesada com o banco de dados. Por favor aguarde.`,
+            });
+
+            const response = await uploadFunc(jsonData);
+
+            if (response.success) {
+                toast({
+                    title: "Sucesso!",
+                    description: response.message,
+                    className: "bg-green-600 border-none text-white",
+                });
+            } else {
+                toast({
+                    title: "Falha na Sincronização",
+                    description: response.message,
+                    variant: "destructive"
+                });
+            }
+
+        } catch (error: any) {
+            console.error("Erro ao ler arquivo:", error);
+            toast({
+                title: "Erro de Leitura",
+                description: "Não foi possível extrair os dados deste tipo de arquivo. Use Excel (.xlsx) ou CSV.",
+                variant: "destructive"
+            });
+        } finally {
+            isLoading(false);
+            event.target.value = '';
+        }
+    };
+
+    const handleDownload = async (type: 'pdvs' | 'produtos') => {
+        const downloadFunc = type === 'pdvs' ? downloadBasePDVs : downloadProdutosFDS;
+        const fileName = type === 'pdvs' ? 'Base_PDVS_Atual.xlsx' : 'Base_ProdutosFDS_Atual.xlsx';
+
+        toast({ title: "Iniciando Download...", description: "Buscando os dados completos do servidor." });
+
+        try {
+            const data = await downloadFunc();
+            if (!data || data.length === 0) {
+                toast({ title: "Base Vazia", description: "Não há dados para exportar.", variant: "destructive" });
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+            XLSX.writeFile(workbook, fileName);
+
+            toast({ title: "Download Concluído", description: `Arquivo ${fileName} gerado com sucesso!`, className: "bg-green-600 border-none text-white" });
+        } catch (error) {
+            console.error("Erro no download:", error);
+            toast({ title: "Erro", description: "Falha ao gerar o arquivo Excel.", variant: "destructive" });
+        }
+    };
+
+    const handleToggleStatus = async (userId: string, currentStatus: boolean, userName: string) => {
+        setLoadingAction(userId);
+        const success = await toggleUserStatus(userId, currentStatus);
+
+        if (success) {
+            // Atualizar UI local instantaneamente sem precisar recarregar o banco inteiro
+            setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, ativo: !currentStatus } : u));
+            toast({
+                title: !currentStatus ? "Acesso Restabelecido" : "Acesso Bloqueado",
+                description: `O perfil de ${userName} foi ${!currentStatus ? 'reativado' : 'desativado'} com sucesso.`,
+                className: !currentStatus ? "bg-green-600 border-none text-white" : "destructive",
+            });
+        } else {
+            toast({
+                title: "Erro de Comunicação",
+                description: "Não foi possível alterar o status do usuário no banco de dados.",
+                variant: "destructive"
+            });
+        }
+        setLoadingAction(null);
+    };
+
+    const handleCreateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!newUser.Nome || !newUser.email || !newUser.password || !newUser.nivel || !newUser.unidade) {
+            toast({ title: "Campos Incompletos", description: "Preencha todos os campos obrigatórios.", variant: "destructive" });
+            return;
+        }
+
+        setLoadingAction('create');
+
+        const response = await createUserAdmin(newUser);
+
+        if (response.success) {
+            toast({
+                title: "Usuário Criado",
+                description: response.message,
+                className: "bg-green-600 border-none text-white",
+            });
+            setIsDialogOpen(false);
+            setNewUser({ Nome: '', email: '', password: '', unidade: '', funcao: '', nivel: '' });
+            fetchUsers(); // Recarregar lista
+        } else {
+            toast({
+                title: "Falha na Criação",
+                description: response.message,
+                variant: "destructive"
+            });
+        }
+
+        setLoadingAction(null);
+    };
+
+    return (
+        <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+
+            <div className="flex flex-col space-y-2 border-b border-border/40 pb-6 pt-4">
+                <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+                    <Database className="w-8 h-8 text-primary" />
+                    Gestão Central
+                </h1>
+                <p className="text-muted-foreground font-medium">
+                    Área restrita de Administração do Sistema. Faça upload de diretrizes ou ajuste acessos.
+                </p>
+            </div>
+
+            <Tabs defaultValue="bases" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8">
+                    <TabsTrigger value="bases" className="font-bold tracking-wide">
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Bases de Dados
+                    </TabsTrigger>
+                    <TabsTrigger value="usuarios" className="font-bold tracking-wide">
+                        <Users className="w-4 h-4 mr-2" />
+                        Usuários
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="bases" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Card PDVS */}
+                        <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden relative group hover:border-primary/40 transition-colors">
+                            <CardHeader className="bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50 pb-8">
+                                <CardTitle className="flex items-center gap-2 text-xl">
+                                    <FileSpreadsheet className="w-6 h-6 text-primary" />
+                                    Base de Clientes (PDVs)
+                                </CardTitle>
+                                <CardDescription className="font-medium text-muted-foreground/80 mt-2">
+                                    Esta ação <strong>apagará</strong> toda a atual carteira de clientes do aplicativo e <strong>injetará</strong> as novas linhas da sua planilha.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
+                                {loadingPdvs ? (
+                                    <div className="flex flex-col items-center gap-4 text-primary animate-pulse">
+                                        <Loader2 className="w-12 h-12 animate-spin" />
+                                        <p className="font-bold tracking-tight">Destruindo e Recriando Tabela...</p>
+                                        <span className="text-xs text-muted-foreground">Isso pode levar até 1 minuto. Não feche.</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-4 w-full">
+                                        <div className="w-16 h-16 rounded-full bg-secondary/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                            <UploadCloud className="w-8 h-8 text-primary" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <h3 className="font-bold">Faça upload de uma planilha Excel</h3>
+                                            <p className="text-xs text-muted-foreground">O arquivo deve conter NOME_VENDEDOR, FILIAL, NOME _SUPERVISOR</p>
+                                        </div>
+                                        <div className="flex gap-2 w-full max-w-sm mt-4">
+                                            <div className="relative w-full flex-[2]">
+                                                <input
+                                                    type="file"
+                                                    accept=".xlsx, .xls, .csv"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    onChange={(e) => handleFileUpload(e, 'pdvs')}
+                                                    disabled={loadingPdvs}
+                                                />
+                                                <Button className="w-full pointer-events-none shadow-md">
+                                                    Substituir Arquivo
+                                                </Button>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 shadow-sm font-bold bg-secondary/50 hover:bg-secondary border-primary/20"
+                                                onClick={() => handleDownload('pdvs')}
+                                                disabled={loadingPdvs}
+                                            >
+                                                <Download className="w-4 h-4 mr-2" />
+                                                Baixar Atual
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Card Produtos FDS */}
+                        <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden relative group hover:border-primary/40 transition-colors">
+                            <CardHeader className="bg-gradient-to-br from-purple-500/10 to-transparent border-b border-border/50 pb-8">
+                                <CardTitle className="flex items-center gap-2 text-xl text-purple-600 dark:text-purple-400">
+                                    <FileSpreadsheet className="w-6 h-6" />
+                                    Base de Produtos FDS
+                                </CardTitle>
+                                <CardDescription className="font-medium text-muted-foreground/80 mt-2">
+                                    Atualize a lista de pontuações, canais e materiais de execução oficiais de FotodeSucesso.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
+                                {loadingProdutos ? (
+                                    <div className="flex flex-col items-center gap-4 text-purple-600 dark:text-purple-400 animate-pulse">
+                                        <Loader2 className="w-12 h-12 animate-spin" />
+                                        <p className="font-bold tracking-tight">Sincronizando Produtos...</p>
+                                        <span className="text-xs text-muted-foreground">Isso pode levar alguns segundos.</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-4 w-full">
+                                        <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                            <UploadCloud className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <h3 className="font-bold">Faça upload da Matriz Oficial</h3>
+                                            <p className="text-xs text-muted-foreground">Colunas obrigatórias: PRODUTO, CANAL, EXECUCAO, PONTOS</p>
+                                        </div>
+                                        <div className="flex gap-2 w-full max-w-sm mt-4">
+                                            <div className="relative w-full flex-[2]">
+                                                <input
+                                                    type="file"
+                                                    accept=".xlsx, .xls, .csv"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    onChange={(e) => handleFileUpload(e, 'produtos')}
+                                                    disabled={loadingProdutos}
+                                                />
+                                                <Button className="w-full bg-purple-600 hover:bg-purple-700 pointer-events-none shadow-md text-white">
+                                                    Substituir Arquivo
+                                                </Button>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 shadow-sm font-bold bg-secondary/50 hover:bg-secondary border-purple-500/20 text-purple-600 dark:text-purple-400"
+                                                onClick={() => handleDownload('produtos')}
+                                                disabled={loadingProdutos}
+                                            >
+                                                <Download className="w-4 h-4 mr-2" />
+                                                Baixar Atual
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl flex items-start gap-4 text-amber-900 dark:text-amber-200 mt-6 !mt-8">
+                        <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <h4 className="font-bold">Aviso Importante sobre Formatação</h4>
+                            <p className="text-sm opacity-90">
+                                A inteligência do sistema <strong>não</strong> consegue advinhar o que as colunas da sua planilha significam se os títulos não forem iguais aos do banco de dados.
+                                Antes de arrastar a planilha, abra no seu Excel e garanta que o NOME DAS COLUNAS (cabeçalho da primeira linha) esteja exatamente garantido.
+                            </p>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="usuarios" className="space-y-6">
+                    <Card className="glass-card bg-card/40 border-primary/20">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6 bg-secondary/10">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <Users className="w-6 h-6 text-primary" />
+                                    Diretório de Acessos
+                                </CardTitle>
+                                <CardDescription className="font-medium mt-1 text-muted-foreground/80">
+                                    Gerencie todos os perfs criados na plataforma Rota Unibeer.
+                                </CardDescription>
+                            </div>
+                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="gap-2 font-bold shadow-md shadow-primary/20">
+                                        <UserPlus className="w-4 h-4" />
+                                        Novo Usuário
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px]">
+                                    <form onSubmit={handleCreateUser}>
+                                        <DialogHeader>
+                                            <DialogTitle className="text-xl">Adicionar Perfil</DialogTitle>
+                                            <DialogDescription>
+                                                Crie um novo acesso. A conta ficará ativa imediatamente.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-6">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="nome">Nome Completo</Label>
+                                                <Input id="nome" required value={newUser.Nome} onChange={e => setNewUser({ ...newUser, Nome: e.target.value })} placeholder="Ex: João da Silva" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="email">E-mail</Label>
+                                                <Input id="email" type="email" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} placeholder="vendas@exemplo.com" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="pass">Senha Inicial</Label>
+                                                <Input id="pass" type="password" required value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="Mínimo 6 caracteres" minLength={6} />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Unidade</Label>
+                                                    <Select value={newUser.unidade} onValueChange={v => setNewUser({ ...newUser, unidade: v })}>
+                                                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Macaé">Macaé</SelectItem>
+                                                            <SelectItem value="Campos">Campos</SelectItem>
+                                                            <SelectItem value="Todas">Todas (Admin)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Nível</Label>
+                                                    <Select value={newUser.nivel} onValueChange={v => setNewUser({ ...newUser, nivel: v })}>
+                                                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Niv1">Niv1 (Vendedor)</SelectItem>
+                                                            <SelectItem value="Niv2">Niv2 (Avaliador Base)</SelectItem>
+                                                            <SelectItem value="Niv4">Niv4 (Supervisor)</SelectItem>
+                                                            <SelectItem value="Niv3">Niv3 (Gerente)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="funcao">Função (Cargo no sistema)</Label>
+                                                <Input id="funcao" required value={newUser.funcao} onChange={e => setNewUser({ ...newUser, funcao: e.target.value })} placeholder="Ex: Supervisor de Vendas" />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="submit" disabled={loadingAction === 'create'} className="w-full">
+                                                {loadingAction === 'create' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                                Salvar Usuário
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {loadingUsers ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                                    <span>Carregando perfis...</span>
+                                </div>
+                            ) : (
+                                <div className="rounded-md overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-secondary/30">
+                                            <TableRow>
+                                                <TableHead className="font-bold text-foreground">Status</TableHead>
+                                                <TableHead className="font-bold text-foreground">Nome de Usuário</TableHead>
+                                                <TableHead className="font-bold text-foreground">Nível</TableHead>
+                                                <TableHead className="font-bold text-foreground">Unidade</TableHead>
+                                                <TableHead className="font-bold text-foreground">Função</TableHead>
+                                                <TableHead className="text-right font-bold text-foreground">Configurar</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody className="bg-background/50">
+                                            {usuarios.map((usr) => (
+                                                <TableRow key={usr.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell>
+                                                        {usr.ativo !== false ? (
+                                                            <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-none px-2 shadow-none font-bold">
+                                                                <CheckCircle2 className="w-3 h-3 mr-1 inline-block" />
+                                                                ATIVO
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-none px-2 shadow-none font-bold">
+                                                                <Lock className="w-3 h-3 mr-1 inline-block" />
+                                                                BLOQUEADO
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="font-bold text-foreground">{usr.Nome}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="font-medium bg-background">{usr.nivel}</Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-medium text-muted-foreground">{usr.unidade}</TableCell>
+                                                    <TableCell className="text-sm font-medium text-muted-foreground">{usr.funcao}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        {usr.id !== user?.id ? (
+                                                            <Button
+                                                                variant={usr.ativo !== false ? "outline" : "default"}
+                                                                size="sm"
+                                                                disabled={loadingAction === usr.id}
+                                                                className={usr.ativo !== false ? "text-destructive hover:bg-destructive/10 hover:text-destructive border-border" : "bg-green-600 hover:bg-green-700 text-white"}
+                                                                onClick={() => handleToggleStatus(usr.id, usr.ativo !== false, usr.Nome)}
+                                                            >
+                                                                {loadingAction === usr.id ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : usr.ativo !== false ? (
+                                                                    <>
+                                                                        <ShieldOff className="w-4 h-4 mr-2" />
+                                                                        Desativar Acesso
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Unlock className="w-4 h-4 mr-2" />
+                                                                        Reativar
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic px-3">Você (Não pode desativar)</span>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {usuarios.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground font-medium">
+                                                        Nenhum usuário localizado.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+        </div>
+    );
+};
+
+export default AdminData;

@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NovaVisita from "./pages/NovaVisita";
+import AdminData from "./pages/AdminData";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +27,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/nova-visita" element={<NovaVisita />} />
+                <Route path="/admin-data" element={<AdminData />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

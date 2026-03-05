@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, LogOut, Shield, User } from "lucide-react";
+import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Database } from "lucide-react";
 import logoUnibeer from "@/assets/logo-unibeer.png";
 import {
   Popover,
@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
+  { title: "Gestão de Dados", url: "/admin-data", icon: Database },
 ];
 
 export function AppSidebar() {
@@ -65,6 +66,9 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-2">
               {navItems.map((item) => {
                 if (isAnalista && item.title === "Nova Visita") {
+                  return null;
+                }
+                if (!isAnalista && item.title === "Gestão de Dados") {
                   return null;
                 }
                 return (

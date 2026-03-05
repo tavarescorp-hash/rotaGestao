@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscarVisitas, excluirVisita, type Visita } from "@/lib/api";
+import { buscarVisitas, excluirVisita, buscarVendedoresAtivos, type Visita, type VendedorAtivo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [visitas, setVisitas] = useState<Visita[]>([]);
+  const [vendedoresBaseReal, setVendedoresBaseReal] = useState<VendedorAtivo[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -42,8 +43,12 @@ const Dashboard = () => {
 
   const carregarVisitas = async () => {
     setLoading(true);
-    const data = await buscarVisitas();
-    setVisitas(data);
+    const [dataVisitas, dataVendedores] = await Promise.all([
+      buscarVisitas(),
+      buscarVendedoresAtivos()
+    ]);
+    setVisitas(dataVisitas);
+    setVendedoresBaseReal(dataVendedores);
     setLoading(false);
   };
 
@@ -120,29 +125,92 @@ const Dashboard = () => {
     const qtdeCoaching = coachingVisitas.length;
 
     // Calculando base de vendedores
-    // Pegamos a base de TODOS os vendedores que atendem aos filtros de Unidade/Cargo/Avaliador (ignorando o período) 
-    // para que a META seja o total da equipe, mesmo se alguém não foi visitado no período.
+    // Pegamos a base oficial de Vendedores vindas do banco de clientes para 
+    // listar sempre 0 visitas para quem a equipe tem sob responsabilidade, 
+    // preenchendo o Coaching com a equipe completa esteticamente.
     const mapaVendedores = new Map<string, number>();
+    const baseVendedoresOficiais = new Set<string>();
 
-    minhasVisitas.forEach(v => {
-      // Ignora registros fora dos filtros de escopo fixo
-      if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return;
-      if (unidade !== "todas" && v.unidade !== unidade) return;
-      if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return;
+    const normalizeStr = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
 
-      if (v.nome_vendedor && !mapaVendedores.has(v.nome_vendedor)) {
-        mapaVendedores.set(v.nome_vendedor, 0); // inicializa com 0
+    const userLogadoNome = normalizeStr(user?.name);
+    const avaliadorEscolhido = normalizeStr(avaliadorFiltro);
+    const avaliadoresHistoricoNormalizados = avaliadoresUnicos.map(normalizeStr);
+
+    // Extrai possível código numérico se a função do usuário for 'SUPERVISOR 200'
+    const userSupCode = user?.funcao?.match(/\d+/)?.[0] || "";
+
+    vendedoresBaseReal.forEach(v => {
+      let match = true;
+      const supName = normalizeStr(v.nome_supervisor);
+
+      const isFilialMatch =
+        (user?.unidade?.toUpperCase() === 'MACAE' && v.filial?.toUpperCase() === 'M') ||
+        (user?.unidade?.toUpperCase() === 'CAMPOS' && (v.filial?.toUpperCase() === 'C' || v.filial?.toUpperCase() === 'S')); // S = SFI?
+
+      if (avaliadorFiltro !== "todos") {
+        match = supName === avaliadorEscolhido;
+      } else {
+        // Dicionário de Correção de Nomes (Login -> Banco de Dados)
+        const nameMap: Record<string, string> = {
+          'carlos.junior': 'carlos tavares',
+          'guilherme.chagas': 'guilherme das chagas',
+          'gerente.campos': 'gerente campos',
+          'diego.macae': 'diego macae'
+        };
+
+        const mappedName = nameMap[userLogadoNome] || userLogadoNome;
+        const isNameMatch = supName === userLogadoNome || supName === mappedName;
+        const isSupCodeMatch = userSupCode ? v.codigo_sup === userSupCode : false;
+        const requireFilial = user?.unidade && user.unidade !== "todas";
+
+        if (user?.nivel === 'Niv4') {
+          // Para Supervisor, deve combinar código/nome E a filial (se aplicável)
+          if (requireFilial) {
+            match = (isSupCodeMatch || isNameMatch) && isFilialMatch;
+          } else {
+            match = isSupCodeMatch || isNameMatch;
+          }
+        } else if (user?.nivel === 'Niv2' || (user?.nivel === 'Niv3' && activeTab === 'minhas')) {
+          if (requireFilial) {
+            match = (isSupCodeMatch || isNameMatch) && isFilialMatch;
+          } else {
+            match = isSupCodeMatch || isNameMatch;
+          }
+        } else if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
+          // Expandindo também pela Filial se o gerente ("unidade") carregar a aba inteira
+          match = avaliadoresHistoricoNormalizados.includes(supName) || isFilialMatch;
+        } else {
+          // Se não caiu em nenhuma regra restrita, a segurança mantém restrito
+          match = false;
+        }
+      }
+
+      if (match && v.nome_vendedor) {
+        // Apenas contabiliza a base oficial para fins de Teto de Meta,
+        // mas não exibe o vendedor visualmente até ele receber uma avaliação de fato.
+        const vNomeNormalizado = v.nome_vendedor.toUpperCase().trim();
+        baseVendedoresOficiais.add(vNomeNormalizado);
       }
     });
 
-    const vendedoresUnicos = mapaVendedores.size;
+    const vendedoresBaseCount = baseVendedoresOficiais.size;
 
-    // Contabiliza o coaching feito NO PERÍODO ATUAL para cada vendedor da equipe delimitada
+    // Cria um Set apenas com vendedores avaliados em Coaching
+    const vendedoresCoachingAtuais = new Set<string>();
+
     coachingVisitas.forEach(v => {
-      if (v.nome_vendedor && mapaVendedores.has(v.nome_vendedor)) {
-        mapaVendedores.set(v.nome_vendedor, (mapaVendedores.get(v.nome_vendedor) || 0) + 1);
+      if (v.nome_vendedor) {
+        const vNomeNormalizado = v.nome_vendedor.toUpperCase().trim();
+        vendedoresCoachingAtuais.add(vNomeNormalizado);
+        mapaVendedores.set(vNomeNormalizado, (mapaVendedores.get(vNomeNormalizado) || 0) + 1);
       }
     });
+
+    // Se houve avaliações de coaching para alguém fora da base oficial (ex: transferência),
+    // incluímos ele no teto total de vendedores da equipe para não estourar 100%.
+    const vendedoresCoachingCount = vendedoresCoachingAtuais.size;
+    const vendedoresUnicos = Math.max(vendedoresBaseCount, vendedoresCoachingCount);
 
     const detalhesCoaching = Array.from(mapaVendedores.entries()).map(([nome, atual]) => ({
       nome,
@@ -154,9 +222,19 @@ const Dashboard = () => {
       ? Math.max(1, avaliadoresUnicos.length)
       : 1;
 
-    const META_FDS = 10 * multi;
-    const META_RGB = 20 * multi;
-    const META_COACHING = Math.max(1, vendedoresUnicos) * 5;
+    let META_FDS = 10 * multi;
+    let META_RGB = 20 * multi;
+    let META_COACHING = Math.max(1, vendedoresUnicos) * 5;
+
+    // Regra solicitada: Metas de Coaching cravadas sem mudança
+    // Gerentes (Niv3): 80. Supervisores (Niv4): 40. FDS: 10, RGB: 20.
+    if (user?.nivel === 'Niv3') {
+      META_FDS = 10;
+      META_RGB = 20;
+      META_COACHING = 80;
+    } else if (user?.nivel === 'Niv4') {
+      META_COACHING = 40;
+    }
 
     // Calcular dias restantes com base no filtro final
     const hoje = new Date();
@@ -169,10 +247,11 @@ const Dashboard = () => {
       qtdeFDS, qtdeRGB, qtdeCoaching,
       META_FDS, META_RGB, META_COACHING,
       baseVendedores: vendedoresUnicos,
+      vendedoresAvaliados: vendedoresCoachingCount,
       detalhesCoaching,
       diasRestantes: dias
     };
-  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab]);
+  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab, vendedoresBaseReal, user?.name]);
 
   const indicadoresUnicos = useMemo(() => {
     const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
@@ -347,43 +426,73 @@ const Dashboard = () => {
               <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Faltam {estatisticasMes.diasRestantes} dias
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-start">
 
-            {/* Meta FDS */}
-            <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-end mb-1">
-                    <div>
-                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">FDS</h3>
-                      <p className="text-xl font-black text-foreground mt-1">
-                        {estatisticasMes.qtdeFDS} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_FDS}</span>
-                      </p>
+            {/* Coluna 1 da Direita/Esquerda - FDS e RGB Empilhados */}
+            <div className="flex flex-col gap-4">
+              {/* Meta FDS */}
+              <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-end mb-1">
+                      <div>
+                        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">FDS</h3>
+                        <p className="text-xl font-black text-foreground mt-1">
+                          {estatisticasMes.qtdeFDS} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_FDS}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                        {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100)}%
-                      </span>
+                    <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                      <div
+                        className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                        style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100)}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                    <div
-                      className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                      style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Meta COACHING */}
-            <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm flex flex-col">
+              {/* Meta RGB */}
+              <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-end mb-1">
+                      <div>
+                        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RGB</h3>
+                        <p className="text-xl font-black text-foreground mt-1">
+                          {estatisticasMes.qtdeRGB} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_RGB}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                      <div
+                        className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                        style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Meta COACHING (Coluna Larga Esticada) */}
+            <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm flex flex-col h-full min-h-[220px]">
               <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex flex-col gap-3 mb-4">
                   <div className="flex justify-between items-end mb-1">
                     <div>
                       <h3 className="text-[10px] font-bold text-muted-foreground flex gap-1 uppercase tracking-widest">
-                        COACHING <span className="opacity-70 normal-case tracking-normal border border-border/50 px-1 rounded">({estatisticasMes.baseVendedores} Vnds)</span>
+                        COACHING <span className="opacity-70 normal-case tracking-normal border border-border/50 px-1 rounded">({estatisticasMes.vendedoresAvaliados} Vnds)</span>
                       </h3>
                       <p className="text-xl font-black text-foreground mt-1">
                         {estatisticasMes.qtdeCoaching} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_COACHING}</span>
@@ -409,7 +518,7 @@ const Dashboard = () => {
                     <span>Vendedor</span>
                     <span>Realizado</span>
                   </h4>
-                  <div className="space-y-3.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                     {estatisticasMes.detalhesCoaching.map((vend, idx) => (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex justify-between items-center text-[10px]">
@@ -430,36 +539,9 @@ const Dashboard = () => {
                     ))}
                     {estatisticasMes.detalhesCoaching.length === 0 && (
                       <p className="text-[10px] text-muted-foreground italic text-center py-2">
-                        Nenhum vendedor encontrado no seu histórico de visitas.
+                        Nenhum vendedor encontrado ou configurado sob sua hierarquia.
                       </p>
                     )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Meta RGB */}
-            <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-end mb-1">
-                    <div>
-                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RGB</h3>
-                      <p className="text-xl font-black text-foreground mt-1">
-                        {estatisticasMes.qtdeRGB} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_RGB}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                        {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                    <div
-                      className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                      style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100)}%` }}
-                    />
                   </div>
                 </div>
               </CardContent>

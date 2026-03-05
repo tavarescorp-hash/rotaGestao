@@ -262,3 +262,75 @@ export async function buscarFdsPorCanal(canal: string) {
     return { produtos: [], execucao: [] };
   }
 }
+
+// Interface for the active sellers list
+export interface VendedorAtivo {
+  nome_vendedor: string;
+  nome_supervisor: string;
+  codigo_sup: string;
+  municipio: string;
+  filial: string;
+  gerente: string;
+}
+
+export async function buscarVendedoresAtivos(unidade?: string): Promise<VendedorAtivo[]> {
+  try {
+    let allData: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("pdvs")
+        .select('"NOME_VENDEDOR", "NOME _SUPERVISOR", "FILIAL", "GERENTE", "SUPERVISOR", "MUNICIPIO"')
+        .range(from, from + step - 1);
+
+      if (error) {
+        console.error("Erro ao buscar base real de vendedores:", error);
+        break; // Tenta usar o que já pegou se falhar no meio
+      }
+
+      if (data && data.length > 0) {
+        allData = [...allData, ...data];
+        if (data.length < step) {
+          hasMore = false; // ÚItima página
+        } else {
+          from += step;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    if (allData.length === 0) return [];
+
+    const data = allData;
+
+    // Limpeza de arrays pegando unicos
+    const unicosMap = new Map<string, VendedorAtivo>();
+
+    data.forEach((row: any) => {
+      const vend = row.NOME_VENDEDOR?.trim();
+      const supName = row["NOME _SUPERVISOR"]?.trim() || "";
+      const supCode = row.SUPERVISOR?.trim() || "";
+      const municipio = row.MUNICIPIO?.trim() || "";
+
+      if (vend && !unicosMap.has(vend)) {
+        unicosMap.set(vend, {
+          nome_vendedor: vend,
+          nome_supervisor: supName,
+          codigo_sup: supCode,
+          municipio: municipio,
+          filial: row.FILIAL?.trim() || "",
+          gerente: row.GERENTE?.trim() || ""
+        });
+      }
+    });
+
+    return Array.from(unicosMap.values());
+  } catch (error) {
+    console.error("Erro inesperado ao buscar vendedores ativos:", error);
+    return [];
+  }
+}

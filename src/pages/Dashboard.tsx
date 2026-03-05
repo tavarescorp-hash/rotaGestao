@@ -62,11 +62,7 @@ const Dashboard = () => {
     }
   }, [user?.unidade]);
 
-  useEffect(() => {
-    if (user?.nivel === 'Niv3') {
-      setActiveTab('unidade');
-    }
-  }, [user?.nivel]);
+
 
   const minhasVisitas = useMemo(() => {
     if (isAnalista) {
@@ -99,15 +95,25 @@ const Dashboard = () => {
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
       if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return false;
-      if (dateRange?.from) {
-        // Zera o tempo para não dar conflito com o fuso
-        const visitaDate = new Date(v.data_visita + "T00:00:00");
-        if (visitaDate < dateRange.from) return false;
+
+      if (dateRange?.from || dateRange?.to) {
+        // Separa YYYY-MM-DD em números inteiros para criar 
+        // uma data "limpa" ao meio-dia, totalmente blindada contra fuso horário.
+        const [anoStr, mesStr, diaStr] = (v.data_visita || "").split("-");
+        if (!anoStr || !mesStr || !diaStr) return false;
+
+        const visitaDate = new Date(parseInt(anoStr), parseInt(mesStr) - 1, parseInt(diaStr), 12, 0, 0);
+
+        if (dateRange?.from) {
+          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate(), 0, 0, 0);
+          if (visitaDate < fromStart) return false;
+        }
+        if (dateRange?.to) {
+          const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59);
+          if (visitaDate > toEnd) return false;
+        }
       }
-      if (dateRange?.to) {
-        const visitaDate = new Date(v.data_visita + "T00:00:00");
-        if (visitaDate > dateRange.to) return false;
-      }
+
       if (unidade !== "todas" && v.unidade !== unidade) return false;
       if (indicadorFiltro !== "todos" && v.indicador_avaliado !== indicadorFiltro) return false;
       if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return false;
@@ -717,7 +723,10 @@ const Dashboard = () => {
                           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
                               <Calendar className="w-3.5 h-3.5 text-primary" />
-                              {new Date(v.data_visita).toLocaleDateString('pt-BR')}
+                              {(() => {
+                                const [a, m, d] = (v.data_visita || "").split("-");
+                                return a && m && d ? `${d}/${m}/${a}` : v.data_visita;
+                              })()}
                             </span>
                             <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
                               <MapPin className="w-3.5 h-3.5 text-primary" />
@@ -795,7 +804,10 @@ const Dashboard = () => {
                   Detalhes do Registro
                 </DialogTitle>
                 <DialogDescription className="mt-1 font-medium">
-                  {selectedVisita && new Date(selectedVisita.data_visita).toLocaleDateString('pt-BR')} • {selectedVisita?.unidade}
+                  {selectedVisita && (() => {
+                    const [a, m, d] = (selectedVisita.data_visita || "").split("-");
+                    return a && m && d ? `${d}/${m}/${a}` : selectedVisita.data_visita;
+                  })()} • {selectedVisita?.unidade}
                 </DialogDescription>
               </div>
             </div>
@@ -813,7 +825,10 @@ const Dashboard = () => {
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Data da Visita</span>
                       <span className="text-sm font-bold flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-primary" />
-                        {new Date(selectedVisita.data_visita).toLocaleDateString('pt-BR')}
+                        {(() => {
+                          const [a, m, d] = (selectedVisita.data_visita || "").split("-");
+                          return a && m && d ? `${d}/${m}/${a}` : selectedVisita.data_visita;
+                        })()}
                       </span>
                     </div>
                     <div>

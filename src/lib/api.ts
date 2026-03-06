@@ -122,7 +122,7 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
 
     let query = supabase
       .from("pdvs")
-      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y"')
+      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla"')
       .eq('"CODIGO"', codigoBuscado);
 
     if (unidade) {
@@ -153,14 +153,14 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
 
     // Adapt the exact schema response to what the UI is currently expecting
     return {
-      nome_fantasia: data.SIGLA,
-      categoria: data.PORTE,
-      canal_cadastrado: data.CANAL,
+      nome_fantasia: data.Sigla || data.SIGLA,
+      categoria: data.Porte || data.PORTE,
+      canal_cadastrado: data.Canal || data.CANAL,
       filial: data.FILIAL,
       municipio: data.MUNICIPIO,
       codigo_vendedor: data.VENDEDOR,
-      nome_vendedor: data.NOME_VENDEDOR,
-      nome_supervisor: data["NOME _SUPERVISOR"],
+      nome_vendedor: data["NOME VENDEDOR"] || data.NOME_VENDEDOR,
+      nome_supervisor: data["NOME SUPERVISOR"] || data["NOME _SUPERVISOR"],
       supervisor: data.SUPERVISOR,
       gerente: data.GERENTE,
       coorden_x: data["Coorden-X"],

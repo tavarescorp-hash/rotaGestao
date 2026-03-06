@@ -19,6 +19,7 @@ import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -258,6 +259,28 @@ const Dashboard = () => {
       diasRestantes: dias
     };
   }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab, vendedoresBaseReal, user?.name]);
+
+  const dadosGraficoAnalista = useMemo(() => {
+    if (!isAnalista) return [];
+
+    const mapa = new Map<string, { name: string, FDS: number, RGB: number, Coaching: number }>();
+
+    filtradas.forEach(v => {
+      const nomeAvaliador = v.avaliador;
+      if (!nomeAvaliador) return;
+
+      if (!mapa.has(nomeAvaliador)) {
+        mapa.set(nomeAvaliador, { name: nomeAvaliador, FDS: 0, RGB: 0, Coaching: 0 });
+      }
+
+      const curr = mapa.get(nomeAvaliador)!;
+      if (v.indicador_avaliado === 'FDS') curr.FDS++;
+      else if (v.indicador_avaliado?.includes('RGB')) curr.RGB++;
+      else if (v.indicador_avaliado?.includes('COACHING')) curr.Coaching++;
+    });
+
+    return Array.from(mapa.values()).sort((a, b) => (b.FDS + b.RGB + b.Coaching) - (a.FDS + a.RGB + a.Coaching));
+  }, [filtradas, isAnalista]);
 
   const indicadoresUnicos = useMemo(() => {
     const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
@@ -555,6 +578,53 @@ const Dashboard = () => {
 
           </div>
         </div>
+      )}
+
+      {/* Painel Visão Global do Analista */}
+      {isAnalista && (
+        <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden shadow-lg mt-6">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b border-border/50">
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              Desempenho da Equipe (Avaliações por Usuário)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 sm:p-6">
+            <div className="h-[400px] w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={dadosGraficoAnalista}
+                  margin={{ top: 20, right: 30, left: 10, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: 'currentColor', fontSize: 11 }}
+                    angle={-35}
+                    textAnchor="end"
+                    interval={0}
+                    height={80}
+                  />
+                  <YAxis tick={{ fill: 'currentColor' }} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    contentStyle={{ backgroundColor: 'rgb(20,20,20)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                  <Bar dataKey="FDS" name="Visitas FDS" stackId="a" fill="#22c55e" radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="RGB" name="Visitas RGB" stackId="a" fill="#a855f7" />
+                  <Bar dataKey="Coaching" name="Coaching" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {dadosGraficoAnalista.length === 0 && (
+              <div className="text-center text-muted-foreground italic mt-4 py-10 border border-dashed border-border/50 rounded-xl">
+                Nenhuma avaliação foi detectada nesses filtros de período para carregar os gráficos.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
 

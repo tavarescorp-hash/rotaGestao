@@ -179,8 +179,8 @@ const AdminData = () => {
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!newUser.Nome || !newUser.email || !newUser.password || !newUser.nivel || !newUser.unidade) {
-            toast({ title: "Campos Incompletos", description: "Preencha todos os campos obrigatórios.", variant: "destructive" });
+        if (!newUser.Nome || !newUser.email || !newUser.password || !newUser.nivel || !newUser.unidade || !newUser.funcao) {
+            toast({ title: "Campos Incompletos", description: "Preencha todos os campos obrigatórios, incluindo a Função.", variant: "destructive" });
             return;
         }
 
@@ -191,7 +191,7 @@ const AdminData = () => {
         if (response.success) {
             toast({
                 title: "Usuário Criado",
-                description: response.message,
+                description: `${response.message} Login: ${newUser.email}`,
                 className: "bg-green-600 border-none text-white",
             });
             setIsDialogOpen(false);
@@ -426,8 +426,16 @@ const AdminData = () => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <Label htmlFor="funcao">Função (Cargo no sistema)</Label>
-                                                <Input id="funcao" required value={newUser.funcao} onChange={e => setNewUser({ ...newUser, funcao: e.target.value })} placeholder="Ex: Supervisor de Vendas" />
+                                                <Label>Função (Cargo no sistema)</Label>
+                                                <Select value={newUser.funcao} onValueChange={v => setNewUser({ ...newUser, funcao: v })}>
+                                                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Vendedor">Vendedor</SelectItem>
+                                                        <SelectItem value="Supervisor de Vendas">Supervisor de Vendas</SelectItem>
+                                                        <SelectItem value="Gerente de Vendas">Gerente de Vendas</SelectItem>
+                                                        <SelectItem value="Analista de Inteligência">Analista de Inteligência</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                         <DialogFooter>

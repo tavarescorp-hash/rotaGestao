@@ -568,9 +568,9 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
       return { success: false, message: "Falha ao obter ID do novo usuário criado." };
     }
 
-    // 2. Imediatamente força a atualização da tabela Public profiles com os níveis do sistema
-    // (O trigger do banco pode ter criado uma linha base, então usamos upsert ou update)
-    const { error: profileError } = await tempClient.from("profiles").update({
+    // 2. Atualiza a tabela Public profiles com os níveis do sistema
+    // Usando o supabase "principal" que está logado como Analista, permitindo a edição por RLS
+    const { error: profileError } = await supabase.from("profiles").update({
       Nome: userData.Nome,
       nivel: userData.nivel,
       unidade: userData.unidade,
@@ -579,8 +579,8 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
     }).eq("id", newUserId);
 
     if (profileError) {
-      // Tentar upsert se update falhar (caso trigger delay fallback)
-      await tempClient.from("profiles").upsert({
+      // Tentar upsert se update falhar
+      await supabase.from("profiles").upsert({
         id: newUserId,
         Nome: userData.Nome,
         nivel: userData.nivel,

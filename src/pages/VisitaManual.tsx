@@ -109,36 +109,9 @@ const NovaVisita = () => {
 
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
       const isGerente = user?.nivel === 'Niv3';
-      const supervisorId = (!isGerente && isSupervisor) ? user?.funcao?.toUpperCase().replace('SUPERVISOR ', '') : undefined;
 
-      const pdvData = await buscarPdvPorCodigo(codigoBusca, (isSupervisor || isGerente) ? user?.unidade : undefined, supervisorId);
+      const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
       if (pdvData) {
-        // Obter nome em caixa alta para comparação insensível
-
-        // Lista de responsáveis vinculados a este PDV no banco
-        const responsvaveis = [
-          pdvData.nome_vendedor?.toUpperCase(),
-          pdvData.nome_supervisor?.toUpperCase(),
-          pdvData.supervisor?.toUpperCase(),
-          pdvData.gerente?.toUpperCase()
-        ].filter(Boolean) as string[];
-
-        // Verifica se o usuário atual tem o nome igual ou contido no nome de algum responsável
-        const isOwner = responsvaveis.some(resp =>
-          resp === currentUserName ||
-          resp.includes(currentUserName) ||
-          currentUserName.includes(resp)
-        );
-
-        if (!isGerente && !isOwner && currentUserName) {
-          toast({
-            title: "Acesso Inválido",
-            description: "Código não é da sua base.",
-            variant: "destructive",
-          });
-          setPdvBuscado(false);
-          return;
-        }
 
         setForm((prev) => ({
           ...prev,

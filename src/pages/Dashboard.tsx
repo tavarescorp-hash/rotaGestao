@@ -45,8 +45,8 @@ const Dashboard = () => {
   const carregarVisitas = async () => {
     setLoading(true);
     const [dataVisitas, dataVendedores] = await Promise.all([
-      buscarVisitas(),
-      buscarVendedoresAtivos()
+      buscarVisitas(user),
+      buscarVendedoresAtivos(user)
     ]);
     setVisitas(dataVisitas);
     setVendedoresBaseReal(dataVendedores);
@@ -79,19 +79,12 @@ const Dashboard = () => {
 
   const avaliadoresUnicos = useMemo(() => {
     const avaliadoresValidos = minhasVisitas
-      .filter(v => {
-        // Se for Gerente vendo a base da Unidade, omitimos outros Gerentes da lista de Avaliadores
-        if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-          return !v.cargo?.toUpperCase().includes('GERENTE');
-        }
-        return true;
-      })
       .map(v => v.avaliador)
       .filter(Boolean) as string[];
 
     const unicos = Array.from(new Set(avaliadoresValidos));
     return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas, user?.nivel, activeTab]);
+  }, [minhasVisitas]);
 
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
@@ -151,47 +144,13 @@ const Dashboard = () => {
       let match = true;
       const supName = normalizeStr(v.nome_supervisor);
 
-      const isFilialMatch =
-        (user?.unidade?.toUpperCase() === 'MACAE' && v.filial?.toUpperCase() === 'M') ||
-        (user?.unidade?.toUpperCase() === 'CAMPOS' && (v.filial?.toUpperCase() === 'C' || v.filial?.toUpperCase() === 'S')); // S = SFI?
-
       if (avaliadorFiltro !== "todos") {
         match = supName === avaliadorEscolhido;
-      } else {
-        // Dicionário de Correção de Nomes (Login -> Banco de Dados)
-        const nameMap: Record<string, string> = {
-          'carlos.junior': 'carlos tavares',
-          'guilherme.chagas': 'guilherme das chagas',
-          'gerente.campos': 'gerente campos',
-          'diego.macae': 'diego macae'
-        };
-
-        const mappedName = nameMap[userLogadoNome] || userLogadoNome;
-        const isNameMatch = supName === userLogadoNome || supName === mappedName;
-        const isSupCodeMatch = userSupCode ? v.codigo_sup === userSupCode : false;
-        const requireFilial = user?.unidade && user.unidade !== "todas";
-
-        if (user?.nivel === 'Niv4') {
-          // Para Supervisor, deve combinar código/nome E a filial (se aplicável)
-          if (requireFilial) {
-            match = (isSupCodeMatch || isNameMatch) && isFilialMatch;
-          } else {
-            match = isSupCodeMatch || isNameMatch;
-          }
-        } else if (user?.nivel === 'Niv2' || (user?.nivel === 'Niv3' && activeTab === 'minhas')) {
-          if (requireFilial) {
-            match = (isSupCodeMatch || isNameMatch) && isFilialMatch;
-          } else {
-            match = isSupCodeMatch || isNameMatch;
-          }
-        } else if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-          // Expandindo também pela Filial se o gerente ("unidade") carregar a aba inteira
-          match = avaliadoresHistoricoNormalizados.includes(supName) || isFilialMatch;
-        } else {
-          // Se não caiu em nenhuma regra restrita, a segurança mantém restrito
-          match = false;
-        }
       }
+
+      // O backend Supabase AGORA JÁ FILTROU a lista vendedoresBaseReal via Superv(1) ou Gerente(1).
+      // Então, se o usuário não filtrou um avaliador específico acima, todo mundo que veio
+      // da API pertence a ele legitimamente.
 
       if (match && v.nome_vendedor) {
         // Apenas contabiliza a base oficial para fins de Teto de Meta,

@@ -77,12 +77,27 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
   }
 }
 
-export async function buscarVisitas(): Promise<Visita[]> {
+export async function buscarVisitas(user?: any): Promise<Visita[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("visitas")
       .select("*")
       .order("created_at", { ascending: false });
+
+    // Se não for Analista nem Diretor, filtramos estritamente pela árvore ou filial da pessoa para não vazar dados
+    if (user && user.nivel !== 'Niv1' && user.nivel !== 'Niv2' && !user.funcao?.toUpperCase().includes('ANALISTA')) {
+      if (user.unidade && user.unidade !== "todas") {
+        if (user.unidade.toUpperCase().includes("MACA")) {
+          query = query.or('unidade.eq.M,unidade.ilike.%MACA%');
+        } else if (user.unidade.toUpperCase().includes("CAMPOS")) {
+          query = query.or('unidade.eq.C,unidade.ilike.%CAMPO%');
+        } else {
+          query = query.eq('unidade', user.unidade);
+        }
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data || [];
@@ -107,40 +122,38 @@ export async function excluirVisita(id: string): Promise<{ success: boolean; mes
   }
 }
 
-export async function buscarPdvPorCodigo(codigo: string, unidade?: string, supervisorId?: string) {
+export async function buscarPdvPorCodigo(codigo: string, user?: any) {
   try {
     let codigoBuscado = codigo;
 
     // Se o código digitado for só números, colocamos a letra da filial automaticamente na frente (Padrão SAP/Kofre)
-    if (/^\d+$/.test(codigoBuscado) && unidade) {
-      if (unidade.toUpperCase().includes('MACA')) {
+    if (/^\d+$/.test(codigoBuscado) && user?.unidade) {
+      if (user.unidade.toUpperCase().includes('MACA')) {
         codigoBuscado = `M${codigoBuscado}`;
-      } else if (unidade.toUpperCase().includes('CAMPOS')) {
+      } else if (user.unidade.toUpperCase().includes('CAMPOS')) {
         codigoBuscado = `C${codigoBuscado}`;
       }
     }
 
     let query = supabase
       .from("pdvs")
-      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)"')
+      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)", "Gerente(1)"')
       .eq('"CODIGO"', codigoBuscado);
 
-    if (unidade) {
-      const unidadeUpper = unidade.toUpperCase();
-      if (unidadeUpper.includes("MACA")) {
-        // Matches "M" or anything with MACA in it
-        query = query.or(`"FILIAL".eq.M,"FILIAL".ilike.%${unidade}%`);
-      } else if (unidadeUpper.includes("CAMPOS")) {
-        // Matches "C" or anything with CAMPOS in it
-        query = query.or(`"FILIAL".eq.C,"FILIAL".ilike.%${unidade}%`);
-      } else {
-        query = query.ilike('"FILIAL"', `%${unidade}%`);
-      }
-    }
+    // Aplicação de Restrição RBAC Dinâmica para Pesquisas
+    if (user?.nivel === 'Niv4' && user?.funcao) {
+      const supervisorId = user.funcao.replace('SUPERVISOR ', '').trim();
+      query = query.eq('"Superv(1)"', supervisorId);
+    } else if (user?.nivel === 'Niv3') {
+      let gerenteRef = user?.name ? user.name : null;
+      if (gerenteRef?.toUpperCase() === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
+      if (gerenteRef?.toUpperCase() === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
 
-    if (supervisorId) {
-      // O arquivo antigo usava SUPERVISOR. O arquivo novo usa Superv(1).
-      query = query.or(`"SUPERVISOR".eq.${supervisorId},"Superv(1)".eq.${supervisorId}`);
+      if (user?.unidade?.toUpperCase().includes("MACA")) {
+        query = query.or(`"Gerente(1)".eq.${gerenteRef},"FILIAL".eq.M,"FILIAL".ilike.%MACA%`);
+      } else if (user?.unidade?.toUpperCase().includes("CAMPOS")) {
+        query = query.or(`"Gerente(1)".eq.${gerenteRef},"FILIAL".eq.C,"FILIAL".ilike.%CAMPO%`);
+      }
     }
 
     const { data, error } = await query.single();
@@ -274,18 +287,41 @@ export interface VendedorAtivo {
   gerente: string;
 }
 
-export async function buscarVendedoresAtivos(unidade?: string): Promise<VendedorAtivo[]> {
+export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[]> {
   try {
     let allData: any[] = [];
     let from = 0;
     const step = 1000;
     let hasMore = true;
 
+    // Extrair códigos de referência
+    const supervisorId = user?.nivel === 'Niv4' && user?.funcao ? user.funcao.replace('SUPERVISOR ', '').trim() : null;
+    let gerenteRef = user?.nivel === 'Niv3' && user?.name ? user.name : null;
+
+    // Normalizar nome do gerente para o padrão banco
+    if (gerenteRef?.toUpperCase() === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
+    if (gerenteRef?.toUpperCase() === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
+
     while (hasMore) {
-      const { data, error } = await supabase
+      let baseQuery = supabase
         .from("pdvs")
-        .select('"NOME_VENDEDOR", "NOME _SUPERVISOR", "FILIAL", "GERENTE", "SUPERVISOR", "MUNICIPIO"')
-        .range(from, from + step - 1);
+        .select('"NOME_VENDEDOR", "NOME _SUPERVISOR", "FILIAL", "GERENTE", "Superv(1)", "Gerente(1)", "MUNICIPIO"');
+
+      // Aplicação de Restrição RBAC Dinâmica no Banco de Dados
+      if (user?.nivel === 'Niv4' && supervisorId) {
+        baseQuery = baseQuery.eq('"Superv(1)"', supervisorId);
+      } else if (user?.nivel === 'Niv3') {
+        // Gerente pode ver a própria equipe ou da própria filial inteira no overview
+        if (user.unidade?.toUpperCase().includes("MACA")) {
+          // Acesso Gerente Macaé (M ou MACAÉ)
+          baseQuery = baseQuery.or('"FILIAL".eq.M,"FILIAL".ilike.%MACAE%');
+        } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+          // Acesso Gerente Campos (C ou CAMPOS)
+          baseQuery = baseQuery.or('"FILIAL".eq.C,"FILIAL".ilike.%CAMPOS%');
+        }
+      }
+
+      const { data, error } = await baseQuery.range(from, from + step - 1);
 
       if (error) {
         console.error("Erro ao buscar base real de vendedores:", error);
@@ -314,7 +350,7 @@ export async function buscarVendedoresAtivos(unidade?: string): Promise<Vendedor
     data.forEach((row: any) => {
       const vend = row.NOME_VENDEDOR?.trim();
       const supName = row["NOME _SUPERVISOR"]?.trim() || "";
-      const supCode = row.SUPERVISOR?.trim() || "";
+      const supCode = row["Superv(1)"]?.trim() || "";
       const municipio = row.MUNICIPIO?.trim() || "";
 
       if (vend && !unicosMap.has(vend)) {

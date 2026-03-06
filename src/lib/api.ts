@@ -154,9 +154,9 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
 
     // Adapt the exact schema response to what the UI is currently expecting
     return {
-      nome_fantasia: data.Sigla || data.SIGLA,
-      categoria: data.Porte || data.PORTE,
-      canal_cadastrado: data.Canal || data.CANAL,
+      nome_fantasia: data.SIGLA || data.Sigla,
+      categoria: data.PORTE || data.Porte,
+      canal_cadastrado: data.CANAL || data.Canal,
       filial: data.FILIAL,
       municipio: data.MUNICIPIO,
       codigo_vendedor: data.VENDEDOR,

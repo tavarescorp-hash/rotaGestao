@@ -122,7 +122,7 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
 
     let query = supabase
       .from("pdvs")
-      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla"')
+      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)"')
       .eq('"CODIGO"', codigoBuscado);
 
     if (unidade) {
@@ -139,7 +139,8 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
     }
 
     if (supervisorId) {
-      query = query.eq('"SUPERVISOR"', supervisorId);
+      // O arquivo antigo usava SUPERVISOR. O arquivo novo usa Superv(1).
+      query = query.or(`"SUPERVISOR".eq.${supervisorId},"Superv(1)".eq.${supervisorId}`);
     }
 
     const { data, error } = await query.single();
@@ -161,7 +162,7 @@ export async function buscarPdvPorCodigo(codigo: string, unidade?: string, super
       codigo_vendedor: data.VENDEDOR,
       nome_vendedor: data["NOME VENDEDOR"] || data.NOME_VENDEDOR,
       nome_supervisor: data["NOME SUPERVISOR"] || data["NOME _SUPERVISOR"],
-      supervisor: data.SUPERVISOR,
+      supervisor: data["Superv(1)"] || data.SUPERVISOR,
       gerente: data.GERENTE,
       coorden_x: data["Coorden-X"],
       coorden_y: data["Coorden-Y"]

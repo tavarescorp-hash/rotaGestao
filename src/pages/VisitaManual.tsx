@@ -368,7 +368,7 @@ const NovaVisita = () => {
                         const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS CGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(option);
                         return (
                           <div key={option} className={`
-                            relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
+                            relative rounded-xl border-2 transition-all duration-200 overflow-hidden
                             ${isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30 border-border/40' : 'cursor-pointer'}
                             ${!isDisabled && form.tipo_visita === option
                               ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
@@ -377,17 +377,17 @@ const NovaVisita = () => {
                             ${!isDisabled && form.tipo_visita !== option ? 'border-border/40 bg-card hover:border-primary/50 hover:bg-muted/30' : ''}
                           `}>
                             <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
-                            <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <Label htmlFor={option} className={`w-full h-full flex flex-col items-center justify-center p-4 gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
                                 ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
                               `}>
                                 {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                               </div>
-                              <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              <span className={`text-sm font-semibold text-center ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 {option}
                               </span>
                               {isDisabled && (
-                                <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm mt-1">
                                   Em Breve
                                 </span>
                               )}

@@ -296,22 +296,27 @@ const VisitaRetroativa = () => {
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-foreground flex items-center">Código do Cliente <span className="text-destructive ml-1">*</span></Label>
                 <div className="flex gap-2">
-                  <Input
-                    value={form.codigo_pdv}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      handleChange("codigo_pdv", val);
-                      setPdvBuscado(false);
-                    }}
-                    placeholder="Pesquisar código..."
-                    className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handlePesquisarPdv();
-                      }
-                    }}
-                  />
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-foreground pointer-events-none">
+                      {user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ') ? 'M' : user?.unidade?.toUpperCase().includes('CAMPOS') ? 'C' : ''}
+                    </span>
+                    <Input
+                      value={form.codigo_pdv}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        handleChange("codigo_pdv", val);
+                        setPdvBuscado(false);
+                      }}
+                      placeholder="     Pesquisar código..."
+                      className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold pl-8"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handlePesquisarPdv();
+                        }
+                      }}
+                    />
+                  </div>
                   <Button
                     type="button"
                     onClick={handlePesquisarPdv}

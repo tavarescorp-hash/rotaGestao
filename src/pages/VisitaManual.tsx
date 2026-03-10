@@ -339,14 +339,6 @@ const NovaVisita = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Setor</Label>
-                    <Input
-                      value={form.filial || "Não informada"}
-                      disabled
-                      className="bg-background/20 text-foreground font-bold border-0"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Potencial</Label>
                     <Input
                       value={form.potencial_cliente || "Não definido"}
@@ -415,8 +407,6 @@ const NovaVisita = () => {
           {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
-              canalIdentificado={form.canal_identificado}
-              setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
               tipoVisita={form.tipo_visita}
               onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData) => handleSubmitFinal({
                 produtosSelecionados: produtos,

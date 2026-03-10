@@ -380,14 +380,6 @@ const VisitaRetroativa = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Setor</Label>
-                    <Input
-                      value={form.filial || "Não informada"}
-                      disabled
-                      className="bg-background/20 text-foreground font-bold border-0"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Potencial</Label>
                     <Input
                       value={form.potencial_cliente || "Não definido"}

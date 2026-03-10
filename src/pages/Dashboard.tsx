@@ -288,8 +288,16 @@ const Dashboard = () => {
       "Canal": v.canal_cadastrado || v.canal_identificado || "-",
       "Indicador Avaliado": v.indicador_avaliado || "-",
       "Pontuação Obtida": v.pontuacao_total ?? "-",
-      "Produtos Selecionados": v.produtos_selecionados || "-",
-      "Execução Selecionada": v.execucao_selecionada || "-",
+      "Foco Visita RGB?": v.rgb_foco_visita || "-",
+      "Comprando Outras (RGB)?": v.rgb_comprando_outras || "-",
+      "TTC Adequado (RGB)?": v.rgb_ttc_adequado || "-",
+      "Ação Concorrente (RGB)?": v.rgb_acao_concorrencia || "-",
+      "Produtos Selecionados (Foco FDS)": v.produtos_selecionados || "-",
+      "Execução Selecionada (Foco FDS)": v.execucao_selecionada || "-",
+      "Pontos Fortes (Coaching)": v.pontos_fortes || "-",
+      "Pontos a Desenvolver (Coaching)": v.pontos_desenvolver || "-",
+      "Passos do Coaching (Coaching)": v.passos_coaching || "-",
+      "Observações Adicionais": v.observacoes || "-",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
@@ -298,7 +306,28 @@ const Dashboard = () => {
 
     // Adjust column widths automatically
     const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["Nome Fantasia"]?.length || 0), 10);
-    worksheet["!cols"] = [{ wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: max_width }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 40 }, { wch: 40 }];
+    worksheet["!cols"] = [
+      { wch: 15 }, // Data
+      { wch: 15 }, // Unidade
+      { wch: 25 }, // Avaliador
+      { wch: 20 }, // Cargo
+      { wch: 12 }, // Cod PDV
+      { wch: max_width }, // Nome Fantasia
+      { wch: 25 }, // Vendedor
+      { wch: 15 }, // Canal
+      { wch: 20 }, // Indicador
+      { wch: 15 }, // Pontuação
+      { wch: 20 }, // RGB Foco
+      { wch: 25 }, // RGB Comprando
+      { wch: 20 }, // RGB TTC
+      { wch: 25 }, // RGB Ação Concorrente
+      { wch: 40 }, // Prod Selecionados
+      { wch: 40 }, // Execucao
+      { wch: 40 }, // Pontos Fortes
+      { wch: 40 }, // Pontos Desenvolver
+      { wch: 40 }, // Passos Coaching
+      { wch: 40 }  // Observações
+    ];
 
     XLSX.writeFile(workbook, `Relatorio_Visitas_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);
 

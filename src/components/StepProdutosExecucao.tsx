@@ -29,8 +29,6 @@ export interface FdsSubmitData {
 
 interface StepProdutosExecucaoProps {
   canalCadastrado: string;
-  canalIdentificado: string;
-  setCanalIdentificado: (v: string) => void;
   tipoVisita: string;
   onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData, fdsData?: FdsSubmitData) => void;
   loading: boolean;
@@ -55,7 +53,7 @@ const canalOptions = [
 
 type ConfigType = { produtos: { nome: string; pontos: number }[], execucao: { nome: string; pontos: number }[] } | null;
 
-const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIdentificado, tipoVisita, onSubmit, loading }: StepProdutosExecucaoProps) => {
+const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }: StepProdutosExecucaoProps) => {
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
   const [config, setConfig] = useState<ConfigType>(null);
@@ -77,13 +75,22 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
   const [fdsQtdSkus, setFdsQtdSkus] = useState("");
   const [fdsRefrigerador, setFdsRefrigerador] = useState("");
   const [fdsPosicionamento, setFdsPosicionamento] = useState("");
+  const [fdsPosicionamentoOutro, setFdsPosicionamentoOutro] = useState("");
   const [fdsRefrigerados, setFdsRefrigerados] = useState("");
   const [fdsPrecificados, setFdsPrecificados] = useState("");
   const [fdsMelhoriaPrecificacao, setFdsMelhoriaPrecificacao] = useState("");
 
   const isFds = tipoVisita === "FDS";
   const isFdsValid = isFds
-    ? fdsQtdSkus && fdsRefrigerador && fdsPosicionamento && fdsRefrigerados && fdsPrecificados && (fdsPrecificados === "SIM" || fdsMelhoriaPrecificacao.trim() !== "")
+    ? !!(
+        fdsQtdSkus &&
+        fdsRefrigerador &&
+        fdsPosicionamento &&
+        (fdsPosicionamento !== "Outro:" || fdsPosicionamentoOutro.trim() !== "") &&
+        fdsRefrigerados &&
+        fdsPrecificados &&
+        (fdsPrecificados === "SIM" || (fdsPrecificados === "NÃO" && fdsMelhoriaPrecificacao.trim() !== ""))
+      )
     : true;
 
   const handleFinalizar = () => {
@@ -102,10 +109,10 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
       fdsData = {
         fds_qtd_skus: fdsQtdSkus,
         fds_refrigerador: fdsRefrigerador,
-        fds_posicionamento: fdsPosicionamento,
+        fds_posicionamento: fdsPosicionamento === "Outro:" ? `Outro: ${fdsPosicionamentoOutro}` : fdsPosicionamento,
         fds_refrigerados: fdsRefrigerados,
         fds_precificados: fdsPrecificados,
-        fds_melhoria_precificacao: fdsMelhoriaPrecificacao,
+        fds_melhoria_precificacao: fdsPrecificados === "SIM" ? "" : fdsMelhoriaPrecificacao,
       };
     }
 
@@ -201,33 +208,15 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
   return (
     <div className="space-y-6">
 
-      {/* Nova Identificação Select */}
-      <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-        <CardContent className="pt-6">
-          <div className="space-y-3">
-            <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-              Nova Identificação (Canal) <span className="text-destructive ml-1">*</span>
-            </Label>
-            <p className="text-xs text-muted-foreground font-semibold mb-2">
-              Confirme ou altere o canal do PDV verificado no momento da visita.
-            </p>
-            <Select value={canalIdentificado} onValueChange={setCanalIdentificado}>
-              <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
-                <SelectValue placeholder="Selecione o canal identificado..." />
-              </SelectTrigger>
-              <SelectContent>
-                {canalOptions.map((canal) => (
-                  <SelectItem key={canal} value={canal} className="font-medium cursor-pointer py-3">{canal}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* FDS Específico */}
       {isFds && (
         <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+          <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6 bg-card/40">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
+              <CardTitle className="text-lg font-bold text-foreground">4- PERGUNTAS FDS</CardTitle>
+            </div>
+          </CardHeader>
           <CardContent className="pt-6 space-y-8">
             <div className="space-y-4">
               <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
@@ -293,10 +282,21 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
                 ].map((opt) => (
                   <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPosicionamento === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
                     <RadioGroupItem value={opt} />
-                    <span className="text-sm font-semibold">{opt}</span>
+                    <span className="text-sm font-semibold">{opt === "Outro:" ? "Outro:" : opt}</span>
                   </Label>
                 ))}
               </RadioGroup>
+
+              {fdsPosicionamento === "Outro:" && (
+                <div className="pl-8 pt-2 animate-in fade-in slide-in-from-top-2">
+                  <Input
+                    placeholder="Especifique o posicionamento do refrigerador..."
+                    value={fdsPosicionamentoOutro}
+                    onChange={(e) => setFdsPosicionamentoOutro(e.target.value)}
+                    className="h-12 bg-background/50"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -565,7 +565,7 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
       <div className="flex gap-4 pt-6 border-t border-border/40">
         <Button
           type="button"
-          disabled={loading || !canalIdentificado || !isRgbValid || !isFdsValid}
+          disabled={loading || !isRgbValid || !isFdsValid}
           onClick={handleFinalizar}
           className="flex-1 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >

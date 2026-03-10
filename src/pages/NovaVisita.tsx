@@ -273,90 +273,92 @@ const NovaVisita = () => {
 
         <div className="space-y-6">
           {/* Top Info: Date and Search */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-sm relative overflow-hidden">
-            <div className="space-y-3 relative z-10">
-              <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
-              <Input
-                type="date"
-                value={form.data_visita}
-                min={new Date().toISOString().split("T")[0]}
-                max={new Date().toISOString().split("T")[0]}
-                onChange={(e) => handleChange("data_visita", e.target.value)}
-                className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm"
-              />
-            </div>
-
-            <div className="space-y-3 relative z-10">
-              <Label className="text-sm font-bold text-foreground flex items-center">Código do Cliente <span className="text-destructive ml-1">*</span></Label>
-              <div className="flex gap-2">
+          <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6 bg-card/40 relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
+                <CardTitle className="text-lg font-bold text-foreground">1- DADOS DA VISITA</CardTitle>
+              </div>
+            </CardHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 relative z-10 border-b border-border/40">
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
                 <Input
-                  value={form.codigo_pdv}
-                  onChange={(e) => {
-                    // Aceita apenas números
-                    const val = e.target.value.replace(/\D/g, '');
-                    handleChange("codigo_pdv", val);
-                    setPdvBuscado(false);
-                  }}
-                  placeholder="Pesquisar código..."
-                  className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handlePesquisarPdv();
-                    }
-                  }}
+                  type="date"
+                  value={form.data_visita}
+                  disabled
+                  className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm opacity-80 cursor-not-allowed font-semibold"
                 />
-                <Button
-                  type="button"
-                  onClick={handlePesquisarPdv}
-                  disabled={isSearchingPdv || !form.codigo_pdv}
-                  className="h-12 px-6 shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
-                >
-                  {isSearchingPdv ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Search className="w-5 h-5" />
-                  )}
-                  <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
-                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-foreground flex items-center">Código do Cliente <span className="text-destructive ml-1">*</span></Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={form.codigo_pdv}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      handleChange("codigo_pdv", val);
+                      setPdvBuscado(false);
+                    }}
+                    placeholder="Pesquisar código..."
+                    className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handlePesquisarPdv();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handlePesquisarPdv}
+                    disabled={isSearchingPdv || !form.codigo_pdv}
+                    className="h-12 px-6 shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
+                  >
+                    {isSearchingPdv ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Search className="w-5 h-5" />
+                    )}
+                    <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 1 - Dados da Visita */}
-          <Card className="glass-card bg-card/40 border-primary/10 shadow-md">
-            <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
-              <CardTitle className="text-lg font-bold text-primary">1- Dados da visita</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
+            <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
-                  <Input type="text" value={user?.name || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
+                  <p className="text-sm font-bold text-foreground truncate">{user?.name || ""}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
-                  <Input type="text" value={user?.unidade || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
+                  <p className="text-sm font-bold text-foreground truncate">{user?.unidade || ""}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Cargo</Label>
-                  <Input type="text" value={user?.funcao || ""} disabled className="bg-background/40 font-bold text-foreground border-0" />
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cargo</Label>
+                  <p className="text-sm font-bold text-foreground truncate">{user?.funcao || ""}</p>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </div>
 
           {/* 2 - Informações do PDV */}
           {pdvBuscado && (
             <Card className="glass-card bg-card/40 border-primary/10 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
               <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
-                <CardTitle className="text-lg font-bold text-primary">2- Informações do PDV</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
+                  <CardTitle className="text-lg font-bold text-foreground">2- INFORMAÇÕES DO PDV</CardTitle>
+                </div>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>
-                    <Input value={form.codigo_pdv} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                    <Input value={`${user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ') ? 'M' : user?.unidade?.toUpperCase().includes('CAMPOS') ? 'C' : ''}${form.codigo_pdv}`} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>
@@ -396,48 +398,70 @@ const NovaVisita = () => {
                   </div>
                 </div>
 
-                {tipoVisitaOptions.length > 0 && (
-                  <div className="space-y-4 pt-6 mt-6 border-t border-border/40">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
-                      <Label className="text-sm font-bold text-foreground">Objetivo / Tipo de Visita <span className="text-destructive">*</span></Label>
-                    </div>
+                <div className="space-y-3 pt-6 mt-6 border-t border-border/40">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    Nova Identificação (Canal) <span className="text-destructive ml-1">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground font-semibold mb-2">
+                    Confirme ou altere o canal do PDV verificado no momento da visita.
+                  </p>
+                  <Select value={form.canal_identificado} onValueChange={(v) => handleChange("canal_identificado", v)}>
+                    <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
+                      <SelectValue placeholder="Selecione o canal identificado..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {canalOptions.map((canal) => (
+                        <SelectItem key={canal} value={canal} className="font-medium cursor-pointer py-3">{canal}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                    <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {tipoVisitaOptions.map((option) => {
-                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS CGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(option);
-                        return (
-                          <div key={option} className={`
-                            relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
-                            ${isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30 border-border/40' : 'cursor-pointer'}
-                            ${!isDisabled && form.tipo_visita === option
-                              ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
-                              : ''
-                            }
-                            ${!isDisabled && form.tipo_visita !== option ? 'border-border/40 bg-card hover:border-primary/50 hover:bg-muted/30' : ''}
+          {pdvBuscado && tipoVisitaOptions.length > 0 && (
+            <Card className="glass-card bg-card/40 border-primary/10 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
+              <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(234,179,8,0.4)]"></span>
+                  <CardTitle className="text-lg font-bold text-foreground">3- TIPO DA VISITA</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
+                <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {tipoVisitaOptions.map((option) => {
+                    const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS CGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(option);
+                    return (
+                      <div key={option} className={`
+                        relative flex items-center p-4 rounded-xl border-2 transition-all duration-200
+                        ${isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30 border-border/40' : 'cursor-pointer'}
+                        ${!isDisabled && form.tipo_visita === option
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : ''
+                        }
+                        ${!isDisabled && form.tipo_visita !== option ? 'border-border/40 bg-card hover:border-primary/50 hover:bg-muted/30' : ''}
+                      `}>
+                        <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
+                        <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                            ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
                           `}>
-                            <RadioGroupItem value={option} id={option} disabled={isDisabled} className="sr-only" />
-                            <Label htmlFor={option} className={`w-full flex items-center gap-3 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                                ${form.tipo_visita === option ? 'border-primary' : 'border-muted-foreground/30'}
-                              `}>
-                                {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                              </div>
-                              <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                {option}
-                              </span>
-                              {isDisabled && (
-                                <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm">
-                                  Em Breve
-                                </span>
-                              )}
-                            </Label>
+                            {form.tipo_visita === option && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                           </div>
-                        );
-                      })}
-                    </RadioGroup>
-                  </div>
-                )}
+                          <span className={`text-sm font-semibold ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {option}
+                          </span>
+                          {isDisabled && (
+                            <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm">
+                              Em Breve
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
               </CardContent>
             </Card>
           )}
@@ -447,14 +471,13 @@ const NovaVisita = () => {
           {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
-              canalIdentificado={form.canal_identificado}
-              setCanalIdentificado={(v) => handleChange("canal_identificado", v)}
               tipoVisita={form.tipo_visita}
-              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
-                rgbData: rgbData
+                rgbData: rgbData,
+                fdsData: fdsData
               })}
               loading={loading}
             />

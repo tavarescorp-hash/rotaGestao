@@ -250,7 +250,7 @@ const NovaVisita = () => {
                 min={new Date().toISOString().split("T")[0]}
                 max={new Date().toISOString().split("T")[0]}
                 onChange={(e) => handleChange("data_visita", e.target.value)}
-                className="h-12 bg-background/50 focus-visible:ring-primary shadow-sm"
+                className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm"
               />
             </div>
 
@@ -266,7 +266,7 @@ const NovaVisita = () => {
                     setPdvBuscado(false);
                   }}
                   placeholder="Pesquisar código..."
-                  className="h-12 bg-background/50 text-base shadow-sm font-semibold"
+                  className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();

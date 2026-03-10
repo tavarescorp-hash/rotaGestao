@@ -31,6 +31,7 @@ export interface Visita {
   rgb_comprando_outras?: string;
   rgb_ttc_adequado?: string;
   rgb_acao_concorrencia?: string;
+  status_aprovacao?: string;
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string }> {
@@ -63,6 +64,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       rgb_comprando_outras: visita.rgb_comprando_outras,
       rgb_ttc_adequado: visita.rgb_ttc_adequado,
       rgb_acao_concorrencia: visita.rgb_acao_concorrencia,
+      status_aprovacao: visita.status_aprovacao || 'Aprovado',
     }]);
 
     if (error) {
@@ -82,6 +84,7 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
     let query = supabase
       .from("visitas")
       .select("*")
+      .eq("status_aprovacao", "Aprovado")
       .order("created_at", { ascending: false });
 
     // Se não for Analista nem Diretor, filtramos estritamente pela árvore ou filial da pessoa para não vazar dados
@@ -104,6 +107,44 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
   } catch (error) {
     console.error("Erro ao buscar visitas:", error);
     return [];
+  }
+}
+
+export async function buscarVisitasPendentes(): Promise<Visita[]> {
+  try {
+    const { data, error } = await supabase
+      .from("visitas")
+      .select("*")
+      .eq("status_aprovacao", "Pendente")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Erro ao buscar visitas pendentes:", error);
+    return [];
+  }
+}
+
+export async function aprovarVisita(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("visitas").update({ status_aprovacao: "Aprovado" }).eq("id", id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+export async function recusarVisita(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("visitas").update({ status_aprovacao: "Recusado" }).eq("id", id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
   }
 }
 

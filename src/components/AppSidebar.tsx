@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Database } from "lucide-react";
+import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Database, CalendarPlus } from "lucide-react";
 import logoUnibeer from "@/assets/logo-unibeer.png";
 import {
   Popover,
@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
+  { title: "Visita Retroativa", url: "/retroativa", icon: CalendarPlus },
   { title: "Gestão de Dados", url: "/admin-data", icon: Database },
 ];
 
@@ -41,6 +42,7 @@ export function AppSidebar() {
   };
 
   const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
+  const isSupervisorOrGerente = user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
@@ -65,12 +67,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {navItems.map((item) => {
-                if (isAnalista && item.title === "Nova Visita") {
-                  return null;
-                }
-                if (!isAnalista && item.title === "Gestão de Dados") {
-                  return null;
-                }
+                if (isAnalista && item.title === "Nova Visita") return null;
+                if (!isAnalista && item.title === "Gestão de Dados") return null;
+                
+                // Regra Visita Retroativa: apenas Gerentes(Niv3) e Supervisores(Niv4)
+                if (item.title === "Visita Retroativa" && !isSupervisorOrGerente) return null;
+
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>

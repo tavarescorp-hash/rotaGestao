@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, FileSpreadsheet, AlertTriangle, Loader2, Database, Users, UserPlus, Shield, ShieldOff, Lock, Unlock, CheckCircle2, Download } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, AlertTriangle, Loader2, Database, Users, UserPlus, Shield, ShieldOff, Lock, Unlock, CheckCircle2, Download, ClipboardCheck, XCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
-import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS } from '@/lib/api';
+import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita } from '@/lib/api';
+import { format } from 'date-fns';
 
 const AdminData = () => {
     const { user } = useAuth();
@@ -27,6 +28,10 @@ const AdminData = () => {
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Estados Aprovação
+    const [visitasPendentes, setVisitasPendentes] = useState<any[]>([]);
+    const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
 
     // Form Novo Usuário
     const [newUser, setNewUser] = useState({
@@ -43,8 +48,16 @@ const AdminData = () => {
     useEffect(() => {
         if (isAnalista) {
             fetchUsers();
+            fetchAprovacoes();
         }
     }, [isAnalista]);
+
+    const fetchAprovacoes = async () => {
+        setLoadingAprovacoes(true);
+        const data = await buscarVisitasPendentes();
+        setVisitasPendentes(data);
+        setLoadingAprovacoes(false);
+    };
 
     const fetchUsers = async () => {
         setLoadingUsers(true);
@@ -208,6 +221,30 @@ const AdminData = () => {
         setLoadingAction(null);
     };
 
+    const handleAprovar = async (id: string, pdv: string) => {
+        setLoadingAction(`aprovar-${id}`);
+        const success = await aprovarVisita(id);
+        if (success) {
+            toast({ title: "Visita Aprovada!", description: `A visita no PDV ${pdv} já está pontuando no painel oficial.`, className: "bg-green-600 text-white" });
+            fetchAprovacoes();
+        } else {
+            toast({ title: "Erro", description: "Não foi possível aprovar a visita.", variant: "destructive" });
+        }
+        setLoadingAction(null);
+    };
+
+    const handleRecusar = async (id: string, pdv: string) => {
+        setLoadingAction(`recusar-${id}`);
+        const success = await recusarVisita(id);
+        if (success) {
+            toast({ title: "Visita Recusada", description: `A visita no PDV ${pdv} foi negada e invalidada.` });
+            fetchAprovacoes();
+        } else {
+            toast({ title: "Erro", description: "Não foi possível recusar a visita.", variant: "destructive" });
+        }
+        setLoadingAction(null);
+    };
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
 
@@ -222,7 +259,7 @@ const AdminData = () => {
             </div>
 
             <Tabs defaultValue="bases" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8">
+                <TabsList className="grid w-full grid-cols-3 max-w-[600px] mb-8">
                     <TabsTrigger value="bases" className="font-bold tracking-wide">
                         <FileSpreadsheet className="w-4 h-4 mr-2" />
                         Bases de Dados
@@ -230,6 +267,15 @@ const AdminData = () => {
                     <TabsTrigger value="usuarios" className="font-bold tracking-wide">
                         <Users className="w-4 h-4 mr-2" />
                         Usuários
+                    </TabsTrigger>
+                    <TabsTrigger value="aprovacoes" className="font-bold tracking-wide">
+                        <ClipboardCheck className="w-4 h-4 mr-2" />
+                        Aprovações
+                        {visitasPendentes.length > 0 && (
+                            <Badge variant="destructive" className="ml-2 h-5 min-w-5 flex items-center justify-center p-0 rounded-full text-[10px]">
+                                {visitasPendentes.length}
+                            </Badge>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
@@ -522,6 +568,93 @@ const AdminData = () => {
                                                 <TableRow>
                                                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground font-medium">
                                                         Nenhum usuário localizado.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="aprovacoes" className="space-y-6">
+                    <Card className="glass-card bg-card/40 border-primary/20">
+                        <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6 bg-secondary/10">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <ClipboardCheck className="w-6 h-6 text-primary" />
+                                    Central de Aprovações
+                                </CardTitle>
+                                <CardDescription className="font-medium mt-1 text-muted-foreground/80">
+                                    Visitas inseridas manualmente no passado aguardando seu veredito.
+                                </CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {loadingAprovacoes ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                                    <span>Buscando pendências...</span>
+                                </div>
+                            ) : (
+                                <div className="rounded-md overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-secondary/30">
+                                            <TableRow>
+                                                <TableHead className="font-bold text-foreground">Data da Visita</TableHead>
+                                                <TableHead className="font-bold text-foreground">PDV</TableHead>
+                                                <TableHead className="font-bold text-foreground">Responsável</TableHead>
+                                                <TableHead className="font-bold text-foreground mx-auto">Ação</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody className="bg-background/50">
+                                            {visitasPendentes.map((visita) => (
+                                                <TableRow key={visita.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="font-bold text-foreground">
+                                                        {format(new Date(visita.data_visita + "T00:00:00"), 'dd/MM/yyyy')}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="font-bold text-foreground">{visita.codigo_pdv}</div>
+                                                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">{visita.nome_fantasia_pdv}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="font-bold text-foreground">{visita.avaliador}</div>
+                                                        <div className="text-xs text-muted-foreground">{visita.cargo}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                disabled={loadingAction !== null}
+                                                                onClick={() => handleAprovar(visita.id, visita.codigo_pdv)}
+                                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                            >
+                                                                {loadingAction === `aprovar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+                                                                Aprovar
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={loadingAction !== null}
+                                                                onClick={() => handleRecusar(visita.id, visita.codigo_pdv)}
+                                                                className="text-destructive border-destructive hover:bg-destructive/10 bg-transparent"
+                                                            >
+                                                                {loadingAction === `recusar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
+                                                                Recusar
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {visitasPendentes.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground font-medium">
+                                                        <div className="flex flex-col items-center justify-center gap-2">
+                                                            <CheckCircle2 className="w-10 h-10 text-green-500/50" />
+                                                            <p>Zero pendências! Tudo limpo por aqui.</p>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             )}

@@ -104,6 +104,18 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    
+    /* Native App Feel Properties */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  
+  /* Allow text selection in inputs and textareas */
+  input, textarea {
+    user-select: auto;
+    -webkit-user-select: auto;
   }
 }
 

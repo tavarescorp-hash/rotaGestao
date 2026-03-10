@@ -173,6 +173,14 @@ const VisitaRetroativa = () => {
     pontos_desenvolver?: string;
     observacoes?: string;
     rgbData?: RgbSubmitData;
+    fdsData?: {
+      fds_qtd_skus: string;
+      fds_refrigerador: string;
+      fds_posicionamento: string;
+      fds_refrigerados: string;
+      fds_precificados: string;
+      fds_melhoria_precificacao: string;
+    };
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -203,6 +211,12 @@ const VisitaRetroativa = () => {
       rgb_comprando_outras: payload.rgbData?.rgb_comprando_outras || "",
       rgb_ttc_adequado: payload.rgbData?.rgb_ttc_adequado || "",
       rgb_acao_concorrencia: payload.rgbData?.rgb_acao_concorrencia || "",
+      fds_qtd_skus: payload.fdsData?.fds_qtd_skus || "",
+      fds_refrigerador: payload.fdsData?.fds_refrigerador || "",
+      fds_posicionamento: payload.fdsData?.fds_posicionamento || "",
+      fds_refrigerados: payload.fdsData?.fds_refrigerados || "",
+      fds_precificados: payload.fdsData?.fds_precificados || "",
+      fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
       status_aprovacao: "Pendente",
     });
 

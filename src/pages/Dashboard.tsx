@@ -292,6 +292,12 @@ const Dashboard = () => {
       "Comprando Outras (RGB)?": v.rgb_comprando_outras || "-",
       "TTC Adequado (RGB)?": v.rgb_ttc_adequado || "-",
       "Ação Concorrente (RGB)?": v.rgb_acao_concorrencia || "-",
+      "Quantidade SKUs (FDS)": v.fds_qtd_skus || "-",
+      "Possui Refrigerador (FDS)?": v.fds_refrigerador || "-",
+      "Posicionamento Marca (FDS)?": v.fds_posicionamento || "-",
+      "Refrigerados (FDS)?": v.fds_refrigerados || "-",
+      "Precificados (FDS)?": v.fds_precificados || "-",
+      "Ação P/ Precificação (FDS)": v.fds_melhoria_precificacao || "-",
       "Produtos Selecionados (Foco FDS)": v.produtos_selecionados || "-",
       "Execução Selecionada (Foco FDS)": v.execucao_selecionada || "-",
       "Pontos Fortes (Coaching)": v.pontos_fortes || "-",
@@ -321,6 +327,12 @@ const Dashboard = () => {
       { wch: 25 }, // RGB Comprando
       { wch: 20 }, // RGB TTC
       { wch: 25 }, // RGB Ação Concorrente
+      { wch: 20 }, // FDS Qtd SKUs
+      { wch: 40 }, // FDS Refrigerador
+      { wch: 40 }, // FDS Posicionamento
+      { wch: 20 }, // FDS Refrigerados
+      { wch: 20 }, // FDS Precificados
+      { wch: 40 }, // FDS Ação Precificação
       { wch: 40 }, // Prod Selecionados
       { wch: 40 }, // Execucao
       { wch: 40 }, // Pontos Fortes

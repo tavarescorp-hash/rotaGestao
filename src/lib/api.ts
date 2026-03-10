@@ -31,6 +31,12 @@ export interface Visita {
   rgb_comprando_outras?: string;
   rgb_ttc_adequado?: string;
   rgb_acao_concorrencia?: string;
+  fds_qtd_skus?: string;
+  fds_refrigerador?: string;
+  fds_posicionamento?: string;
+  fds_refrigerados?: string;
+  fds_precificados?: string;
+  fds_melhoria_precificacao?: string;
   status_aprovacao?: string;
 }
 
@@ -64,6 +70,12 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       rgb_comprando_outras: visita.rgb_comprando_outras,
       rgb_ttc_adequado: visita.rgb_ttc_adequado,
       rgb_acao_concorrencia: visita.rgb_acao_concorrencia,
+      fds_qtd_skus: visita.fds_qtd_skus,
+      fds_refrigerador: visita.fds_refrigerador,
+      fds_posicionamento: visita.fds_posicionamento,
+      fds_refrigerados: visita.fds_refrigerados,
+      fds_precificados: visita.fds_precificados,
+      fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
     }]);
 

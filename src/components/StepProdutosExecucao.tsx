@@ -18,12 +18,21 @@ export interface RgbSubmitData {
   rgb_acao_concorrencia: string;
 }
 
+export interface FdsSubmitData {
+  fds_qtd_skus: string;
+  fds_refrigerador: string;
+  fds_posicionamento: string;
+  fds_refrigerados: string;
+  fds_precificados: string;
+  fds_melhoria_precificacao: string;
+}
+
 interface StepProdutosExecucaoProps {
   canalCadastrado: string;
   canalIdentificado: string;
   setCanalIdentificado: (v: string) => void;
   tipoVisita: string;
-  onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData) => void;
+  onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData, fdsData?: FdsSubmitData) => void;
   loading: boolean;
 }
 
@@ -64,6 +73,19 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
     ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== ""))
     : true;
 
+  // FDS States
+  const [fdsQtdSkus, setFdsQtdSkus] = useState("");
+  const [fdsRefrigerador, setFdsRefrigerador] = useState("");
+  const [fdsPosicionamento, setFdsPosicionamento] = useState("");
+  const [fdsRefrigerados, setFdsRefrigerados] = useState("");
+  const [fdsPrecificados, setFdsPrecificados] = useState("");
+  const [fdsMelhoriaPrecificacao, setFdsMelhoriaPrecificacao] = useState("");
+
+  const isFds = tipoVisita === "FDS";
+  const isFdsValid = isFds
+    ? fdsQtdSkus && fdsRefrigerador && fdsPosicionamento && fdsRefrigerados && fdsPrecificados && (fdsPrecificados === "SIM" || fdsMelhoriaPrecificacao.trim() !== "")
+    : true;
+
   const handleFinalizar = () => {
     let rgbData = undefined;
     if (isRgb) {
@@ -74,7 +96,20 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
         rgb_acao_concorrencia: rgbAcaoConcorrencia === "Outro" ? `Outro: ${rgbAcaoConcorrenciaOutro}` : rgbAcaoConcorrencia,
       };
     }
-    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData);
+
+    let fdsData = undefined;
+    if (isFds) {
+      fdsData = {
+        fds_qtd_skus: fdsQtdSkus,
+        fds_refrigerador: fdsRefrigerador,
+        fds_posicionamento: fdsPosicionamento,
+        fds_refrigerados: fdsRefrigerados,
+        fds_precificados: fdsPrecificados,
+        fds_melhoria_precificacao: fdsMelhoriaPrecificacao,
+      };
+    }
+
+    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData);
   };
 
   useEffect(() => {
@@ -189,6 +224,125 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
           </div>
         </CardContent>
       </Card>
+
+      {/* FDS Específico */}
+      {isFds && (
+        <Card className="glass-card bg-card/40 border-primary/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+          <CardContent className="pt-6 space-y-8">
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                Quantos SKUs há no PDV? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <Select value={fdsQtdSkus} onValueChange={setFdsQtdSkus}>
+                <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
+                  <SelectValue placeholder="Selecione a quantidade de SKUs..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    "Não, 1  SKU",
+                    "Não, 2  SKUs",
+                    "Não, 3  SKUs",
+                    "Não, 4  SKUs",
+                    "Não, 5  SKUs",
+                    "Sim, 6  SKUs",
+                    "Sim, 7  SKUs",
+                    "Sim, 8  SKUs",
+                    "Sim, 9  SKUs",
+                    "Sim, 10 SKUs",
+                    "Sim, +10 SKUs",
+                    "Nenhum SKU no PDV."
+                  ].map((opt) => (
+                    <SelectItem key={opt} value={opt} className="font-medium cursor-pointer py-3">{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                PDV POSSUI ALGUM REFRIGERADOR? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={fdsRefrigerador} onValueChange={setFdsRefrigerador} className="grid gap-3">
+                {[
+                  "PDV NÃO POSSUI GELADEIRA OU POSSUI APENAS GELADEIRA DA CONCORRÊNCIA",
+                  "PDV POSSUI APENAS GELADEIRA SEM MARCA",
+                  "PDV POSSUI GELADEIRA DA CIA"
+                ].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsRefrigerador === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold leading-tight">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                POSICIONAMENTO: O REFRIGERADOR DA CIA ESTÁ COM NO MÍNIMO 50% ABASTECIDO COM A MARCA DA GELADEIRA? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={fdsPosicionamento} onValueChange={setFdsPosicionamento} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  "SIM, 50% da marca do equipamento",
+                  "Sim, 75% da marca do equipamento",
+                  "Sim, 100% da marca do equipamento",
+                  "Não, 25% da marca do equipamento",
+                  "Não, 10% da marca do equipamento",
+                  "Não há produto da marca do equipamento",
+                  "NÃO POSSUI REFRIGERADOR DA CIA",
+                  "Outro:"
+                ].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPosicionamento === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                OS PRODUTOS DA MARCA DA CIA ESTÃO DEVIDAMENTE REFRIGERADOS? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={fdsRefrigerados} onValueChange={setFdsRefrigerados} className="flex gap-4">
+                {["SIM", "NÃO"].map((opt) => (
+                  <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsRefrigerados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                TODOS OS SKUs OBRIGATÓRIOS PRESENTES ESTÃO PRECIFICADOS? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={fdsPrecificados} onValueChange={setFdsPrecificados} className="flex gap-4">
+                {["SIM", "NÃO"].map((opt) => (
+                  <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPrecificados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {fdsPrecificados === "NÃO" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                  SE NÃO, O QUE PODE SER FEITO PARA MELHORAR A PRECIFICAÇÃO? <span className="text-destructive ml-1">*</span>
+                </Label>
+                <Input
+                  placeholder="Escreva como você vai atuar para resolver o problema de precificação..."
+                  value={fdsMelhoriaPrecificacao}
+                  onChange={(e) => setFdsMelhoriaPrecificacao(e.target.value)}
+                  className="h-12 bg-background/50"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* FOCO RGB Questions */}
       {isRgb && (
@@ -411,7 +565,7 @@ const StepProdutosExecucao = ({ canalCadastrado, canalIdentificado, setCanalIden
       <div className="flex gap-4 pt-6 border-t border-border/40">
         <Button
           type="button"
-          disabled={loading || !canalIdentificado || !isRgbValid}
+          disabled={loading || !canalIdentificado || !isRgbValid || !isFdsValid}
           onClick={handleFinalizar}
           className="flex-1 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >

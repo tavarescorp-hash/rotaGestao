@@ -37,6 +37,7 @@ export interface Visita {
   fds_refrigerados?: string;
   fds_precificados?: string;
   fds_melhoria_precificacao?: string;
+  fds_observacoes?: string;
   status_aprovacao?: string;
 }
 
@@ -76,6 +77,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       fds_refrigerados: visita.fds_refrigerados,
       fds_precificados: visita.fds_precificados,
       fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
+      fds_observacoes: visita.fds_observacoes,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
     }]);
 

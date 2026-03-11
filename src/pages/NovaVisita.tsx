@@ -180,6 +180,7 @@ const NovaVisita = () => {
       fds_refrigerados: string;
       fds_precificados: string;
       fds_melhoria_precificacao: string;
+      fds_observacoes: string;
     };
   }) => {
     setLoading(true);
@@ -217,6 +218,7 @@ const NovaVisita = () => {
       fds_refrigerados: payload.fdsData?.fds_refrigerados || "",
       fds_precificados: payload.fdsData?.fds_precificados || "",
       fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
+      fds_observacoes: payload.fdsData?.fds_observacoes || "",
     });
 
     toast({

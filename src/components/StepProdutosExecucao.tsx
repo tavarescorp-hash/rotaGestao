@@ -79,6 +79,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [fdsRefrigerados, setFdsRefrigerados] = useState("");
   const [fdsPrecificados, setFdsPrecificados] = useState("");
   const [fdsMelhoriaPrecificacao, setFdsMelhoriaPrecificacao] = useState("");
+  const [fdsObservacoes, setFdsObservacoes] = useState("");
 
   const isFds = tipoVisita === "FDS";
   const isFdsValid = isFds
@@ -89,7 +90,8 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
         (fdsPosicionamento !== "Outro:" || fdsPosicionamentoOutro.trim() !== "") &&
         fdsRefrigerados &&
         fdsPrecificados &&
-        (fdsPrecificados === "SIM" || (fdsPrecificados === "NÃO" && fdsMelhoriaPrecificacao.trim() !== ""))
+        (fdsPrecificados === "SIM" || (fdsPrecificados === "NÃO" && fdsMelhoriaPrecificacao.trim() !== "")) &&
+        fdsObservacoes.trim() !== ""
       )
     : true;
 
@@ -113,6 +115,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
         fds_refrigerados: fdsRefrigerados,
         fds_precificados: fdsPrecificados,
         fds_melhoria_precificacao: fdsPrecificados === "SIM" ? "" : fdsMelhoriaPrecificacao,
+        fds_observacoes: fdsObservacoes,
       };
     }
 
@@ -492,6 +495,18 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                     />
                   </div>
                 )}
+
+                <div className="space-y-4 pt-4 border-t border-border/20">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    OBSERVAÇÕES/ PLANO DE AÇÃO <span className="text-destructive ml-1">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Escreva suas observações ou plano de ação..."
+                    value={fdsObservacoes}
+                    onChange={(e) => setFdsObservacoes(e.target.value)}
+                    className="h-12 bg-background/50"
+                  />
+                </div>
               </div>
             )}
           </CardContent>

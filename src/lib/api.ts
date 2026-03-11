@@ -689,3 +689,37 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
     return { success: false, message: error.message || "Erro desconhecido ao cadastrar funcionário." };
   }
 }
+
+// ==========================================
+// CONFIGURAÇÕES GLOBAIS DO SISTEMA
+// ==========================================
+
+export async function getConfiguracao(chave: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from("configuracoes")
+      .select("valor")
+      .eq("chave", chave)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? data.valor : null;
+  } catch (error) {
+    console.error(`Erro ao buscar configuração ${chave}:`, error);
+    return null;
+  }
+}
+
+export async function setConfiguracao(chave: string, valor: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("configuracoes")
+      .upsert({ chave, valor, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error(`Erro ao salvar configuração ${chave}:`, error);
+    return false;
+  }
+}

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { canalProdutosExecucao } from "@/lib/canalData";
-import { buscarFdsPorCanal } from "@/lib/api";
+import { buscarFdsPorCanal, getConfiguracao } from "@/lib/api";
 
 export interface RgbSubmitData {
   rgb_foco_visita: string;
@@ -61,6 +61,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
 
   // RGB States
   const [rgbFocoVisita, setRgbFocoVisita] = useState("");
+  const [isFocoRgbLocked, setIsFocoRgbLocked] = useState(false);
   const [rgbComprandoOutras, setRgbComprandoOutras] = useState("");
   const [rgbTtcAdequado, setRgbTtcAdequado] = useState("");
   const [rgbAcaoConcorrencia, setRgbAcaoConcorrencia] = useState("");
@@ -136,13 +137,26 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
       setIsFetchingConfig(false);
     };
 
+    const loadGlobalConfigurations = async () => {
+      if (isRgb) {
+        const focoRgbGlobal = await getConfiguracao('foco_rgb_mes');
+        if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum') {
+          setRgbFocoVisita(focoRgbGlobal);
+          setIsFocoRgbLocked(true);
+        } else {
+          setIsFocoRgbLocked(false);
+        }
+      }
+    };
+
     // Reseta as seleções toda vez que o canal ou o tipo de visita mudam
     // Isso evita que produtos de um PDV anterior fiquem "presos" na memória e somem pontos
     setProdutosSelecionados([]);
     setExecucaoSelecionada([]);
 
     loadConfig();
-  }, [canalCadastrado, tipoVisita]);
+    loadGlobalConfigurations();
+  }, [canalCadastrado, tipoVisita, isRgb]);
 
   const pontuacaoProdutos = useMemo(() => {
     if (!config) return 0;
@@ -521,9 +535,9 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
               <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
                 Qual o foco da visita? <span className="text-destructive ml-1">*</span>
               </Label>
-              <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className="grid gap-3">
+              <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className={`grid gap-3 ${isFocoRgbLocked ? "opacity-90 pointer-events-none" : ""}`} disabled={isFocoRgbLocked}>
                 {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => (
-                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbFocoVisita === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isFocoRgbLocked ? "cursor-not-allowed" : "cursor-pointer"} ${rgbFocoVisita === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
                     <RadioGroupItem value={opt} />
                     <span className="text-sm font-semibold">{opt}</span>
                   </Label>

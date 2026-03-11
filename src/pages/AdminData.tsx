@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, FileSpreadsheet, AlertTriangle, Loader2, Database, Users, UserPlus, Shield, ShieldOff, Lock, Unlock, CheckCircle2, Download, ClipboardCheck, XCircle } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, AlertTriangle, Loader2, Database, Users, UserPlus, Shield, ShieldOff, Lock, Unlock, CheckCircle2, Download, ClipboardCheck, XCircle, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
-import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita } from '@/lib/api';
+import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao } from '@/lib/api';
 import { format } from 'date-fns';
 
 const AdminData = () => {
@@ -43,12 +43,17 @@ const AdminData = () => {
         nivel: ''
     });
 
+    // Estados Configurações Globais
+    const [configFocoRgb, setConfigFocoRgb] = useState<string>('');
+    const [loadingConfig, setLoadingConfig] = useState(false);
+
     const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
 
     useEffect(() => {
         if (isAnalista) {
             fetchUsers();
             fetchAprovacoes();
+            fetchConfiguracoes();
         }
     }, [isAnalista]);
 
@@ -57,6 +62,26 @@ const AdminData = () => {
         const data = await buscarVisitasPendentes();
         setVisitasPendentes(data);
         setLoadingAprovacoes(false);
+    };
+
+    const fetchConfiguracoes = async () => {
+        setLoadingConfig(true);
+        const focoRgb = await getConfiguracao('foco_rgb_mes');
+        setConfigFocoRgb(focoRgb || 'Nenhum');
+        setLoadingConfig(false);
+    };
+
+    const handleSaveConfig = async () => {
+        setLoadingAction('saveConfig');
+        const valorParaSalvar = configFocoRgb === 'Nenhum' ? '' : configFocoRgb;
+        const success = await setConfiguracao('foco_rgb_mes', valorParaSalvar);
+        
+        if (success) {
+            toast({ title: "Configuração Salva", description: "A nova diretriz Foco RGB foi salva com sucesso e já está valendo para todos os avaliadores.", className: "bg-green-600 text-white" });
+        } else {
+            toast({ title: "Erro", description: "Não foi possível sincronizar a configuração.", variant: "destructive" });
+        }
+        setLoadingAction(null);
     };
 
     const fetchUsers = async () => {
@@ -259,16 +284,16 @@ const AdminData = () => {
             </div>
 
             <Tabs defaultValue="bases" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 max-w-[600px] mb-8">
-                    <TabsTrigger value="bases" className="font-bold tracking-wide">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 max-w-[800px] mb-8 h-auto p-1">
+                    <TabsTrigger value="bases" className="font-bold tracking-wide py-2">
                         <FileSpreadsheet className="w-4 h-4 mr-2" />
                         Bases de Dados
                     </TabsTrigger>
-                    <TabsTrigger value="usuarios" className="font-bold tracking-wide">
+                    <TabsTrigger value="usuarios" className="font-bold tracking-wide py-2">
                         <Users className="w-4 h-4 mr-2" />
                         Usuários
                     </TabsTrigger>
-                    <TabsTrigger value="aprovacoes" className="font-bold tracking-wide">
+                    <TabsTrigger value="aprovacoes" className="font-bold tracking-wide py-2">
                         <ClipboardCheck className="w-4 h-4 mr-2" />
                         Aprovações
                         {visitasPendentes.length > 0 && (
@@ -276,6 +301,10 @@ const AdminData = () => {
                                 {visitasPendentes.length}
                             </Badge>
                         )}
+                    </TabsTrigger>
+                    <TabsTrigger value="configuracoes" className="font-bold tracking-wide py-2">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configurações
                     </TabsTrigger>
                 </TabsList>
 
@@ -660,6 +689,63 @@ const AdminData = () => {
                                             )}
                                         </TableBody>
                                     </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="configuracoes" className="space-y-6">
+                    <Card className="glass-card bg-card/40 border-primary/20 max-w-2xl mx-auto">
+                        <CardHeader className="flex flex-col items-start border-b border-border/50 pb-6 bg-secondary/10">
+                            <CardTitle className="text-xl flex items-center gap-2">
+                                <Settings className="w-6 h-6 text-primary" />
+                                Configurações Globais
+                            </CardTitle>
+                            <CardDescription className="font-medium mt-1 text-muted-foreground/80">
+                                Defina regras e metas que valerão automaticamente para todos os usuários do sistema.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            {loadingConfig ? (
+                                <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                                    <span>Lendo configurações atuais...</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <Label className="text-base font-bold text-foreground">Foco de Visita RGB do Mês</Label>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Força todos os Avaliadores a preencherem o formulário RGB com este foco pré-definido, bloqueando alterações manuais no celular deles.
+                                            </p>
+                                        </div>
+                                        <div className="w-full sm:w-2/3">
+                                            <Select value={configFocoRgb} onValueChange={setConfigFocoRgb}>
+                                                <SelectTrigger className="h-12 border-primary/30">
+                                                    <SelectValue placeholder="Selecione o Foco Vigente" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Nenhum" className="font-semibold text-muted-foreground">Desativado (Os Avaliadores escolhem livremente)</SelectItem>
+                                                    <SelectItem value="RGB - Maiores clientes" className="font-bold text-foreground">RGB - Maiores clientes</SelectItem>
+                                                    <SelectItem value="RGB - Maiores quedas" className="font-bold text-foreground">RGB - Maiores quedas</SelectItem>
+                                                    <SelectItem value="RGB - Maiores COMPASS não compradores" className="font-bold text-foreground">RGB - Maiores COMPASS não compradores</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="pt-6 border-t border-border/40 flex justify-end">
+                                        <Button 
+                                            onClick={handleSaveConfig} 
+                                            disabled={loadingAction === 'saveConfig'}
+                                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md h-12 px-8"
+                                        >
+                                            {loadingAction === 'saveConfig' ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
+                                            Salvar Alterações
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>

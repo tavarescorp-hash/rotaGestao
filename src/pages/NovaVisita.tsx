@@ -289,7 +289,7 @@ const NovaVisita = () => {
                   type="date"
                   value={form.data_visita}
                   disabled
-                  className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm opacity-80 cursor-not-allowed font-semibold"
+                  className="h-12 bg-background/50 dark:bg-muted/10 text-foreground focus-visible:ring-primary shadow-sm opacity-100 cursor-not-allowed font-semibold border-border/50"
                 />
               </div>
 
@@ -308,7 +308,7 @@ const NovaVisita = () => {
                         setPdvBuscado(false);
                       }}
                       placeholder="     Pesquisar código..."
-                      className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold pl-8"
+                      className="h-12 bg-background/50 dark:bg-muted/10 text-foreground shadow-sm font-semibold pl-8 border-border/50 focus-visible:border-primary/50"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();

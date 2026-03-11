@@ -386,7 +386,18 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
               <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
                 PDV POSSUI ALGUM REFRIGERADOR? <span className="text-destructive ml-1">*</span>
               </Label>
-              <RadioGroup value={fdsRefrigerador} onValueChange={setFdsRefrigerador} className="grid gap-3">
+              <RadioGroup 
+                value={fdsRefrigerador} 
+                onValueChange={(val) => {
+                  setFdsRefrigerador(val);
+                  if (val === "PDV NÃO POSSUI GELADEIRA OU POSSUI APENAS GELADEIRA DA CONCORRÊNCIA" || val === "PDV POSSUI APENAS GELADEIRA SEM MARCA") {
+                    setFdsPosicionamento("NÃO POSSUI REFRIGERADOR DA CIA");
+                  } else {
+                    setFdsPosicionamento("");
+                  }
+                }} 
+                className="grid gap-3"
+              >
                 {[
                   "PDV NÃO POSSUI GELADEIRA OU POSSUI APENAS GELADEIRA DA CONCORRÊNCIA",
                   "PDV POSSUI APENAS GELADEIRA SEM MARCA",
@@ -400,79 +411,87 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
               </RadioGroup>
             </div>
 
-            <div className="space-y-4">
-              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-                POSICIONAMENTO: O REFRIGERADOR DA CIA ESTÁ COM NO MÍNIMO 50% ABASTECIDO COM A MARCA DA GELADEIRA? <span className="text-destructive ml-1">*</span>
-              </Label>
-              <RadioGroup value={fdsPosicionamento} onValueChange={setFdsPosicionamento} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  "SIM, 50% da marca do equipamento",
-                  "Sim, 75% da marca do equipamento",
-                  "Sim, 100% da marca do equipamento",
-                  "Não, 25% da marca do equipamento",
-                  "Não, 10% da marca do equipamento",
-                  "Não há produto da marca do equipamento",
-                  "NÃO POSSUI REFRIGERADOR DA CIA",
-                  "Outro:"
-                ].map((opt) => (
-                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPosicionamento === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                    <RadioGroupItem value={opt} />
-                    <span className="text-sm font-semibold">{opt === "Outro:" ? "Outro:" : opt}</span>
+            {fdsRefrigerador && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    POSICIONAMENTO: O REFRIGERADOR DA CIA ESTÁ COM NO MÍNIMO 50% ABASTECIDO COM A MARCA DA GELADEIRA? <span className="text-destructive ml-1">*</span>
                   </Label>
-                ))}
-              </RadioGroup>
+                  <RadioGroup value={fdsPosicionamento} onValueChange={setFdsPosicionamento} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(fdsRefrigerador === "PDV POSSUI GELADEIRA DA CIA" 
+                      ? [
+                          "Não, 10% da marca do equipamento",
+                          "Não, 25% da marca do equipamento",
+                          "Sim, 50% da marca do equipamento",
+                          "Sim, 75% da marca do equipamento",
+                          "Sim, 100% da marca do equipamento",
+                          "Outro:"
+                        ]
+                      : [
+                          "NÃO POSSUI REFRIGERADOR DA CIA",
+                          "Outro:"
+                        ]
+                    ).map((opt) => (
+                      <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPosicionamento === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                        <RadioGroupItem value={opt} />
+                        <span className="text-sm font-semibold">{opt === "Outro:" ? "Outro:" : opt}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
 
-              {fdsPosicionamento === "Outro:" && (
-                <div className="pl-8 pt-2 animate-in fade-in slide-in-from-top-2">
-                  <Input
-                    placeholder="Especifique o posicionamento do refrigerador..."
-                    value={fdsPosicionamentoOutro}
-                    onChange={(e) => setFdsPosicionamentoOutro(e.target.value)}
-                    className="h-12 bg-background/50"
-                  />
+                  {fdsPosicionamento === "Outro:" && (
+                    <div className="pl-8 pt-2 animate-in fade-in slide-in-from-top-2">
+                      <Input
+                        placeholder="Especifique o posicionamento do refrigerador..."
+                        value={fdsPosicionamentoOutro}
+                        onChange={(e) => setFdsPosicionamentoOutro(e.target.value)}
+                        className="h-12 bg-background/50"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-4">
-              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-                OS PRODUTOS DA MARCA DA CIA ESTÃO DEVIDAMENTE REFRIGERADOS? <span className="text-destructive ml-1">*</span>
-              </Label>
-              <RadioGroup value={fdsRefrigerados} onValueChange={setFdsRefrigerados} className="flex gap-4">
-                {["SIM", "NÃO"].map((opt) => (
-                  <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsRefrigerados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                    <RadioGroupItem value={opt} />
-                    <span className="text-sm font-semibold">{opt}</span>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    OS PRODUTOS DA MARCA DA CIA ESTÃO DEVIDAMENTE REFRIGERADOS? <span className="text-destructive ml-1">*</span>
                   </Label>
-                ))}
-              </RadioGroup>
-            </div>
+                  <RadioGroup value={fdsRefrigerados} onValueChange={setFdsRefrigerados} className="flex gap-4">
+                    {["SIM", "NÃO"].map((opt) => (
+                      <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsRefrigerados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                        <RadioGroupItem value={opt} />
+                        <span className="text-sm font-semibold">{opt}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
 
-            <div className="space-y-4">
-              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-                TODOS OS SKUs OBRIGATÓRIOS PRESENTES ESTÃO PRECIFICADOS? <span className="text-destructive ml-1">*</span>
-              </Label>
-              <RadioGroup value={fdsPrecificados} onValueChange={setFdsPrecificados} className="flex gap-4">
-                {["SIM", "NÃO"].map((opt) => (
-                  <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPrecificados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                    <RadioGroupItem value={opt} />
-                    <span className="text-sm font-semibold">{opt}</span>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    TODOS OS SKUs OBRIGATÓRIOS PRESENTES ESTÃO PRECIFICADOS? <span className="text-destructive ml-1">*</span>
                   </Label>
-                ))}
-              </RadioGroup>
-            </div>
+                  <RadioGroup value={fdsPrecificados} onValueChange={setFdsPrecificados} className="flex gap-4">
+                    {["SIM", "NÃO"].map((opt) => (
+                      <Label key={opt} className={`flex-1 flex items-center justify-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${fdsPrecificados === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                        <RadioGroupItem value={opt} />
+                        <span className="text-sm font-semibold">{opt}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
 
-            {fdsPrecificados === "NÃO" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-                  SE NÃO, O QUE PODE SER FEITO PARA MELHORAR A PRECIFICAÇÃO? <span className="text-destructive ml-1">*</span>
-                </Label>
-                <Input
-                  placeholder="Escreva como você vai atuar para resolver o problema de precificação..."
-                  value={fdsMelhoriaPrecificacao}
-                  onChange={(e) => setFdsMelhoriaPrecificacao(e.target.value)}
-                  className="h-12 bg-background/50"
-                />
+                {fdsPrecificados === "NÃO" && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                      SE NÃO, O QUE PODE SER FEITO PARA MELHORAR A PRECIFICAÇÃO? <span className="text-destructive ml-1">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Escreva como você vai atuar para resolver o problema de precificação..."
+                      value={fdsMelhoriaPrecificacao}
+                      onChange={(e) => setFdsMelhoriaPrecificacao(e.target.value)}
+                      className="h-12 bg-background/50"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -230,7 +230,6 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
             <div className="w-px h-8 bg-border/50"></div>
             <div className="flex items-center justify-center px-4 bg-primary text-primary-foreground rounded-lg h-full shadow-inner">
               <span className="text-xl font-black">{pontuacaoTotal}</span>
-              <span className="text-xs font-semibold ml-1 opacity-80">pts</span>
             </div>
           </div>
         </CardContent>
@@ -278,7 +277,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                         variant={isChecked ? "default" : "secondary"}
                         className={`text-xs shrink-0 font-bold ${isChecked ? 'shadow-sm shadow-primary/20' : 'opacity-70'}`}
                       >
-                        +{produto.pontos} <span className="opacity-70 ml-1 font-normal text-[10px]">pts</span>
+                        +{produto.pontos}
                       </Badge>
                     </label>
                   );
@@ -332,7 +331,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                         {tipoVisita === "FDS" ? (
                           <span className="text-[10px] uppercase font-normal tracking-wider">Vinculado</span>
                         ) : (
-                          <>+{item.pontos} <span className="opacity-70 ml-1 font-normal text-[10px]">pts</span></>
+                          <>+{item.pontos}</>
                         )}
                       </Badge>
                     </label>

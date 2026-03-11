@@ -363,7 +363,7 @@ const NovaVisita = () => {
                       <Label className="text-sm font-bold text-foreground">Objetivo / Tipo de Visita <span className="text-destructive">*</span></Label>
                     </div>
 
-                    <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {tipoVisitaOptions.map((option) => {
                         const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES POTENCIAS BASE DE COMPRAS CGB", "MAIORES POTENCIAS BASE DE COMPRAS RGB"].includes(option);
                         return (

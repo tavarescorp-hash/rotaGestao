@@ -278,14 +278,23 @@ const Dashboard = () => {
 
     // Prepare data for Excel
     const dadosExportacao = filtradas.map(v => ({
+      "ID Visita": v.id || "-",
       "Data da Visita": format(new Date(v.data_visita + "T00:00:00"), "dd/MM/yyyy"),
+      "Status": v.status_aprovacao || "-",
       "Unidade": v.unidade || "-",
+      "Filial": v.filial || "-",
       "Avaliador": v.avaliador || "-",
       "Cargo": v.cargo || "-",
+      "Cod. Vendedor": v.codigo_vendedor || "-",
+      "Nome Vendedor": v.nome_vendedor || "-",
       "Código PDV": v.codigo_pdv || "-",
       "Nome Fantasia": v.nome_fantasia_pdv || "-",
-      "Vendedor": v.nome_vendedor || "-",
-      "Canal": v.canal_cadastrado || v.canal_identificado || "-",
+      "Município": v.municipio || "-",
+      "Potencial Cliente": v.potencial_cliente || "-",
+      "Canal Cadastrado": v.canal_cadastrado || "-",
+      "Canal Identificado": v.canal_identificado || "-",
+      "Coordenada X": v.coorden_x || "-",
+      "Coordenada Y": v.coorden_y || "-",
       "Indicador Avaliado": v.indicador_avaliado || "-",
       "Pontuação Obtida": v.pontuacao_total ?? "-",
       "Foco Visita RGB?": v.rgb_foco_visita || "-",
@@ -298,6 +307,7 @@ const Dashboard = () => {
       "Refrigerados (FDS)?": v.fds_refrigerados || "-",
       "Precificados (FDS)?": v.fds_precificados || "-",
       "Ação P/ Precificação (FDS)": v.fds_melhoria_precificacao || "-",
+      "Observações FDS": v.fds_observacoes || "-",
       "Produtos Selecionados (Foco FDS)": v.produtos_selecionados || "-",
       "Execução Selecionada (Foco FDS)": v.execucao_selecionada || "-",
       "Pontos Fortes (Coaching)": v.pontos_fortes || "-",
@@ -313,14 +323,23 @@ const Dashboard = () => {
     // Adjust column widths automatically
     const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["Nome Fantasia"]?.length || 0), 10);
     worksheet["!cols"] = [
+      { wch: 36 }, // ID
       { wch: 15 }, // Data
+      { wch: 15 }, // Status
       { wch: 15 }, // Unidade
+      { wch: 15 }, // Filial
       { wch: 25 }, // Avaliador
       { wch: 20 }, // Cargo
+      { wch: 15 }, // Cod Vendedor
+      { wch: 25 }, // Nome Vendedor
       { wch: 12 }, // Cod PDV
       { wch: max_width }, // Nome Fantasia
-      { wch: 25 }, // Vendedor
-      { wch: 15 }, // Canal
+      { wch: 20 }, // Município
+      { wch: 15 }, // Potencial
+      { wch: 15 }, // Canal Cad
+      { wch: 15 }, // Canal Iden
+      { wch: 15 }, // Coord X
+      { wch: 15 }, // Coord Y
       { wch: 20 }, // Indicador
       { wch: 15 }, // Pontuação
       { wch: 20 }, // RGB Foco
@@ -333,12 +352,13 @@ const Dashboard = () => {
       { wch: 20 }, // FDS Refrigerados
       { wch: 20 }, // FDS Precificados
       { wch: 40 }, // FDS Ação Precificação
+      { wch: 40 }, // FDS Observações
       { wch: 40 }, // Prod Selecionados
       { wch: 40 }, // Execucao
       { wch: 40 }, // Pontos Fortes
       { wch: 40 }, // Pontos Desenvolver
       { wch: 40 }, // Passos Coaching
-      { wch: 40 }  // Observações
+      { wch: 40 }  // Observações Adicionais
     ];
 
     XLSX.writeFile(workbook, `Relatorio_Visitas_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);

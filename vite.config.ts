@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Rota Unibeer',
-        short_name: 'Rota Unibeer',
-        description: 'Gestão Inteligente de Rotas e Avaliações de Vendas',
+        name: 'Global Soluções',
+        short_name: 'Global',
+        description: 'Gestão Inteligente de Rotas',
         theme_color: '#B22222',
         background_color: '#ffffff',
         display: 'standalone',

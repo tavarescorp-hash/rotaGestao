@@ -251,7 +251,7 @@ const AdminData = () => {
         const success = await aprovarVisita(id);
         if (success) {
             toast({ title: "Visita Aprovada!", description: `A visita no PDV ${pdv} já está pontuando no painel oficial.`, className: "bg-green-600 text-white" });
-            setVisitasPendentes(prev => prev.filter(v => v.id !== id));
+            setVisitasPendentes(prev => prev.filter(v => String(v.id) !== String(id)));
         } else {
             toast({ title: "Erro", description: "Não foi possível aprovar a visita.", variant: "destructive" });
         }
@@ -263,7 +263,7 @@ const AdminData = () => {
         const success = await recusarVisita(id);
         if (success) {
             toast({ title: "Visita Recusada", description: `A visita no PDV ${pdv} foi negada e invalidada.` });
-            setVisitasPendentes(prev => prev.filter(v => v.id !== id));
+            setVisitasPendentes(prev => prev.filter(v => String(v.id) !== String(id)));
         } else {
             toast({ title: "Erro", description: "Não foi possível recusar a visita.", variant: "destructive" });
         }

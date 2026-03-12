@@ -181,6 +181,7 @@ const VisitaRetroativa = () => {
       fds_precificados: string;
       fds_melhoria_precificacao: string;
     };
+    produtosNaoSelecionados?: string[];
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -217,6 +218,7 @@ const VisitaRetroativa = () => {
       fds_refrigerados: payload.fdsData?.fds_refrigerados || "",
       fds_precificados: payload.fdsData?.fds_precificados || "",
       fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
+      produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       status_aprovacao: "Pendente",
     });
 

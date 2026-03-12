@@ -182,6 +182,7 @@ const NovaVisita = () => {
       fds_melhoria_precificacao: string;
       fds_observacoes: string;
     };
+    produtosNaoSelecionados?: string[];
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -219,6 +220,7 @@ const NovaVisita = () => {
       fds_precificados: payload.fdsData?.fds_precificados || "",
       fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
       fds_observacoes: payload.fdsData?.fds_observacoes || "",
+      produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
     });
 
     toast({

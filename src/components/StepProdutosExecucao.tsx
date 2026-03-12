@@ -27,12 +27,7 @@ export interface FdsSubmitData {
   fds_melhoria_precificacao: string;
 }
 
-interface StepProdutosExecucaoProps {
-  canalCadastrado: string;
-  tipoVisita: string;
-  onSubmit: (produtosSelecionados: string[], execucaoSelecionada: string[], pontuacaoTotal: number, rgbData?: RgbSubmitData, fdsData?: FdsSubmitData) => void;
-  loading: boolean;
-}
+// Removed duplicate StepProdutosExecucaoProps definition
 
 const canalOptions = [
   "Padaria/Confeitaria",
@@ -52,6 +47,24 @@ const canalOptions = [
 ];
 
 type ConfigType = { produtos: { nome: string; pontos: number }[], execucao: { nome: string; pontos: number }[] } | null;
+
+interface SubmitFnPops {
+  (
+    produtosSelecionados: string[],
+    execucaoSelecionada: string[],
+    pontuacaoTotal: number,
+    rgbData?: RgbSubmitData,
+    fdsData?: FdsSubmitData,
+    produtosNaoSelecionados?: string[]
+  ): void;
+}
+
+interface StepProdutosExecucaoProps {
+  canalCadastrado: string;
+  tipoVisita: string;
+  onSubmit: SubmitFnPops;
+  loading: boolean;
+}
 
 const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }: StepProdutosExecucaoProps) => {
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
@@ -120,7 +133,12 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
       };
     }
 
-    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData);
+    // Calcular Gaps (Produtos Não Selecionados)
+    const produtosNaoSelecionados = config 
+      ? config.produtos.map(p => p.nome).filter(nome => !produtosSelecionados.includes(nome))
+      : [];
+
+    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData, produtosNaoSelecionados);
   };
 
   useEffect(() => {

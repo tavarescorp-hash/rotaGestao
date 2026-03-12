@@ -38,6 +38,7 @@ export interface Visita {
   fds_precificados?: string;
   fds_melhoria_precificacao?: string;
   fds_observacoes?: string;
+  produtos_nao_selecionados?: string;
   status_aprovacao?: string;
 }
 
@@ -78,6 +79,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       fds_precificados: visita.fds_precificados,
       fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
       fds_observacoes: visita.fds_observacoes,
+      produtos_nao_selecionados: visita.produtos_nao_selecionados,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
     }]);
 

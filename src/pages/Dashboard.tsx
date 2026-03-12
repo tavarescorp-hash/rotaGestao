@@ -278,42 +278,36 @@ const Dashboard = () => {
 
     // Prepare data for Excel
     const dadosExportacao = filtradas.map(v => ({
-      "ID Visita": v.id || "-",
-      "Data da Visita": format(new Date(v.data_visita + "T00:00:00"), "dd/MM/yyyy"),
-      "Status": v.status_aprovacao || "-",
-      "Unidade": v.unidade || "-",
-      "Filial": v.filial || "-",
-      "Avaliador": v.avaliador || "-",
-      "Cargo": v.cargo || "-",
-      "Cod. Vendedor": v.codigo_vendedor || "-",
-      "Nome Vendedor": v.nome_vendedor || "-",
-      "Código PDV": v.codigo_pdv || "-",
-      "Nome Fantasia": v.nome_fantasia_pdv || "-",
-      "Município": v.municipio || "-",
-      "Potencial Cliente": v.potencial_cliente || "-",
-      "Canal Cadastrado": v.canal_cadastrado || "-",
-      "Canal Identificado": v.canal_identificado || "-",
-      "Coordenada X": v.coorden_x || "-",
-      "Coordenada Y": v.coorden_y || "-",
-      "Indicador Avaliado": v.indicador_avaliado || "-",
-      "Pontuação Obtida": v.pontuacao_total ?? "-",
-      "Foco Visita RGB?": v.rgb_foco_visita || "-",
-      "Comprando Outras (RGB)?": v.rgb_comprando_outras || "-",
-      "TTC Adequado (RGB)?": v.rgb_ttc_adequado || "-",
-      "Ação Concorrente (RGB)?": v.rgb_acao_concorrencia || "-",
-      "Quantidade SKUs (FDS)": v.fds_qtd_skus || "-",
-      "Possui Refrigerador (FDS)?": v.fds_refrigerador || "-",
-      "Posicionamento Marca (FDS)?": v.fds_posicionamento || "-",
-      "Refrigerados (FDS)?": v.fds_refrigerados || "-",
-      "Precificados (FDS)?": v.fds_precificados || "-",
-      "Ação P/ Precificação (FDS)": v.fds_melhoria_precificacao || "-",
-      "Observações FDS": v.fds_observacoes || "-",
-      "Produtos Selecionados (Foco FDS)": v.produtos_selecionados || "-",
-      "Execução Selecionada (Foco FDS)": v.execucao_selecionada || "-",
-      "Pontos Fortes (Coaching)": v.pontos_fortes || "-",
-      "Pontos a Desenvolver (Coaching)": v.pontos_desenvolver || "-",
-      "Passos do Coaching (Coaching)": v.passos_coaching || "-",
-      "Observações Adicionais": v.observacoes || "-",
+      "DATA VISITA": format(new Date(v.data_visita + "T00:00:00"), "dd/MM/yyyy"),
+      "UNIDADE": v.unidade || "-",
+      "AVALIADOR": v.avaliador || "-",
+      "CARGO": v.cargo || "-",
+      "NOME DO VENDEDOR": v.nome_vendedor || "-",
+      "CODIGO": v.codigo_pdv || "-",
+      "NOME FANTASIA": v.nome_fantasia_pdv || "-",
+      "POTENCIA DO CLIENTE": v.potencial_cliente || "-",
+      "CANAL CADASTRADO": v.canal_cadastrado || "-",
+      "CANAL IDENTIFICADO": v.canal_identificado || "-",
+      "INDICADOR AVALIADO": v.indicador_avaliado || "-",
+      "OBSERVAÇAO": v.observacoes || "-",
+      "FILIA": v.filial || "-",
+      "PRODUTOS SELECIONADOS": v.produtos_selecionados || "-",
+      "PONTUAÇÃO TOTAL": v.pontuacao_total ?? "-",
+      "PONTOS FORTES": v.pontos_fortes || "-",
+      "PONTOS DESENVOLVER": v.pontos_desenvolver || "-",
+      "PASSOS COACHING": v.passos_coaching || "-",
+      "RGB FOCO VISITA": v.rgb_foco_visita || "-",
+      "RGB COMPRANDO OUTRA": v.rgb_comprando_outras || "-",
+      "RGB TTC ADEQUADO": v.rgb_ttc_adequado || "-",
+      "RGB ACAO CONCORRENCIA": v.rgb_acao_concorrencia || "-",
+      "CODIGO DO VENDEDOR": v.codigo_vendedor || "-",
+      "FDS QTS SKUS": v.fds_qtd_skus || "-",
+      "FDS REFRIGERADOR": v.fds_refrigerador || "-",
+      "FDS POSICIONAMENTO": v.fds_posicionamento || "-",
+      "FDS REFRIGERADOR ": v.fds_refrigerados || "-", // Extra space to prevent object key duplication
+      "FDS PRECIFICAÇÃO": v.fds_precificados || "-",
+      "FDS OBSERVAÇOES": v.fds_observacoes || "-",
+      "PRODUTOS NAO SELECIONADOS": v.produtos_nao_selecionados || "-"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
@@ -321,44 +315,38 @@ const Dashboard = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Visitas");
 
     // Adjust column widths automatically
-    const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["Nome Fantasia"]?.length || 0), 10);
+    const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["NOME FANTASIA"]?.length || 0), 10);
     worksheet["!cols"] = [
-      { wch: 36 }, // ID
-      { wch: 15 }, // Data
-      { wch: 15 }, // Status
-      { wch: 15 }, // Unidade
-      { wch: 15 }, // Filial
-      { wch: 25 }, // Avaliador
-      { wch: 20 }, // Cargo
-      { wch: 15 }, // Cod Vendedor
-      { wch: 25 }, // Nome Vendedor
-      { wch: 12 }, // Cod PDV
-      { wch: max_width }, // Nome Fantasia
-      { wch: 20 }, // Município
-      { wch: 15 }, // Potencial
-      { wch: 15 }, // Canal Cad
-      { wch: 15 }, // Canal Iden
-      { wch: 15 }, // Coord X
-      { wch: 15 }, // Coord Y
-      { wch: 20 }, // Indicador
-      { wch: 15 }, // Pontuação
-      { wch: 20 }, // RGB Foco
-      { wch: 25 }, // RGB Comprando
-      { wch: 20 }, // RGB TTC
-      { wch: 25 }, // RGB Ação Concorrente
-      { wch: 20 }, // FDS Qtd SKUs
-      { wch: 40 }, // FDS Refrigerador
-      { wch: 40 }, // FDS Posicionamento
-      { wch: 20 }, // FDS Refrigerados
-      { wch: 20 }, // FDS Precificados
-      { wch: 40 }, // FDS Ação Precificação
-      { wch: 40 }, // FDS Observações
-      { wch: 40 }, // Prod Selecionados
-      { wch: 40 }, // Execucao
-      { wch: 40 }, // Pontos Fortes
-      { wch: 40 }, // Pontos Desenvolver
-      { wch: 40 }, // Passos Coaching
-      { wch: 40 }  // Observações Adicionais
+      { wch: 15 }, // DATA VISITA
+      { wch: 15 }, // UNIDADE
+      { wch: 25 }, // AVALIADOR
+      { wch: 20 }, // CARGO
+      { wch: 25 }, // NOME DO VENDEDOR
+      { wch: 12 }, // CODIGO
+      { wch: max_width }, // NOME FANTASIA
+      { wch: 20 }, // POTENCIA DO CLIENTE
+      { wch: 20 }, // CANAL CADASTRADO
+      { wch: 20 }, // CANAL IDENTIFICADO
+      { wch: 25 }, // INDICADOR AVALIADO
+      { wch: 50 }, // OBSERVAÇAO
+      { wch: 15 }, // FILIA
+      { wch: 50 }, // PRODUTOS SELECIONADOS
+      { wch: 15 }, // PONTUAÇÃO TOTAL
+      { wch: 40 }, // PONTOS FORTES
+      { wch: 40 }, // PONTOS DESENVOLVER
+      { wch: 40 }, // PASSOS COACHING
+      { wch: 20 }, // RGB FOCO VISITA
+      { wch: 25 }, // RGB COMPRANDO OUTRA
+      { wch: 20 }, // RGB TTC ADEQUADO
+      { wch: 25 }, // RGB ACAO CONCORRENCIA
+      { wch: 15 }, // CODIGO DO VENDEDOR
+      { wch: 15 }, // FDS QTS SKUS
+      { wch: 20 }, // FDS REFRIGERADOR
+      { wch: 25 }, // FDS POSICIONAMENTO
+      { wch: 20 }, // FDS REFRIGERADOR (2)
+      { wch: 25 }, // FDS PRECIFICAÇÃO
+      { wch: 50 }, // FDS OBSERVAÇOES
+      { wch: 50 }  // PRODUTOS NAO SELECIONADOS
     ];
 
     XLSX.writeFile(workbook, `Relatorio_Visitas_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);

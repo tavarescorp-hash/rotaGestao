@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn } from "lucide-react";
-import logoUnibeer from "@/assets/logo-unibeer.png";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -69,7 +68,7 @@ const Login = () => {
           <div className="w-28 h-28 bg-white/20 dark:bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
             {/* Inner specifically for the logo */}
             <div className="w-full h-full flex items-center justify-center p-2">
-              <img src={logoUnibeer} alt="UniBeer" className="h-auto w-[85%] drop-shadow-sm transition-transform duration-500 hover:scale-105" />
+              <img src="/logo-global.png" alt="Global Soluções" className="h-auto w-[90%] drop-shadow-sm transition-transform duration-500 hover:scale-105" />
             </div>
           </div>
           <div>
@@ -162,7 +161,7 @@ const Login = () => {
 
       {/* Global Footer (mostly for desktop/large screens spacing) */}
       <div className="absolute bottom-6 text-xs text-zinc-400 font-medium tracking-wide z-10 hidden sm:block backdrop-blur-sm px-4 py-1.5 rounded-full bg-black/20">
-        © {new Date().getFullYear()} UniBeer Distribuidora. Todos os direitos reservados.
+        © {new Date().getFullYear()} Global Soluções. Todos os direitos reservados.
       </div>
     </div>
   );

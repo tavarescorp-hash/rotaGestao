@@ -144,22 +144,51 @@ export async function buscarVisitasPendentes(): Promise<Visita[]> {
 
 export async function aprovarVisita(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from("visitas").update({ status_aprovacao: "Aprovado" }).eq("id", id);
-    if (error) throw error;
+    const { data, error } = await supabase
+      .from("visitas")
+      .update({ status_aprovacao: "Aprovado" })
+      .eq("id", id)
+      .select();
+      
+    if (error) {
+      console.error("Erro Supabase Aprovar:", error);
+      return false;
+    }
+    
+    // Confirma que pelo menos 1 linha foi modificada
+    if (!data || data.length === 0) {
+      console.error("Nenhuma visita foi encontrada ou atualizada com o ID:", id);
+      return false;
+    }
+    
     return true;
   } catch (err) {
-    console.error(err);
+    console.error("Exception em aprovarVisita:", err);
     return false;
   }
 }
 
 export async function recusarVisita(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from("visitas").update({ status_aprovacao: "Recusado" }).eq("id", id);
-    if (error) throw error;
+    const { data, error } = await supabase
+      .from("visitas")
+      .delete()
+      .eq("id", id)
+      .select();
+      
+    if (error) {
+      console.error("Erro Supabase Recusar/Deletar:", error);
+      return false;
+    }
+
+    if (!data || data.length === 0) {
+      console.error("Nenhuma visita foi encontrada ou deletada com o ID:", id);
+      return false;
+    }
+    
     return true;
   } catch (err) {
-    console.error(err);
+    console.error("Exception em recusarVisita:", err);
     return false;
   }
 }

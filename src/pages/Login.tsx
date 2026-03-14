@@ -33,6 +33,17 @@ const Login = () => {
 
   const handleEmailBlur = async () => {
     if (!email || !email.includes('@')) return;
+    
+    // Forçar Global Soluções (Default) para o CEO/Master
+    if (email.trim().toLowerCase() === 'tavarescorp@gmail.com') {
+      setTenantStyle({
+        logo_url: "/logo-global.png",
+        cor_primaria: "#B45309",
+        nome: "Global Soluções"
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim() });
       if (!error && data) {

@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import NovaVisita from "./pages/NovaVisita";
 import VisitaRetroativa from "./pages/VisitaRetroativa";
 import AdminData from "./pages/AdminData";
+import SuperAdmin from "./pages/SuperAdmin";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/nova-visita" element={<NovaVisita />} />
                 <Route path="/retroativa" element={<VisitaRetroativa />} />
                 <Route path="/admin-data" element={<AdminData />} />
+                <Route path="/super-admin" element={<SuperAdmin />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

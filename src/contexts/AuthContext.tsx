@@ -68,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      const isMaster = profile?.nivel === 'Master';
+
       setUser({
         id: sessionUser.id,
         email: sessionUser.email || "",
@@ -77,10 +79,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         funcao: profile?.funcao,
         nivel: profile?.nivel,
         indicadores: getIndicadoresPorNivel(profile?.nivel),
-        empresa_id: profile?.empresa_id || 1,
-        empresa_nome: empresaInfo?.nome || "Global Soluções",
-        empresa_logo: empresaInfo?.logo_url || "/logo-global.png",
-        empresa_cor: empresaInfo?.cor_primaria || "#B45309",
+        empresa_id: isMaster ? 0 : (profile?.empresa_id || 1),
+        empresa_nome: isMaster ? "Global Soluções" : (empresaInfo?.nome || "Global Soluções"),
+        empresa_logo: isMaster ? "/logo-global.png" : (empresaInfo?.logo_url || "/logo-global.png"),
+        empresa_cor: isMaster ? "#B45309" : (empresaInfo?.cor_primaria || "#B45309"),
       });
     } catch (err) {
       console.error("Failed to map profile", err);

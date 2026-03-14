@@ -41,9 +41,9 @@ export function AppSidebar() {
     navigate("/");
   };
 
-  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
-  const isSupervisorOrGerente = user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
   const isMaster = user?.nivel === 'Master';
+  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || isMaster;
+  const isSupervisorOrGerente = user?.nivel === 'Niv3' || user?.nivel === 'Niv4' || isMaster;
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">

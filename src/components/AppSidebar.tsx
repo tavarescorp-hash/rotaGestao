@@ -1,7 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Database, CalendarPlus } from "lucide-react";
-import logoUnibeer from "@/assets/logo-unibeer.png";
 import {
   Popover,
   PopoverContent,
@@ -48,12 +47,12 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
-        <div className="bg-white dark:bg-zinc-100/90 p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors">
-          <img src={logoUnibeer} alt="UniBeer" className="h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300" />
+        <div className="bg-white dark:bg-zinc-100/90 p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors overflow-hidden">
+          <img src={user?.empresa_logo || "/logo-global.png"} alt={user?.empresa_nome || "Gestão"} className="h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300 max-w-[90%]" />
         </div>
         <div className="text-center mt-2">
           {/* Replaced text-primary with text-foreground for high contrast, and standardized the font weights */}
-          <h2 className="text-base font-black tracking-widest text-foreground uppercase">Rota Gestão</h2>
+          <h2 className="text-base font-black tracking-widest text-foreground uppercase">{user?.empresa_nome || "Global Soluções"}</h2>
           <p className="text-xs text-muted-foreground font-semibold uppercase mt-0.5">Visitas de Mercado</p>
         </div>
       </SidebarHeader>

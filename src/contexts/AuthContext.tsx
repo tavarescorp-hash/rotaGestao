@@ -13,6 +13,10 @@ export interface User {
   funcao?: string;
   nivel?: NivelHieriaquico | string;
   indicadores?: string[];
+  empresa_id?: number;
+  empresa_nome?: string;
+  empresa_logo?: string;
+  empresa_cor?: string;
 }
 
 interface AuthContextType {
@@ -33,15 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("unidade, funcao, nivel, Nome, ativo")
+        .select(`
+          unidade, 
+          funcao, 
+          nivel, 
+          Nome, 
+          ativo,
+          empresa_id,
+          empresas (
+            nome,
+            logo_url,
+            cor_primaria,
+            status_assinatura
+          )
+        `)
         .eq("id", sessionUser.id)
         .single();
 
       if (error && error.code !== "PGRST116") {
         console.error("Error fetching profile", error);
       }
+      
+      const empresaInfo = profile?.empresas ? (Array.isArray(profile.empresas) ? profile.empresas[0] : profile.empresas) as any : null;
 
-      if (profile && profile.ativo === false) {
+      // Bloqueio por usuário inativo OU empresa inadimplente
+      if (profile && (profile.ativo === false || (empresaInfo && empresaInfo.status_assinatura !== "Ativa"))) {
         await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
@@ -57,6 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         funcao: profile?.funcao,
         nivel: profile?.nivel,
         indicadores: getIndicadoresPorNivel(profile?.nivel),
+        empresa_id: profile?.empresa_id || 1,
+        empresa_nome: empresaInfo?.nome || "Global Soluções",
+        empresa_logo: empresaInfo?.logo_url || "/logo-global.png",
+        empresa_cor: empresaInfo?.cor_primaria || "#B45309",
       });
     } catch (err) {
       console.error("Failed to map profile", err);

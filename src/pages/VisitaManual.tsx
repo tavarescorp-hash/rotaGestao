@@ -186,6 +186,7 @@ const NovaVisita = () => {
       rgb_comprando_outras: payload.rgbData?.rgb_comprando_outras || "",
       rgb_ttc_adequado: payload.rgbData?.rgb_ttc_adequado || "",
       rgb_acao_concorrencia: payload.rgbData?.rgb_acao_concorrencia || "",
+      empresa_id: user?.empresa_id || 1,
     });
 
     toast({

@@ -139,7 +139,8 @@ const AdminData = () => {
                 description: `Lemos ${jsonData.length} linhas. Iniciando sincronização pesada com o banco de dados. Por favor aguarde.`,
             });
 
-            const response = await uploadFunc(jsonData);
+            // Pass the user object to the upload function
+            const response = await uploadFunc(jsonData, user);
 
             if (response.success) {
                 toast({

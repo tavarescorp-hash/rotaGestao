@@ -40,6 +40,7 @@ export interface Visita {
   fds_observacoes?: string;
   produtos_nao_selecionados?: string;
   status_aprovacao?: string;
+  empresa_id?: number;
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string }> {
@@ -81,6 +82,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       fds_observacoes: visita.fds_observacoes,
       produtos_nao_selecionados: visita.produtos_nao_selecionados,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
+      empresa_id: visita.empresa_id || 1, // Fallback para Unibeer em caso extremo
     }]);
 
     if (error) {
@@ -102,6 +104,11 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
       .select("*")
       .eq("status_aprovacao", "Aprovado")
       .order("created_at", { ascending: false });
+
+    // Isolamento Multi-Tenant SaaS
+    if (user?.empresa_id) {
+       query = query.eq('empresa_id', user.empresa_id);
+    }
 
     // Se não for Analista nem Diretor, filtramos estritamente pela árvore ou filial da pessoa para não vazar dados
     if (user && user.nivel !== 'Niv1' && user.nivel !== 'Niv2' && !user.funcao?.toUpperCase().includes('ANALISTA')) {
@@ -126,13 +133,20 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
   }
 }
 
-export async function buscarVisitasPendentes(): Promise<Visita[]> {
+export async function buscarVisitasPendentes(user?: any): Promise<Visita[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("visitas")
       .select("*")
       .eq("status_aprovacao", "Pendente")
       .order("created_at", { ascending: false });
+
+    // Isolamento Multi-Tenant SaaS
+    if (user?.empresa_id) {
+       query = query.eq('empresa_id', user.empresa_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data || [];
@@ -226,6 +240,11 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
       .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)", "Gerente(1)"')
       .eq('"CODIGO"', codigoBuscado);
 
+    // Isolamento Multi-Tenant SaaS
+    if (user?.empresa_id) {
+       query = query.eq('empresa_id', user.empresa_id);
+    }
+
     // Aplicação de Restrição RBAC Dinâmica para Pesquisas
     if (user?.nivel === 'Niv4' && user?.funcao) {
       const supervisorId = user.funcao.replace('SUPERVISOR ', '').trim();
@@ -272,7 +291,7 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
   }
 }
 
-export async function verificarVisitaMensal(codigoPdv: string, avaliador: string, dataBusca: string): Promise<boolean> {
+export async function verificarVisitaMensal(codigoPdv: string, avaliador: string, dataBusca: string, user?: any): Promise<boolean> {
   try {
     // Evita o problema de fuso horário do JS separando a string YYYY-MM-DD
     const [anoStr, mesStr] = dataBusca.split("-");
@@ -292,13 +311,19 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
     const codigoComPrefixo = letter ? `${letter}${numbersOnly}` : codigoPdv;
     const codigoSemPrefixo = numbersOnly;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("visitas")
       .select("id")
       .in("codigo_pdv", [codigoComPrefixo, codigoSemPrefixo])
       .eq("avaliador", avaliador)
       .gte("data_visita", prevDate)
       .lt("data_visita", nextDate);
+
+    if (user?.empresa_id) {
+       query = query.eq('empresa_id', user.empresa_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Erro ao verificar visita existente:", error);
@@ -327,9 +352,16 @@ export async function buscarFdsPorCanal(canal: string) {
 
     // Buscamos a tabela inteira (é pequena, em torno de 150 linhas) para garantir
     // que o filtro do frontend seja impecável com NFD (remoção de acentos)
-    const { data, error } = await supabase
+    let query = supabase
       .from("produtos_fds")
       .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
+
+    // MÁXIMA ATENÇÃO: Se user (global) existir, filtre a base de produtos pelo Tenant
+    // TODO: Necessária atualização de onde buscarFdsPorCanal é chamado para passar o User
+    // Deixaremos sem filtro super estrito neste fetch por enquanto até passarmos User no Front, MAS 
+    // com default fallback pra Unibeer se quiser proteger, ideal é passar user!.
+    
+    const { data, error } = await query;
 
     if (error) {
       console.error("Erro ao buscar dados FDS:", error);
@@ -392,6 +424,11 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       let baseQuery = supabase
         .from("pdvs")
         .select('"NOME_VENDEDOR", "NOME _SUPERVISOR", "FILIAL", "GERENTE", "Superv(1)", "Gerente(1)", "MUNICIPIO"');
+
+      // Isolamento Multi-Tenant SaaS
+      if (user?.empresa_id) {
+         baseQuery = baseQuery.eq('empresa_id', user.empresa_id);
+      }
 
       // Aplicação de Restrição RBAC Dinâmica no Banco de Dados
       if (user?.nivel === 'Niv4' && supervisorId) {
@@ -462,16 +499,16 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 // FUNÇÕES DE ADMINISTRAÇÃO (UPLOAD EM MASSA)
 // -----------------------------------------------------------------------------
 
-export async function uploadBasePDVs(dados: any[]): Promise<{ success: boolean; message: string }> {
+export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Limpar a tabela inteira (segurança usando uma exclusão virtual nula)
-    // Usamos um filtro que sempre será verdadeiro mas força o client postgres a aceitar o DELETE sem WHERE explícito de ID único
-    const { error: errorDel } = await supabase.from("pdvs").delete().neq('CODIGO', 'FORCE_DELETE_ALL_IMPOSSIBLE_CODE');
+    const empresaId = user?.empresa_id || 1;
 
-    // Fallback: se o banco restringir exclusão total assim, tentamos neq na role
+    // 1. Limpar SOMENTE a base da Empresa atual
+    const { error: errorDel } = await supabase.from("pdvs").delete().eq('empresa_id', empresaId);
+
+    // Fallback se nulo
     if (errorDel) {
       console.warn("Retentativa de Deleção total pdvs com outro filtro:", errorDel);
-      await supabase.from("pdvs").delete().not('created_at', 'is', null);
     }
 
     // 2. Inserir em lotes (chunks) para não estourar o limite de payload da API REST do Supabase (max 1000)
@@ -491,6 +528,8 @@ export async function uploadBasePDVs(dados: any[]): Promise<{ success: boolean; 
             cleanRow[key] = String(row[key]);
           }
         }
+        // Injeta empresa_id ativamente para forçar o vinculo
+        cleanRow.empresa_id = empresaId;
         return cleanRow;
       });
 
@@ -505,13 +544,15 @@ export async function uploadBasePDVs(dados: any[]): Promise<{ success: boolean; 
   }
 }
 
-export async function uploadProdutosFDS(dados: any[]): Promise<{ success: boolean; message: string }> {
+export async function uploadProdutosFDS(dados: any[], user?: any): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Limpar tabela produtos
-    const { error: errorDel } = await supabase.from("produtos_fds").delete().neq('id', -1);
+    const empresaId = user?.empresa_id || 1;
+
+    // 1. Limpar tabela produtos SOMENTE do Tenant atual
+    const { error: errorDel } = await supabase.from("produtos_fds").delete().eq('empresa_id', empresaId);
 
     if (errorDel) {
-      await supabase.from("produtos_fds").delete().not('id', 'is', null);
+      console.warn("Aviso ao deletar FDS antigo", errorDel);
     }
 
     // 2. Inserir em lotes (chunks)
@@ -535,6 +576,8 @@ export async function uploadProdutosFDS(dados: any[]): Promise<{ success: boolea
             }
           }
         }
+        // Injeta empresa_id no novo payload
+        cleanRow.empresa_id = empresaId;
         return cleanRow;
       });
 
@@ -553,17 +596,20 @@ export async function uploadProdutosFDS(dados: any[]): Promise<{ success: boolea
 // FUNÇÕES DE EXPORTAÇÃO (DOWNLOAD DE BANCO)
 // -----------------------------------------------------------------------------
 
-export async function downloadBasePDVs() {
+export async function downloadBasePDVs(user?: any) {
   try {
     let allData: any[] = [];
     let from = 0;
     const step = 1000;
     let fetchMore = true;
+    
+    const empresaId = user?.empresa_id || 1;
 
     while (fetchMore) {
       const { data, error } = await supabase
         .from('pdvs')
         .select('*')
+        .eq('empresa_id', empresaId)
         .range(from, from + step - 1);
 
       if (error) throw error;
@@ -582,17 +628,20 @@ export async function downloadBasePDVs() {
   }
 }
 
-export async function downloadProdutosFDS() {
+export async function downloadProdutosFDS(user?: any) {
   try {
     let allData: any[] = [];
     let from = 0;
     const step = 1000;
     let fetchMore = true;
+    
+    const empresaId = user?.empresa_id || 1;
 
     while (fetchMore) {
       const { data, error } = await supabase
         .from('produtos_fds')
         .select('*')
+        .eq('empresa_id', empresaId)
         .range(from, from + step - 1);
 
       if (error) throw error;
@@ -693,12 +742,16 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
 
     // 2. Atualiza a tabela Public profiles com os níveis do sistema
     // Usando o supabase "principal" que está logado como Analista, permitindo a edição por RLS
+    // Garante vincular à empresa do Analista que o convocou
+    const empresaId = userData.empresa_id || 1;
+    
     const { error: profileError } = await supabase.from("profiles").update({
       Nome: userData.Nome,
       nivel: userData.nivel,
       unidade: userData.unidade,
       funcao: userData.funcao,
-      ativo: true
+      ativo: true,
+      empresa_id: empresaId
     }).eq("id", newUserId);
 
     if (profileError) {
@@ -709,7 +762,8 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
         nivel: userData.nivel,
         unidade: userData.unidade,
         funcao: userData.funcao,
-        ativo: true
+        ativo: true,
+        empresa_id: empresaId
       });
     }
 

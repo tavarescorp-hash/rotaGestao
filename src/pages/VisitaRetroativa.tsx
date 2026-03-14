@@ -182,6 +182,7 @@ const VisitaRetroativa = () => {
       fds_melhoria_precificacao: string;
     };
     produtosNaoSelecionados?: string[];
+    empresa_id?: number;
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -220,6 +221,7 @@ const VisitaRetroativa = () => {
       fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
       produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       status_aprovacao: "Pendente",
+      empresa_id: user?.empresa_id || 1,
     });
 
     toast({

@@ -32,6 +32,7 @@ const AdminData = () => {
     // Estados Aprovação
     const [visitasPendentes, setVisitasPendentes] = useState<any[]>([]);
     const [loadingAprovacoes, setLoadingAprovacoes] = useState(false);
+    const [visitaSelecionada, setVisitaSelecionada] = useState<any | null>(null);
 
     // Form Novo Usuário
     const [newUser, setNewUser] = useState({
@@ -653,25 +654,14 @@ const AdminData = () => {
                                                         <div className="text-xs text-muted-foreground">{visita.cargo}</div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex justify-center">
                                                             <Button
                                                                 size="sm"
-                                                                disabled={loadingAction !== null}
-                                                                onClick={() => handleAprovar(visita.id, visita.codigo_pdv)}
-                                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                                variant="default"
+                                                                className="bg-primary/90 hover:bg-primary text-white"
+                                                                onClick={() => setVisitaSelecionada(visita)}
                                                             >
-                                                                {loadingAction === `aprovar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-                                                                Aprovar
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                disabled={loadingAction !== null}
-                                                                onClick={() => handleRecusar(visita.id, visita.codigo_pdv)}
-                                                                className="text-destructive border-destructive hover:bg-destructive/10 bg-transparent"
-                                                            >
-                                                                {loadingAction === `recusar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
-                                                                Recusar
+                                                                👁️ Detalhes
                                                             </Button>
                                                         </div>
                                                     </TableCell>
@@ -691,6 +681,146 @@ const AdminData = () => {
                                     </Table>
                                 </div>
                             )}
+
+                            {/* Detalhes Modal (Dialog) */}
+                            <Dialog open={!!visitaSelecionada} onOpenChange={(open) => !open && setVisitaSelecionada(null)}>
+                                <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800 text-zinc-100 max-h-[85vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                            <span>🎫 Ticket {visitaSelecionada?.codigo_pdv}</span>
+                                            <Badge variant="secondary" className="bg-primary/20 text-primary-foreground text-xs ml-auto">
+                                                {visitaSelecionada?.tipo_visita?.toUpperCase() || 'NORMAL'}
+                                            </Badge>
+                                        </DialogTitle>
+                                        <DialogDescription className="text-zinc-400">
+                                            {visitaSelecionada?.nome_fantasia_pdv}
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    {visitaSelecionada && (
+                                        <div className="space-y-6 mt-4">
+                                            {/* Info Block 1 */}
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div className="space-y-1">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">Avaliador</p>
+                                                    <p className="font-medium">{visitaSelecionada.avaliador}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">Vendedor Acompanhado</p>
+                                                    <p className="font-medium">{visitaSelecionada.vendedor_acompanhado || 'N/A'}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">Canal</p>
+                                                    <p className="font-medium">{visitaSelecionada.canal_pdv || 'Não informado'}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">Data Registrada</p>
+                                                    <p className="font-medium">{format(new Date(visitaSelecionada.data_visita + "T00:00:00"), 'dd/MM/yyyy')}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">Pontuação FDS</p>
+                                                    <p className="font-bold text-amber-500 text-lg">{visitaSelecionada.pontuacao_fds || 0} pts</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Products Executed */}
+                                            {visitaSelecionada.produtos_selecionados && (
+                                                <div className="space-y-2 border-t border-zinc-800 pt-4">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">✅ Produtos Encontrados (Positivados)</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {visitaSelecionada.produtos_selecionados.split(',').map((p: string, i: number) => (
+                                                            <Badge key={i} variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">{p.trim()}</Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Ouro / Execution */}
+                                            {visitaSelecionada.execucao_selecionada && (
+                                                <div className="space-y-2">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">🏆 Indicadores Ouro</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {visitaSelecionada.execucao_selecionada.split(',').map((p: string, i: number) => (
+                                                            <Badge key={i} variant="outline" className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20">{p.trim()}</Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Gaps */}
+                                            {visitaSelecionada.produtos_nao_selecionados && (
+                                                <div className="space-y-2 border-t border-zinc-800 pt-4">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">❌ Produtos Falantes (Gaps Identificados)</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {visitaSelecionada.produtos_nao_selecionados.split(',').map((p: string, i: number) => (
+                                                            <Badge key={i} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">{p.trim()}</Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* FDS Extra Checks */}
+                                            {(visitaSelecionada.fds_precificacao || visitaSelecionada.fds_condicao_produto || visitaSelecionada.fds_vencimento || visitaSelecionada.fds_equipamento) && (
+                                                  <div className="space-y-3 border-t border-zinc-800 pt-4">
+                                                    <p className="text-zinc-500 font-semibold uppercase text-xs">📋 Detalhes FDS</p>
+                                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                                        {visitaSelecionada.fds_precificacao && <div><span className="text-zinc-400">Precificação:</span> <span className="text-white">{visitaSelecionada.fds_precificacao}</span></div>}
+                                                        {visitaSelecionada.fds_condicao_produto && <div><span className="text-zinc-400">Condições:</span> <span className="text-white">{visitaSelecionada.fds_condicao_produto}</span></div>}
+                                                        {visitaSelecionada.fds_vencimento && <div><span className="text-zinc-400">Vencimento Validado:</span> <span className="text-white">{visitaSelecionada.fds_vencimento}</span></div>}
+                                                        {visitaSelecionada.fds_equipamento && <div><span className="text-zinc-400">Equipamento Gelado:</span> <span className="text-white">{visitaSelecionada.fds_equipamento}</span></div>}
+                                                    </div>
+                                                  </div>
+                                            )}
+
+                                            {/* Notes / PDD */}
+                                            {(visitaSelecionada.observacoes || visitaSelecionada.pontos_desenvolver) && (
+                                                <div className="space-y-3 border-t border-zinc-800 pt-4 pb-2">
+                                                    {visitaSelecionada.observacoes && (
+                                                        <div>
+                                                            <p className="text-zinc-500 font-semibold uppercase text-xs mb-1">📝 Observações Gerais</p>
+                                                            <p className="text-sm bg-zinc-950 p-3 rounded-md italic text-zinc-300 border border-zinc-800">{visitaSelecionada.observacoes}</p>
+                                                        </div>
+                                                    )}
+                                                    {visitaSelecionada.pontos_desenvolver && (
+                                                         <div>
+                                                             <p className="text-zinc-500 font-semibold uppercase text-xs mb-1">🎯 Pontos a Desenvolver (Coaching)</p>
+                                                             <p className="text-sm bg-zinc-950 p-3 rounded-md italic text-zinc-300 border border-zinc-800">{visitaSelecionada.pontos_desenvolver}</p>
+                                                         </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <DialogFooter className="sm:justify-between border-t border-zinc-800 pt-4 mt-6">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="text-destructive border-destructive hover:bg-destructive/10 hidden sm:flex w-full sm:w-auto"
+                                            disabled={loadingAction !== null}
+                                            onClick={() => {
+                                                handleRecusar(visitaSelecionada.id, visitaSelecionada.codigo_pdv);
+                                                setVisitaSelecionada(null);
+                                            }}
+                                        >
+                                            {loadingAction === `recusar-${visitaSelecionada?.id}` ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                                            RECUSAR TICKET
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto mt-2 sm:mt-0 font-bold"
+                                            disabled={loadingAction !== null}
+                                            onClick={() => {
+                                                handleAprovar(visitaSelecionada.id, visitaSelecionada.codigo_pdv);
+                                                setVisitaSelecionada(null);
+                                            }}
+                                        >
+                                            {loadingAction === `aprovar-${visitaSelecionada?.id}` ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                            APROVAR TICKET
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </CardContent>
                     </Card>
                 </TabsContent>

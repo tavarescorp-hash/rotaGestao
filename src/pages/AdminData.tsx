@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
-import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao } from '@/lib/api';
+import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao, getEmpresas } from '@/lib/api';
 import { format } from 'date-fns';
 
 const AdminData = () => {
@@ -48,7 +48,26 @@ const AdminData = () => {
     const [configFocoRgb, setConfigFocoRgb] = useState<string>('');
     const [loadingConfig, setLoadingConfig] = useState(false);
 
-    const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
+    const isMaster = user?.nivel === 'Master';
+    const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || isMaster;
+
+    // SaaS Tenant Selector
+    const [empresas, setEmpresas] = useState<any[]>([]);
+    const [selectedEmpresaId, setSelectedEmpresaId] = useState<number>(user?.empresa_id || 1);
+    
+    // O usuário "Ativo" para a tela de AdminData. Se for Master, ele age em nome da Empresa Selecionada
+    const activeUser = isMaster && selectedEmpresaId ? { ...user, empresa_id: selectedEmpresaId } : user;
+
+    useEffect(() => {
+        if (isMaster) {
+            getEmpresas().then(data => {
+                setEmpresas(data);
+                if (data.length > 0 && selectedEmpresaId === 0) {
+                    setSelectedEmpresaId(data[0].id);
+                }
+            });
+        }
+    }, [isMaster]);
 
     useEffect(() => {
         if (isAnalista) {
@@ -56,18 +75,18 @@ const AdminData = () => {
             fetchAprovacoes();
             fetchConfiguracoes();
         }
-    }, [isAnalista]);
+    }, [isAnalista, selectedEmpresaId]);
 
     const fetchAprovacoes = async () => {
         setLoadingAprovacoes(true);
-        const data = await buscarVisitasPendentes();
+        const data = await buscarVisitasPendentes(activeUser);
         setVisitasPendentes(data);
         setLoadingAprovacoes(false);
     };
 
     const fetchConfiguracoes = async () => {
         setLoadingConfig(true);
-        const focoRgb = await getConfiguracao('foco_rgb_mes');
+        const focoRgb = await getConfiguracao('foco_rgb_mes', activeUser);
         setConfigFocoRgb(focoRgb || 'Nenhum');
         setLoadingConfig(false);
     };
@@ -75,7 +94,7 @@ const AdminData = () => {
     const handleSaveConfig = async () => {
         setLoadingAction('saveConfig');
         const valorParaSalvar = configFocoRgb === 'Nenhum' ? '' : configFocoRgb;
-        const success = await setConfiguracao('foco_rgb_mes', valorParaSalvar);
+        const success = await setConfiguracao('foco_rgb_mes', valorParaSalvar, activeUser);
         
         if (success) {
             toast({ title: "Configuração Salva", description: "A nova diretriz Foco RGB foi salva com sucesso e já está valendo para todos os avaliadores.", className: "bg-green-600 text-white" });
@@ -87,7 +106,7 @@ const AdminData = () => {
 
     const fetchUsers = async () => {
         setLoadingUsers(true);
-        const data = await getUsers();
+        const data = await getUsers(activeUser);
         setUsuarios(data);
         setLoadingUsers(false);
     };
@@ -140,7 +159,7 @@ const AdminData = () => {
             });
 
             // Pass the user object to the upload function
-            const response = await uploadFunc(jsonData, user);
+            const response = await uploadFunc(jsonData, activeUser);
 
             if (response.success) {
                 toast({
@@ -176,7 +195,7 @@ const AdminData = () => {
         toast({ title: "Iniciando Download...", description: "Buscando os dados completos do servidor." });
 
         try {
-            const data = await downloadFunc();
+            const data = await downloadFunc(activeUser);
             if (!data || data.length === 0) {
                 toast({ title: "Base Vazia", description: "Não há dados para exportar.", variant: "destructive" });
                 return;
@@ -216,22 +235,22 @@ const AdminData = () => {
         setLoadingAction(null);
     };
 
-    const handleCreateUser = async (e: React.FormEvent) => {
+    const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoadingAction('addUser');
 
         if (!newUser.Nome || !newUser.email || !newUser.password || !newUser.nivel || !newUser.unidade || !newUser.funcao) {
             toast({ title: "Campos Incompletos", description: "Preencha todos os campos obrigatórios, incluindo a Função.", variant: "destructive" });
+            setLoadingAction(null);
             return;
         }
 
-        setLoadingAction('create');
+        const success = await createUserAdmin({...newUser, empresa_id: selectedEmpresaId});
 
-        const response = await createUserAdmin(newUser);
-
-        if (response.success) {
+        if (success.success) {
             toast({
                 title: "Usuário Criado",
-                description: `${response.message} Login: ${newUser.email}`,
+                description: `${success.message} Login: ${newUser.email}`,
                 className: "bg-green-600 border-none text-white",
             });
             setIsDialogOpen(false);
@@ -240,7 +259,7 @@ const AdminData = () => {
         } else {
             toast({
                 title: "Falha na Criação",
-                description: response.message,
+                description: success.message,
                 variant: "destructive"
             });
         }
@@ -276,13 +295,37 @@ const AdminData = () => {
         <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
 
             <div className="flex flex-col space-y-2 border-b border-border/40 pb-6 pt-4">
-                <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-                    <Database className="w-8 h-8 text-primary" />
-                    Gestão Central
-                </h1>
-                <p className="text-muted-foreground font-medium">
-                    Área restrita de Administração do Sistema. Faça upload de diretrizes ou ajuste acessos.
-                </p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+                            <Database className="w-8 h-8 text-primary" />
+                            Gestão Central
+                        </h1>
+                        <p className="text-muted-foreground font-medium mt-2">
+                            Área restrita de Administração do Sistema. Faça upload de diretrizes ou ajuste acessos.
+                        </p>
+                    </div>
+                    {isMaster && (
+                        <div className="w-full md:w-[300px] border border-primary/20 p-3 rounded-xl bg-primary/5 shadow-inner">
+                            <Label className="text-[10px] text-primary uppercase tracking-widest font-black mb-1.5 block">Nível Master: Empresa Selecionada</Label>
+                            <Select 
+                                value={String(selectedEmpresaId)} 
+                                onValueChange={(val) => setSelectedEmpresaId(Number(val))}
+                            >
+                                <SelectTrigger className="w-full bg-card/80 backdrop-blur-md border-primary/30 h-10 shadow-sm focus:ring-primary/40 font-semibold focus:ring-offset-background">
+                                    <SelectValue placeholder="Selecione o Cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {empresas.map((emp) => (
+                                        <SelectItem key={emp.id} value={String(emp.id)} className="font-medium cursor-pointer">
+                                            {emp.nome}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <Tabs defaultValue="bases" className="w-full">
@@ -455,7 +498,7 @@ const AdminData = () => {
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[425px]">
-                                    <form onSubmit={handleCreateUser}>
+                                    <form onSubmit={handleAddUser}>
                                         <DialogHeader>
                                             <DialogTitle className="text-xl">Adicionar Perfil</DialogTitle>
                                             <DialogDescription>

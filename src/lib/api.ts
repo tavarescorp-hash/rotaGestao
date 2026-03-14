@@ -665,12 +665,19 @@ export async function downloadProdutosFDS(user?: any) {
 // -----------------------------------------------------------------------------
 
 /** Busca a lista completa de usuários do sistema */
-export async function getUsers() {
+export async function getUsers(user?: any) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("profiles")
       .select("*")
       .order("Nome", { ascending: true });
+
+    // Isolamento Multi-Tenant SaaS
+    if (user?.empresa_id) {
+       query = query.eq('empresa_id', user.empresa_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data || [];
@@ -835,13 +842,18 @@ export async function createUserAdminForEmpresa(userData: any): Promise<{ succes
 // CONFIGURAÇÕES GLOBAIS DO SISTEMA
 // ==========================================
 
-export async function getConfiguracao(chave: string): Promise<string | null> {
+export async function getConfiguracao(chave: string, user?: any): Promise<string | null> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("configuracoes")
       .select("valor")
-      .eq("chave", chave)
-      .maybeSingle();
+      .eq("chave", chave);
+
+    if (user?.empresa_id) {
+      query = query.eq('empresa_id', user.empresa_id);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error) throw error;
     return data ? data.valor : null;
@@ -851,11 +863,12 @@ export async function getConfiguracao(chave: string): Promise<string | null> {
   }
 }
 
-export async function setConfiguracao(chave: string, valor: string): Promise<boolean> {
+export async function setConfiguracao(chave: string, valor: string, user?: any): Promise<boolean> {
   try {
+    const empresaId = user?.empresa_id || 1;
     const { error } = await supabase
       .from("configuracoes")
-      .upsert({ chave, valor, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+      .upsert({ chave, valor, empresa_id: empresaId, atualizado_em: new Date().toISOString() }, { onConflict: 'chave, empresa_id' });
 
     if (error) throw error;
     return true;

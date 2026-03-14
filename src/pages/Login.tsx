@@ -27,7 +27,11 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      if (user.nivel === 'Master') {
+        navigate("/super-admin");
+      } else {
+        navigate("/dashboard");
+      }
     }
   }, [user, navigate]);
 
@@ -64,7 +68,7 @@ const Login = () => {
     try {
       const success = await login(email, password);
       if (success) {
-        navigate("/dashboard");
+        // O `user` vai ser atualizado via contexto e o `useEffect` acima fará o redirect correto.
       } else {
         toast({
           title: "Erro de autenticação",

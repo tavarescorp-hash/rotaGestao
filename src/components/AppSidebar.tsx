@@ -68,14 +68,19 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {navItems.map((item) => {
-                if (isAnalista && item.title === "Nova Visita") return null;
-                if (!isAnalista && item.title === "Gestão de Dados") return null;
-                
-                // Regra Visita Retroativa: apenas Gerentes(Niv3) e Supervisores(Niv4)
-                if (item.title === "Visita Retroativa" && !isSupervisorOrGerente) return null;
+                // Nível Master de SaaS não mistura operações de rua (ocultar relatórios)
+                if (isMaster) {
+                  if (item.title === "Dashboard" || item.title === "Nova Visita" || item.title === "Visita Retroativa") return null;
+                } else {
+                  if (isAnalista && item.title === "Nova Visita") return null;
+                  if (!isAnalista && item.title === "Gestão de Dados") return null;
+                  
+                  // Regra Visita Retroativa: apenas Gerentes(Niv3) e Supervisores(Niv4)
+                  if (item.title === "Visita Retroativa" && !isSupervisorOrGerente) return null;
 
-                // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
-                if (item.title === "SaaS Admin" && !isMaster) return null;
+                  // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
+                  if (item.title === "SaaS Admin") return null;
+                }
 
                 return (
                   <SidebarMenuItem key={item.title}>

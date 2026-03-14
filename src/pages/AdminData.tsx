@@ -822,18 +822,20 @@ const AdminData = () => {
                                                                 Mix Padrão Localizado
                                                             </h4>
                                                             <Badge variant="outline" className="font-bold border-primary shadow-sm text-foreground">
-                                                                Score: {visitaSelecionada.pontuacao_fds || visitaSelecionada.pontuacao_total} pts
+                                                                Score: {visitaSelecionada.pontuacao_total || 0} pts
                                                             </Badge>
                                                         </div>
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="p-4 rounded-xl bg-card border border-border/40">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos Encontrados ({visitaSelecionada.produtos_selecionados ? visitaSelecionada.produtos_selecionados.split(",").length : 0})</span>
+                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos Encontrados ({visitaSelecionada.produtos_selecionados ? visitaSelecionada.produtos_selecionados.split(";").length : 0})</span>
                                                                 {visitaSelecionada.produtos_selecionados ? (
                                                                       <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                          {visitaSelecionada.produtos_selecionados.split(',').map((p: string, i: number) => (
-                                                                              <Badge key={i} variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">{p.trim()}</Badge>
-                                                                          ))}
+                                                                          {visitaSelecionada.produtos_selecionados.split(';').map((p: string, i: number) => {
+                                                                              const trimmed = p.trim();
+                                                                              if (!trimmed) return null;
+                                                                              return <Badge key={i} variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">{trimmed}</Badge>;
+                                                                          })}
                                                                       </div>
                                                                 ) : (
                                                                     <span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>
@@ -841,12 +843,14 @@ const AdminData = () => {
                                                             </div>
 
                                                             <div className="p-4 rounded-xl bg-card border border-border/40">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução POSITIVA ({visitaSelecionada.execucao_selecionada ? visitaSelecionada.execucao_selecionada.split(",").length : 0})</span>
+                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução POSITIVA ({visitaSelecionada.execucao_selecionada ? visitaSelecionada.execucao_selecionada.split(";").length : 0})</span>
                                                                 {visitaSelecionada.execucao_selecionada ? (
                                                                       <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                          {visitaSelecionada.execucao_selecionada.split(',').map((e: string, i: number) => (
-                                                                              <Badge key={i} variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">{e.trim()}</Badge>
-                                                                          ))}
+                                                                          {visitaSelecionada.execucao_selecionada.split(';').map((e: string, i: number) => {
+                                                                              const trimmed = e.trim();
+                                                                              if (!trimmed) return null;
+                                                                              return <Badge key={i} variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">{trimmed}</Badge>;
+                                                                          })}
                                                                       </div>
                                                                 ) : (
                                                                     <span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>
@@ -856,29 +860,37 @@ const AdminData = () => {
                                                         
                                                         {visitaSelecionada.produtos_nao_selecionados && (
                                                             <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 mt-4">
-                                                                <span className="text-[10px] uppercase font-bold text-destructive mb-3 block">Gaps (Produtos Faltantes) ({visitaSelecionada.produtos_nao_selecionados.split(",").length})</span>
+                                                                <span className="text-[10px] uppercase font-bold text-destructive mb-3 block">Gaps (Produtos Faltantes) ({visitaSelecionada.produtos_nao_selecionados.split(";").length})</span>
                                                                 <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                    {visitaSelecionada.produtos_nao_selecionados.split(',').map((p: string, i: number) => (
-                                                                        <Badge key={i} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">{p.trim()}</Badge>
-                                                                    ))}
+                                                                    {visitaSelecionada.produtos_nao_selecionados.split(';').map((p: string, i: number) => {
+                                                                        const trimmed = p.trim();
+                                                                        if (!trimmed) return null;
+                                                                        return <Badge key={i} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">{trimmed}</Badge>;
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         )}
 
-                                                        {(visitaSelecionada.fds_precificacao || visitaSelecionada.fds_condicao_produto || visitaSelecionada.fds_vencimento || visitaSelecionada.fds_equipamento) && (
+                                                        {(visitaSelecionada.fds_qtd_skus || visitaSelecionada.fds_refrigerador || visitaSelecionada.fds_posicionamento || visitaSelecionada.fds_refrigerados || visitaSelecionada.fds_precificados) && (
                                                             <div className="p-4 rounded-xl flex flex-col gap-3 bg-secondary/20 border border-secondary mt-4">
                                                                 <h4 className="text-sm font-extrabold text-foreground mb-1 uppercase tracking-widest flex items-center gap-2">
                                                                     📋 Detalhamento FDS Extra
                                                                 </h4>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                                                    {visitaSelecionada.fds_precificacao && <div><span className="text-xs font-bold text-muted-foreground block">Precificação:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_precificacao}</span></div>}
-                                                                    {visitaSelecionada.fds_condicao_produto && <div><span className="text-xs font-bold text-muted-foreground block">Condição dos Produtos:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_condicao_produto}</span></div>}
-                                                                    {visitaSelecionada.fds_vencimento && <div><span className="text-xs font-bold text-muted-foreground block">Vencimento Validado:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_vencimento}</span></div>}
-                                                                    {visitaSelecionada.fds_equipamento && <div><span className="text-xs font-bold text-muted-foreground block">Equipamento Gelado:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_equipamento}</span></div>}
+                                                                    {visitaSelecionada.fds_qtd_skus && <div><span className="text-xs font-bold text-muted-foreground block">Qtd SKUs:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_qtd_skus}</span></div>}
+                                                                    {visitaSelecionada.fds_refrigerador && <div><span className="text-xs font-bold text-muted-foreground block">Refrigerador FDS:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_refrigerador}</span></div>}
+                                                                    {visitaSelecionada.fds_posicionamento && <div><span className="text-xs font-bold text-muted-foreground block">Posicionamento Cerveja:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_posicionamento}</span></div>}
+                                                                    {visitaSelecionada.fds_refrigerados && <div><span className="text-xs font-bold text-muted-foreground block">Min. 30% Refrigerados:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_refrigerados}</span></div>}
+                                                                    {visitaSelecionada.fds_precificados && <div><span className="text-xs font-bold text-muted-foreground block">Mix 100% Precificado:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_precificados}</span></div>}
+                                                                    {visitaSelecionada.fds_melhoria_precificacao && <div><span className="text-xs font-bold text-muted-foreground block">Melhoria Preços:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_melhoria_precificacao}</span></div>}
                                                                 </div>
+                                                                {visitaSelecionada.fds_observacoes && (
+                                                                    <div className="mt-2 text-xs italic text-zinc-400 border-t border-secondary/30 pt-2">
+                                                                        "{visitaSelecionada.fds_observacoes}"
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
-
                                                     </div>
                                                 )}
 

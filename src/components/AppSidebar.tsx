@@ -49,8 +49,12 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
-        <div className="bg-white dark:bg-zinc-100/90 p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors overflow-hidden">
-          <img src={user?.empresa_logo || "/logo-global.png"} alt={user?.empresa_nome || "Gestão"} className="h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300 max-w-[90%]" />
+        <div className="bg-white dark:bg-zinc-800/90 p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors overflow-hidden">
+          <img 
+            src={user?.empresa_logo || "/logo-global.png"} 
+            alt={user?.empresa_nome || "Gestão"} 
+            className={`h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300 max-w-[90%] ${(!user?.empresa_logo || user?.empresa_logo === '/logo-global.png') ? 'brightness-0 dark:invert' : ''}`} 
+          />
         </div>
         <div className="text-center mt-2">
           {/* Replaced text-primary with text-foreground for high contrast, and standardized the font weights */}

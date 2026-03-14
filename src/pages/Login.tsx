@@ -105,10 +105,14 @@ const Login = () => {
 
         <div className="text-center mb-8 flex flex-col items-center space-y-5">
           {/* Logo container - White background in dark mode, subtle in light mode */}
-          <div className="w-28 h-28 bg-white/20 dark:bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
+          <div className="w-28 h-28 bg-white/20 dark:bg-zinc-800/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
             {/* Inner specifically for the logo */}
             <div className="w-full h-full flex items-center justify-center p-2">
-              <img src={tenantStyle.logo_url} alt={tenantStyle.nome} className="h-auto max-w-[90%] max-h-[90%] drop-shadow-sm transition-transform duration-500 hover:scale-105" />
+              <img 
+                src={tenantStyle.logo_url} 
+                alt={tenantStyle.nome} 
+                className={`h-auto max-w-[90%] max-h-[90%] drop-shadow-sm transition-transform duration-500 hover:scale-105 ${tenantStyle.logo_url === '/logo-global.png' ? 'brightness-0 dark:invert' : ''}`} 
+              />
             </div>
           </div>
           <div>

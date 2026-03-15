@@ -35,6 +35,8 @@ const potencialOptions = ["Diamante", "Ouro", "Prata", "Bronze"];
 
 
 
+import { getIndicadoresPorNivel } from "@/lib/roles";
+
 const NovaVisita = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -60,19 +62,7 @@ const NovaVisita = () => {
     coorden_y: "",
   });
 
-  let tipoVisitaOptions = user?.indicadores || [];
-
-  // Customizações de Visão baseadas em Nivelamento (Hierarquia)
-  if (user?.nivel === 'Niv1') {
-    // Vendedores comuns
-    tipoVisitaOptions = ["FDS"];
-  } else if (user?.nivel === 'Niv2') {
-    // Supervisores
-    tipoVisitaOptions = ["FDS", "COACHING ROTA BASICA COM VENDEDOR"];
-  } else if (user?.nivel === 'Niv3') {
-    // Gerentes
-    tipoVisitaOptions = ["FDS", "COACHING ROTA BASICA COM VENDEDOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB"];
-  }
+  const tipoVisitaOptions = user?.indicadores?.length ? user.indicadores : getIndicadoresPorNivel(user?.nivel);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

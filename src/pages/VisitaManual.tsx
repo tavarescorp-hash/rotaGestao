@@ -325,7 +325,7 @@ const NovaVisita = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>
-                    <Input value={form.codigo_pdv} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                    <Input value={`${form.filial?.toUpperCase() || ''}${form.codigo_pdv}`} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>

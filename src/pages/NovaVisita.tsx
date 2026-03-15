@@ -292,7 +292,7 @@ const NovaVisita = () => {
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-foreground pointer-events-none">
-                      {user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ') ? 'M' : user?.unidade?.toUpperCase().includes('CAMPOS') ? 'C' : ''}
+                      {form.filial?.toUpperCase()}
                     </span>
                     <Input
                       value={form.codigo_pdv}
@@ -359,7 +359,7 @@ const NovaVisita = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Código</Label>
-                    <Input value={`${user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ') ? 'M' : user?.unidade?.toUpperCase().includes('CAMPOS') ? 'C' : ''}${form.codigo_pdv}`} disabled className="bg-background/20 text-foreground font-bold border-0" />
+                    <Input value={`${form.filial?.toUpperCase() || ''}${form.codigo_pdv}`} disabled className="bg-background/20 text-foreground font-bold border-0" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vendedor</Label>

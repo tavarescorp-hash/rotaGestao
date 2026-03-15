@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Building2, AlertTriangle, ShieldX, Headset } from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export default function Bloqueada() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Se a empresa está ativa, manda de volta pro app normal
   if (user?.status_assinatura === "Ativa" || user?.nivel === "Master") {
@@ -50,7 +51,7 @@ export default function Bloqueada() {
           <Button 
             variant="outline" 
             className="w-full h-14 bg-red-950/50 hover:bg-red-900/80 text-white border-red-500/30 hover:border-red-500/50 font-bold transition-all text-base"
-            onClick={() => window.open('https://api.whatsapp.com/send?phone=5522998811802', '_blank')}
+            onClick={() => window.open('https://api.whatsapp.com/send?phone=5522974022321', '_blank')}
           >
             <Headset className="w-5 h-5 mr-3" />
             Suporte Global Soluções
@@ -58,7 +59,10 @@ export default function Bloqueada() {
 
           <Button 
             className="w-full h-14 bg-white hover:bg-white/90 text-red-950 font-black text-base transition-all"
-            onClick={logout}
+            onClick={async () => {
+              await logout();
+              navigate("/");
+            }}
           >
             <Building2 className="w-5 h-5 mr-3" />
             Sair do Sistema

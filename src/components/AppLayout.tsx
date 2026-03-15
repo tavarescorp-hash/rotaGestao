@@ -17,10 +17,10 @@ const AppLayout = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card">
-            <div className="flex items-center">
-              <SidebarTrigger />
-              <span className="ml-3 text-sm font-medium text-muted-foreground">UniBeer — Rota Gestão</span>
+          <header className="h-16 sm:h-14 flex items-center justify-between border-b border-border px-4 sm:px-4 bg-card gap-2">
+            <div className="flex items-center min-w-0">
+              <SidebarTrigger className="shrink-0" />
+              <span className="ml-2 text-xs sm:text-sm font-medium text-muted-foreground truncate">UniBeer — Rota Gestão</span>
             </div>
             <ModeToggle />
           </header>

@@ -49,11 +49,11 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
-        <div className="bg-white p-3 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors overflow-hidden">
+        <div className="bg-white p-2 rounded-2xl shadow-md border border-black/5 dark:border-white/10 mb-3 w-full flex items-center justify-center transition-colors overflow-hidden">
           <img 
             src={user?.empresa_logo || "/logo-gestao-rota.png"} 
             alt={user?.empresa_nome || "Gestão"} 
-            className="h-10 md:h-12 object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300 max-w-[90%]" 
+            className="h-14 md:h-16 w-full object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300" 
           />
         </div>
         <div className="text-center mt-2">

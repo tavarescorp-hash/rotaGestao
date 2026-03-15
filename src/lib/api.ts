@@ -736,23 +736,33 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
 
     // 1. Cria a conta no Identity (Authentication)
     const { data: authData, error: authError } = await tempClient.auth.signUp({
-      email: userData.email,
+      email: userData.email.trim().toLowerCase(),
       password: userData.password,
       options: {
         data: {
           name: userData.Nome,
-          role: 'user' // Default db role
+          role: 'user'
         }
       }
     });
 
     if (authError) {
-      return { success: false, message: `Erro ao criar conta: ${authError.message}` };
+      // Traduz erros comuns do Supabase para português
+      let mensagem = authError.message;
+      if (mensagem.toLowerCase().includes('invalid email') || mensagem.toLowerCase().includes('email address')) {
+        mensagem = `O e-mail "${userData.email}" não é válido. Verifique o formato (exemplo@dominio.com).`;
+      } else if (mensagem.toLowerCase().includes('already registered') || mensagem.toLowerCase().includes('already been registered')) {
+        mensagem = `O e-mail "${userData.email}" já está cadastrado no sistema.`;
+      } else if (mensagem.toLowerCase().includes('password')) {
+        mensagem = `Senha inválida. Use ao menos 6 caracteres.`;
+      }
+      return { success: false, message: mensagem };
     }
 
     const newUserId = authData.user?.id;
-    if (!newUserId) {
-      return { success: false, message: "Falha ao obter ID do novo usuário criado." };
+    // Quando o email já está cadastrado (mas não confirmado), o Supabase retorna user com identities vazio
+    if (!newUserId || (authData.user?.identities && authData.user.identities.length === 0)) {
+      return { success: false, message: `O e-mail "${userData.email}" já está cadastrado no sistema.` };
     }
 
     // 2. Atualiza a tabela Public profiles com os níveis do sistema

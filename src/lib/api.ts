@@ -237,8 +237,8 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
 
     let query = supabase
       .from("pdvs")
-      .select('"SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)", "Gerente(1)"')
-      .eq('"CODIGO"', codigoBuscado);
+      .select('filial, codigo, cod_vendedor, nome_vendedor, cod_supervisor, nome_supervisor, cod_gerente, nome_gerente_vendas, nome_gerente_comercial, rota, canal, cnpj_cpf, sigla, razao_social, porte')
+      .eq('codigo', codigoBuscado);
 
     // Isolamento Multi-Tenant SaaS
     if (user?.empresa_id) {
@@ -248,16 +248,16 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     // Aplicação de Restrição RBAC Dinâmica para Pesquisas
     if (user?.nivel === 'Niv4' && user?.funcao) {
       const supervisorId = user.funcao.replace('SUPERVISOR ', '').trim();
-      query = query.eq('"Superv(1)"', supervisorId);
+      query = query.eq('cod_supervisor', supervisorId);
     } else if (user?.nivel === 'Niv3') {
       let gerenteRef = user?.name ? user.name : null;
       if (gerenteRef?.toUpperCase() === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
       if (gerenteRef?.toUpperCase() === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
 
       if (user?.unidade?.toUpperCase().includes("MACA")) {
-        query = query.or(`"Gerente(1)".eq.${gerenteRef},"FILIAL".eq.M,"FILIAL".ilike.%MACA%`);
+        query = query.or(`nome_gerente_vendas.eq.${gerenteRef},filial.eq.M,filial.ilike.%MACA%`);
       } else if (user?.unidade?.toUpperCase().includes("CAMPOS")) {
-        query = query.or(`"Gerente(1)".eq.${gerenteRef},"FILIAL".eq.C,"FILIAL".ilike.%CAMPO%`);
+        query = query.or(`nome_gerente_vendas.eq.${gerenteRef},filial.eq.C,filial.ilike.%CAMPO%`);
       }
     }
 
@@ -272,18 +272,18 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
 
     // Adapt the exact schema response to what the UI is currently expecting
     return {
-      nome_fantasia: data.SIGLA || data.Sigla,
-      categoria: data.PORTE || data.Porte,
-      canal_cadastrado: data.CANAL || data.Canal,
-      filial: data.FILIAL,
-      municipio: data.MUNICIPIO,
-      codigo_vendedor: data.VENDEDOR,
-      nome_vendedor: data["NOME VENDEDOR"] || data.NOME_VENDEDOR,
-      nome_supervisor: data["NOME SUPERVISOR"] || data["NOME _SUPERVISOR"],
-      supervisor: data["Superv(1)"] || data.SUPERVISOR,
-      gerente: data.GERENTE,
-      coorden_x: data["Coorden-X"],
-      coorden_y: data["Coorden-Y"]
+      nome_fantasia: data.sigla || data.razao_social,
+      categoria: data.porte,
+      canal_cadastrado: data.canal,
+      filial: data.filial,
+      municipio: "", // Campo não existente na base limpa base clientes unibeer.xlsx
+      codigo_vendedor: data.cod_vendedor,
+      nome_vendedor: data.nome_vendedor,
+      nome_supervisor: data.nome_supervisor,
+      supervisor: data.cod_supervisor ? data.cod_supervisor.toString() : "",
+      gerente: data.nome_gerente_vendas,
+      coorden_x: "", // Campo não existente na base limpa base clientes unibeer.xlsx
+      coorden_y: ""  // Campo não existente na base limpa base clientes unibeer.xlsx
     };
   } catch (error) {
     console.error("Erro inesperado ao buscar PDV:", error);
@@ -423,7 +423,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
     while (hasMore) {
       let baseQuery = supabase
         .from("pdvs")
-        .select('"NOME_VENDEDOR", "NOME _SUPERVISOR", "FILIAL", "GERENTE", "Superv(1)", "Gerente(1)", "MUNICIPIO"');
+        .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente');
 
       // Isolamento Multi-Tenant SaaS
       if (user?.empresa_id) {
@@ -432,15 +432,15 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
       // Aplicação de Restrição RBAC Dinâmica no Banco de Dados
       if (user?.nivel === 'Niv4' && supervisorId) {
-        baseQuery = baseQuery.eq('"Superv(1)"', supervisorId);
+        baseQuery = baseQuery.eq('cod_supervisor', supervisorId);
       } else if (user?.nivel === 'Niv3') {
         // Gerente pode ver a própria equipe ou da própria filial inteira no overview
         if (user.unidade?.toUpperCase().includes("MACA")) {
           // Acesso Gerente Macaé (M ou MACAÉ)
-          baseQuery = baseQuery.or('"FILIAL".eq.M,"FILIAL".ilike.%MACAE%');
+          baseQuery = baseQuery.or('filial.eq.M,filial.ilike.%MACAE%');
         } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
           // Acesso Gerente Campos (C ou CAMPOS)
-          baseQuery = baseQuery.or('"FILIAL".eq.C,"FILIAL".ilike.%CAMPOS%');
+          baseQuery = baseQuery.or('filial.eq.C,filial.ilike.%CAMPOS%');
         }
       }
 
@@ -471,10 +471,10 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
     const unicosMap = new Map<string, VendedorAtivo>();
 
     data.forEach((row: any) => {
-      const vend = row.NOME_VENDEDOR?.trim();
-      const supName = row["NOME _SUPERVISOR"]?.trim() || "";
-      const supCode = row["Superv(1)"]?.trim() || "";
-      const municipio = row.MUNICIPIO?.trim() || "";
+      const vend = row.nome_vendedor?.trim();
+      const supName = row.nome_supervisor?.trim() || "";
+      const supCode = row.cod_supervisor?.toString() || "";
+      const municipio = ""; // Sem município na base atual 
 
       if (vend && !unicosMap.has(vend)) {
         unicosMap.set(vend, {
@@ -482,8 +482,8 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           nome_supervisor: supName,
           codigo_sup: supCode,
           municipio: municipio,
-          filial: row.FILIAL?.trim() || "",
-          gerente: row.GERENTE?.trim() || ""
+          filial: row.filial?.trim() || "",
+          gerente: row.nome_gerente_vendas?.trim() || ""
         });
       }
     });
@@ -518,10 +518,9 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
 
       // Sanitizar chaves e filtrar exclusivamente as colunas vitais para o banco
       const allowedColumns = [
-        "CODIGO", "SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", 
-        "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", 
-        "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", 
-        "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)", "Gerente(1)"
+        "filial", "codigo", "cod_vendedor", "nome_vendedor", "cod_supervisor",
+        "nome_supervisor", "cod_gerente", "nome_gerente_vendas", "nome_gerente_comercial",
+        "rota", "canal", "cnpj_cpf", "sigla", "razao_social", "porte"
       ];
 
       const cleanChunk = chunk.map(row => {

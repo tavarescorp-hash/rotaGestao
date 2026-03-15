@@ -140,8 +140,21 @@ const AdminData = () => {
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
 
-            // Converte a planilha para JSON, pulando linhas vazias
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            // Converte a planilha para JSON, pulando linhas vazias sem forçar strings vazias
+            const rawData = XLSX.utils.sheet_to_json(worksheet);
+            
+            // Filtro rigoroso: O objeto deve existir e ter as propriedades básicas válidas
+            const jsonData = rawData.filter((row: any) => {
+              if (type === 'pdvs') {
+                 // PDV exige obrigatoriamente um código válido para existir
+                 return row && row.codigo && String(row.codigo).trim() !== "";
+              }
+              // Para produtos, deve ter NOME DO PRODUTO e CANAL
+              if (type === 'produtos') {
+                 return row && row.PRODUTO && String(row.PRODUTO).trim() !== "" && row.CANAL;
+              }
+              return true;
+            });
 
             if (jsonData.length === 0) {
                 toast({

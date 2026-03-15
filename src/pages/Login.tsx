@@ -104,14 +104,14 @@ const Login = () => {
         <div className="absolute top-0 left-0 right-0 h-1.5 opacity-70" style={{ background: `linear-gradient(to right, transparent, ${tenantStyle.cor_primaria}, transparent)` }} />
 
         <div className="text-center mb-8 flex flex-col items-center space-y-5">
-          {/* Logo container - Transparent background to let the new logo blend smoothly */}
-          <div className="w-48 h-28 flex items-center justify-center">
+          {/* Logo container - White rounded background adjusted for rectangular logos */}
+          <div className="w-48 h-28 bg-white backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20 overflow-hidden">
             {/* Inner specifically for the logo */}
-            <div className="w-full h-full flex items-center justify-center p-2">
+            <div className="w-full h-full flex items-center justify-center p-3">
               <img 
                 src={tenantStyle.logo_url} 
                 alt={tenantStyle.nome} 
-                className="w-full h-full object-contain drop-shadow-md transition-transform duration-500 hover:scale-105" 
+                className="w-full h-full object-contain drop-shadow-sm transition-transform duration-500 hover:scale-105" 
               />
             </div>
           </div>

@@ -80,9 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         nivel: profile?.nivel,
         indicadores: getIndicadoresPorNivel(profile?.nivel),
         empresa_id: isMaster ? 0 : (profile?.empresa_id || 1),
-        empresa_nome: isMaster ? "Global Soluções" : (empresaInfo?.nome || "Global Soluções"),
-        empresa_logo: isMaster ? "/logo-global.png" : (empresaInfo?.logo_url || "/logo-global.png"),
-        empresa_cor: isMaster ? "#B45309" : (empresaInfo?.cor_primaria || "#B45309"),
+        empresa_nome: isMaster ? "Gestão de Rota" : (empresaInfo?.nome || "Gestão de Rota"),
+        empresa_logo: isMaster ? "/logo-gestao-rota.png" : (empresaInfo?.logo_url || "/logo-gestao-rota.png"),
+        empresa_cor: isMaster ? "#0E385D" : (empresaInfo?.cor_primaria || "#B45309"),
       });
     } catch (err) {
       console.error("Failed to map profile", err);

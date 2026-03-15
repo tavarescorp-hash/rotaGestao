@@ -516,18 +516,24 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
     for (let i = 0; i < dados.length; i += chunkSize) {
       const chunk = dados.slice(i, i + chunkSize);
 
-      // Sanitizar chaves que vem do Excel vazias ou indefinidas
+      // Sanitizar chaves e filtrar exclusivamente as colunas vitais para o banco
+      const allowedColumns = [
+        "CODIGO", "SIGLA", "PORTE", "CANAL", "FILIAL", "MUNICIPIO", 
+        "VENDEDOR", "NOME_VENDEDOR", "NOME _SUPERVISOR", "SUPERVISOR", 
+        "GERENTE", "Coorden-X", "Coorden-Y", "NOME VENDEDOR", 
+        "NOME SUPERVISOR", "Canal", "Porte", "Sigla", "Superv(1)", "Gerente(1)"
+      ];
+
       const cleanChunk = chunk.map(row => {
         const cleanRow: any = {};
-        for (const key in row) {
-          // Ignorar colunas auto-geradas pelo banco de dados (que também vem no Download)
-          const lowerKey = key.toLowerCase();
-          if (['id', 'tipo', 'created_at', 'updated_at'].includes(lowerKey)) continue;
-
-          if (row[key] !== undefined && row[key] !== null) {
-            cleanRow[key] = String(row[key]);
+        
+        // Em vez de iterar sobre todas as 150 chaves do Excel velho, puxamos apenas as 20 que precisamos
+        for (const allowedKey of allowedColumns) {
+          if (row[allowedKey] !== undefined && row[allowedKey] !== null) {
+            cleanRow[allowedKey] = String(row[allowedKey]);
           }
         }
+        
         // Injeta empresa_id ativamente para forçar o vinculo
         cleanRow.empresa_id = empresaId;
         return cleanRow;

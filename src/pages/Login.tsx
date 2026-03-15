@@ -16,9 +16,9 @@ const Login = () => {
   
   // Estado Dinâmico do Tenant (SaaS)
   const [tenantStyle, setTenantStyle] = useState({
-    logo_url: "/logo-global.png",
+    logo_url: "/logo-gestao-rota.png",
     cor_primaria: "#B45309",
-    nome: "Global Soluções"
+    nome: "Gestão de Rota"
   });
 
   const { login, user } = useAuth();
@@ -38,12 +38,12 @@ const Login = () => {
   const handleEmailBlur = async () => {
     if (!email || !email.includes('@')) return;
     
-    // Forçar Global Soluções (Default) para o CEO/Master
+    // Forçar Gestão de Rota (Default) para o CEO/Master
     if (email.trim().toLowerCase() === 'tavarescorp@gmail.com') {
       setTenantStyle({
-        logo_url: "/logo-global.png",
-        cor_primaria: "#B45309",
-        nome: "Global Soluções"
+        logo_url: "/logo-gestao-rota.png",
+        cor_primaria: "#0E385D", // Nova cor temática do botão baseada na logo postada
+        nome: "Gestão de Rota"
       });
       return;
     }
@@ -52,9 +52,9 @@ const Login = () => {
       const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim() });
       if (!error && data) {
          setTenantStyle({
-           logo_url: data.logo_url || "/logo-global.png",
-           cor_primaria: data.cor_primaria || "#B45309",
-           nome: data.nome || "Global Soluções"
+           logo_url: data.logo_url || "/logo-gestao-rota.png",
+           cor_primaria: data.cor_primaria || "#0E385D",
+           nome: data.nome || "Gestão de Rota"
          });
       }
     } catch (err) {
@@ -104,14 +104,14 @@ const Login = () => {
         <div className="absolute top-0 left-0 right-0 h-1.5 opacity-70" style={{ background: `linear-gradient(to right, transparent, ${tenantStyle.cor_primaria}, transparent)` }} />
 
         <div className="text-center mb-8 flex flex-col items-center space-y-5">
-          {/* Logo container - White background in dark mode, subtle in light mode */}
-          <div className="w-28 h-28 bg-white/20 dark:bg-zinc-800/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
+          {/* Logo container - White background explicitly to protect black texts from the logo */}
+          <div className="w-28 h-28 bg-white backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20">
             {/* Inner specifically for the logo */}
             <div className="w-full h-full flex items-center justify-center p-2">
               <img 
                 src={tenantStyle.logo_url} 
                 alt={tenantStyle.nome} 
-                className={`h-auto max-w-[90%] max-h-[90%] drop-shadow-sm transition-transform duration-500 hover:scale-105 ${tenantStyle.logo_url === '/logo-global.png' ? 'brightness-0 dark:invert' : ''}`} 
+                className="h-auto max-w-[90%] max-h-[90%] drop-shadow-sm transition-transform duration-500 hover:scale-105" 
               />
             </div>
           </div>

@@ -25,10 +25,10 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
       },
       manifest: {
-        name: 'Global Soluções',
-        short_name: 'Global',
+        name: 'Gestão de Rota',
+        short_name: 'Gestão Rota',
         description: 'Gestão Inteligente de Rotas',
-        theme_color: '#B22222',
+        theme_color: '#0E385D',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

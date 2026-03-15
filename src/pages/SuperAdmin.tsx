@@ -123,7 +123,7 @@ export default function SuperAdmin() {
             SaaS Admin Panel
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie os Inquilinos (Tenants) da Plataforma Global Soluções.
+            Gerencie os Inquilinos (Tenants) da Plataforma Gestão de Rota.
           </p>
         </div>
         

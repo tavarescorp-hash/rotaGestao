@@ -56,7 +56,7 @@ export default function SuperAdmin() {
   const handleToggleStatus = async (empresa: Empresa) => {
     const novoStatus = empresa.status_assinatura === "Ativa" ? "Inadimplente" : "Ativa";
     const sucesso = await updateEmpresaStatus(empresa.id, novoStatus);
-    
+
     if (sucesso) {
       toast({ title: "Status atualizado!", description: `A empresa ${empresa.nome} agora está ${novoStatus}.` });
       carregarEmpresas();
@@ -104,7 +104,7 @@ export default function SuperAdmin() {
     };
 
     const { success, message } = await createUserAdminForEmpresa(payload);
-    
+
     if (success) {
       toast({ title: "Sucesso!", description: message });
       setIsAdminDialogOpen(false);
@@ -125,7 +125,7 @@ export default function SuperAdmin() {
             Gerencie os Inquilinos (Tenants) da Plataforma Gestão de Rota.
           </p>
         </div>
-        
+
         <Dialog open={isEmpresaDialogOpen} onOpenChange={setIsEmpresaDialogOpen}>
           <DialogTrigger asChild>
             <Button className="font-bold flex items-center gap-2" size="lg">
@@ -141,21 +141,21 @@ export default function SuperAdmin() {
             <form onSubmit={handleCreateEmpresa} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label>Nome da Empresa *</Label>
-                <Input value={novaEmpresa.nome} onChange={e => setNovaEmpresa({...novaEmpresa, nome: e.target.value})} placeholder="Ex: Distribuidora Azul" />
+                <Input value={novaEmpresa.nome} onChange={e => setNovaEmpresa({ ...novaEmpresa, nome: e.target.value })} placeholder="Ex: Distribuidora Azul" />
               </div>
               <div className="space-y-2">
                 <Label>CNPJ *</Label>
-                <Input value={novaEmpresa.cnpj} onChange={e => setNovaEmpresa({...novaEmpresa, cnpj: e.target.value})} placeholder="00.000.000/0001-00" />
+                <Input value={novaEmpresa.cnpj} onChange={e => setNovaEmpresa({ ...novaEmpresa, cnpj: e.target.value })} placeholder="00.000.000/0001-00" />
               </div>
               <div className="space-y-2">
                 <Label>URL da Logomarca (PNG/JPG)</Label>
-                <Input value={novaEmpresa.logo_url} onChange={e => setNovaEmpresa({...novaEmpresa, logo_url: e.target.value})} placeholder="https://..." />
+                <Input value={novaEmpresa.logo_url} onChange={e => setNovaEmpresa({ ...novaEmpresa, logo_url: e.target.value })} placeholder="https://..." />
               </div>
               <div className="space-y-2">
                 <Label>Cor Primária (Hexadecimal)</Label>
                 <div className="flex gap-2">
-                  <Input type="color" value={novaEmpresa.cor_primaria} onChange={e => setNovaEmpresa({...novaEmpresa, cor_primaria: e.target.value})} className="w-16 h-10 p-1" />
-                  <Input value={novaEmpresa.cor_primaria} onChange={e => setNovaEmpresa({...novaEmpresa, cor_primaria: e.target.value})} placeholder="#HexColor" className="flex-1" />
+                  <Input type="color" value={novaEmpresa.cor_primaria} onChange={e => setNovaEmpresa({ ...novaEmpresa, cor_primaria: e.target.value })} className="w-16 h-10 p-1" />
+                  <Input value={novaEmpresa.cor_primaria} onChange={e => setNovaEmpresa({ ...novaEmpresa, cor_primaria: e.target.value })} placeholder="#HexColor" className="flex-1" />
                 </div>
               </div>
               <Button type="submit" className="w-full">Cadastrar Cliente</Button>
@@ -219,9 +219,9 @@ export default function SuperAdmin() {
                         <UserPlus className="w-4 h-4 mr-2 text-primary" />
                         Criar Admin
                       </Button>
-                      <Button 
-                        variant={empresa.status_assinatura === 'Ativa' ? 'secondary' : 'default'} 
-                        size="sm" 
+                      <Button
+                        variant={empresa.status_assinatura === 'Ativa' ? 'secondary' : 'default'}
+                        size="sm"
                         onClick={() => handleToggleStatus(empresa)}
                         className="h-8 w-28"
                       >
@@ -247,21 +247,21 @@ export default function SuperAdmin() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAdmin} className="space-y-4 pt-4">
-             <div className="space-y-2">
+            <div className="space-y-2">
               <Label>Nome Completo do Admin</Label>
-              <Input value={novoAdmin.Nome} onChange={e => setNovoAdmin({...novoAdmin, Nome: e.target.value})} placeholder="Nome" />
+              <Input value={novoAdmin.Nome} onChange={e => setNovoAdmin({ ...novoAdmin, Nome: e.target.value })} placeholder="Nome" />
             </div>
             <div className="space-y-2">
               <Label>E-mail de Acesso</Label>
-              <Input type="email" value={novoAdmin.email} onChange={e => setNovoAdmin({...novoAdmin, email: e.target.value})} placeholder="admin@empresa.com.br" />
+              <Input type="email" value={novoAdmin.email} onChange={e => setNovoAdmin({ ...novoAdmin, email: e.target.value })} placeholder="admin@empresa.com.br" />
             </div>
             <div className="space-y-2">
               <Label>Senha Inicial</Label>
-              <Input type="text" value={novoAdmin.password} onChange={e => setNovoAdmin({...novoAdmin, password: e.target.value})} placeholder="Senha forte..." />
+              <Input type="text" value={novoAdmin.password} onChange={e => setNovoAdmin({ ...novoAdmin, password: e.target.value })} placeholder="Senha forte..." />
             </div>
             <div className="space-y-2">
               <Label>Unidade</Label>
-              <Input value={novoAdmin.unidade} onChange={e => setNovoAdmin({...novoAdmin, unidade: e.target.value})} placeholder="Ex: Macaé, Campos, todas..." />
+              <Input value={novoAdmin.unidade} onChange={e => setNovoAdmin({ ...novoAdmin, unidade: e.target.value })} placeholder="Ex: Macaé, Campos, todas..." />
             </div>
             <Button type="submit" className="w-full">Gerar Conta Admin</Button>
           </form>

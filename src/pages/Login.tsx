@@ -106,12 +106,12 @@ const Login = () => {
         <div className="text-center mb-8 flex flex-col items-center space-y-5">
           {/* Logo container - Transparent wrapper for original unboxed logo */}
           <div className="w-full h-32 flex items-center justify-center overflow-hidden mb-2">
-            {/* Inner specifically for the logo */}
-            <div className="w-full h-full flex items-center justify-center">
+            {/* Inner specifically for the logo com fundo branco */}
+            <div className="h-[100px] w-[100px] sm:h-[120px] sm:w-[120px] bg-white rounded-2xl flex items-center justify-center p-3 shadow-lg">
               <img
                 src={tenantStyle.logo_url}
                 alt={tenantStyle.nome}
-                className="w-auto h-full max-h-[100%] max-w-[90%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:scale-105"
+                className="w-auto h-full object-contain transition-transform duration-500 hover:scale-105"
               />
             </div>
           </div>

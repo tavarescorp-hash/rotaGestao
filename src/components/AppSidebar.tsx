@@ -49,12 +49,14 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300">
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
-        <div className="w-full h-16 flex items-center justify-center overflow-hidden">
-          <img 
-            src={user?.empresa_logo || "/logo-gestao-rota.png"} 
-            alt={user?.empresa_nome || "Gestão"} 
-            className="h-full w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] transition-transform hover:scale-105 duration-300 max-w-full" 
-          />
+        <div className="w-full h-auto flex items-center justify-center mt-2 mb-2">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-md">
+            <img 
+              src={user?.empresa_logo || "/logo-gestao-rota.png"} 
+              alt={user?.empresa_nome || "Gestão"} 
+              className="h-full w-auto object-contain transition-transform hover:scale-105 duration-300" 
+            />
+          </div>
         </div>
         <div className="text-center mt-2">
           {/* Replaced text-primary with text-foreground for high contrast, and standardized the font weights */}

@@ -110,6 +110,10 @@
     -webkit-touch-callout: none;
     user-select: none;
     -webkit-user-select: none;
+
+    /* iOS PWA Safe Area */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
   /* Allow text selection in inputs and textareas */
@@ -122,5 +126,10 @@
 @layer utilities {
   .glass-card {
     @apply bg-card/80 backdrop-blur-sm border border-border shadow-sm;
+  }
+
+  /* iOS PWA: Push sticky header below the safe area of the notch */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
   }
 }

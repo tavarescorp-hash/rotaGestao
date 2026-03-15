@@ -105,13 +105,13 @@ const Login = () => {
 
         <div className="text-center mb-8 flex flex-col items-center space-y-5">
           {/* Logo container - White rounded background adjusted for rectangular logos */}
-          <div className="w-48 h-28 bg-white backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20 overflow-hidden">
+          <div className="w-28 h-28 bg-white backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-black/10 dark:border-white/20 overflow-hidden">
             {/* Inner specifically for the logo */}
-            <div className="w-full h-full flex items-center justify-center p-3">
+            <div className="w-full h-full flex items-center justify-center">
               <img 
                 src={tenantStyle.logo_url} 
                 alt={tenantStyle.nome} 
-                className="w-full h-full object-contain drop-shadow-sm transition-transform duration-500 hover:scale-105" 
+                className="w-full h-full object-cover drop-shadow-sm transition-transform duration-500 hover:scale-105" 
               />
             </div>
           </div>

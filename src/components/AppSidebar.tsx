@@ -53,7 +53,7 @@ export function AppSidebar() {
           <img 
             src={user?.empresa_logo || "/logo-gestao-rota.png"} 
             alt={user?.empresa_nome || "Gestão"} 
-            className="h-full w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] transition-transform hover:scale-105 duration-300 max-w-full" 
+            className="h-full w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] transition-transform hover:scale-105 duration-300 max-w-full brightness-0 invert" 
           />
         </div>
         <div className="text-center mt-2">

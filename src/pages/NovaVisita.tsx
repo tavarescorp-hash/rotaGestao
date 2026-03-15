@@ -293,7 +293,7 @@ const NovaVisita = () => {
                   type="date"
                   value={form.data_visita}
                   disabled
-                  className="h-12 bg-background/50 dark:bg-muted/10 text-foreground focus-visible:ring-primary shadow-sm opacity-100 cursor-not-allowed font-semibold border-border/50"
+                  className="h-12 bg-background/50 dark:bg-muted/10 text-foreground disabled:text-foreground dark:disabled:text-white focus-visible:ring-primary shadow-sm disabled:opacity-100 cursor-not-allowed font-semibold border-border/50"
                 />
               </div>
 

@@ -183,8 +183,8 @@ const Login = () => {
           <Popover>
             <PopoverTrigger asChild>
               <img
-                src="/logo-gestao-rota.png"
-                alt="Desenvolvido por Global Devs"
+                src="/logo-global.png"
+                alt="Desenvolvido por Global Soluções"
                 className="h-5 object-contain opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer"
               />
             </PopoverTrigger>

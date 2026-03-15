@@ -13,11 +13,11 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   // Estado Dinâmico do Tenant (SaaS)
   const [tenantStyle, setTenantStyle] = useState({
     logo_url: "/logo-gestao-rota.png",
-    cor_primaria: "#B45309",
+    cor_primaria: "#d9e7e9ff",
     nome: "Gestão de Rota"
   });
 
@@ -37,7 +37,7 @@ const Login = () => {
 
   const handleEmailBlur = async () => {
     if (!email || !email.includes('@')) return;
-    
+
     // Forçar Gestão de Rota (Default) para o CEO/Master
     if (email.trim().toLowerCase() === 'tavarescorp@gmail.com') {
       setTenantStyle({
@@ -51,11 +51,11 @@ const Login = () => {
     try {
       const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim() });
       if (!error && data) {
-         setTenantStyle({
-           logo_url: data.logo_url || "/logo-gestao-rota.png",
-           cor_primaria: data.cor_primaria || "#0E385D",
-           nome: data.nome || "Gestão de Rota"
-         });
+        setTenantStyle({
+          logo_url: data.logo_url || "/logo-gestao-rota.png",
+          cor_primaria: data.cor_primaria || "#0E385D",
+          nome: data.nome || "Gestão de Rota"
+        });
       }
     } catch (err) {
       // Falha silenciosa: mantém estilo global
@@ -108,10 +108,10 @@ const Login = () => {
           <div className="w-full h-32 flex items-center justify-center overflow-hidden mb-2">
             {/* Inner specifically for the logo */}
             <div className="w-full h-full flex items-center justify-center">
-              <img 
-                src={tenantStyle.logo_url} 
-                alt={tenantStyle.nome} 
-                className="w-auto h-full max-h-[100%] max-w-[90%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:scale-105" 
+              <img
+                src={tenantStyle.logo_url}
+                alt={tenantStyle.nome}
+                className="w-auto h-full max-h-[100%] max-w-[90%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:scale-105"
               />
             </div>
           </div>

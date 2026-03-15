@@ -34,7 +34,7 @@ export default function SuperAdmin() {
   const [isEmpresaDialogOpen, setIsEmpresaDialogOpen] = useState(false);
 
   // Formulário Novo Admin
-  const [novoAdmin, setNovoAdmin] = useState({ Nome: "", email: "", password: "", empresa_id: 1 });
+  const [novoAdmin, setNovoAdmin] = useState({ Nome: "", email: "", password: "", unidade: "", empresa_id: 1 });
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [empresaSelecionada, setEmpresaSelecionada] = useState<Empresa | null>(null);
 
@@ -85,7 +85,7 @@ export default function SuperAdmin() {
 
   const handleOpenAdminDialog = (empresa: Empresa) => {
     setEmpresaSelecionada(empresa);
-    setNovoAdmin({ Nome: "", email: "", password: "", empresa_id: empresa.id });
+    setNovoAdmin({ Nome: "", email: "", password: "", unidade: "", empresa_id: empresa.id });
     setIsAdminDialogOpen(true);
   };
 
@@ -96,11 +96,10 @@ export default function SuperAdmin() {
       return;
     }
 
-    // Criamos um payload compatível com o sistema (Niv1) global.
+    // Criamos um payload compatível com o sistema global.
     const payload = {
       ...novoAdmin,
-      nivel: "Niv1", // Nível de Analista / Master da Empresa
-      unidade: "todas",
+      nivel: "Niv1",
       funcao: "ANALISTA COMERCIAL",
     };
 
@@ -259,6 +258,10 @@ export default function SuperAdmin() {
             <div className="space-y-2">
               <Label>Senha Inicial</Label>
               <Input type="text" value={novoAdmin.password} onChange={e => setNovoAdmin({...novoAdmin, password: e.target.value})} placeholder="Senha forte..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Unidade</Label>
+              <Input value={novoAdmin.unidade} onChange={e => setNovoAdmin({...novoAdmin, unidade: e.target.value})} placeholder="Ex: Macaé, Campos, todas..." />
             </div>
             <Button type="submit" className="w-full">Gerar Conta Admin</Button>
           </form>

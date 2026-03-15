@@ -12,7 +12,7 @@ export const INDICADORES_MAP = {
     "Niv2": [
         "FDS",
         "COACHING ROTA BASICA COM VENDEDOR",
-        "MAIORES POTENCIAS BASE DE COMPRAS RGB"
+        "FOCO MAIORES QUEDAS RGB"
     ],
     "Niv3": [
         "FDS",

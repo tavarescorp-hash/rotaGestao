@@ -41,6 +41,7 @@ const Dashboard = () => {
   const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
 
   const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
+  const isGerenteComercial = user?.nivel === 'Niv2';
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -61,12 +62,22 @@ const Dashboard = () => {
     if (user?.unidade && user.unidade !== "todas" && unidade === "todas") {
       setUnidade(user.unidade);
     }
-  }, [user?.unidade]);
+    // Gerente Comercial (Niv2) inicia na aba Macaé por padrão
+    if (user?.nivel === 'Niv2' && activeTab === 'minhas') {
+      setActiveTab('macae');
+    }
+  }, [user?.unidade, user?.nivel]);
 
 
 
   const minhasVisitas = useMemo(() => {
     if (isAnalista) {
+      return visitas;
+    }
+    // Niv2 (Gerente Comercial): filtra por unidade conforme aba ativa (Macaé/Campos)
+    if (isGerenteComercial) {
+      const unidadeAba = activeTab === 'macae' ? 'Macaé' : activeTab === 'campos' ? 'Campos' : null;
+      if (unidadeAba) return visitas.filter(v => v.unidade === unidadeAba);
       return visitas;
     }
     // Aba "Supervisores": Exibe os da unidade logada GERAL, EXCETO os relatórios feitos pelos PRÓPRIOS gerentes
@@ -75,7 +86,7 @@ const Dashboard = () => {
     }
     // Aba "Minhas Avaliações": Exibe EXATAMENTE as que o Logado fez
     return visitas.filter(v => v.avaliador === user?.name);
-  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab, isAnalista]);
+  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab, isAnalista, isGerenteComercial]);
 
   const avaliadoresUnicos = useMemo(() => {
     const avaliadoresValidos = minhasVisitas
@@ -448,6 +459,20 @@ const Dashboard = () => {
           <TabsList className="grid w-full grid-cols-2 lg:w-[500px] h-12 bg-background/50 border border-border/40 shadow-sm">
             <TabsTrigger value="minhas" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Minhas Avaliações</TabsTrigger>
             <TabsTrigger value="unidade" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Supervisores ({user?.unidade})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      {/* Abas de Unidades para Gerente Comercial (Niv2) */}
+      {isGerenteComercial && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-in fade-in slide-in-from-top-2">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] h-12 bg-background/50 border border-border/40 shadow-sm">
+            <TabsTrigger value="macae" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">
+              📍 Macaé
+            </TabsTrigger>
+            <TabsTrigger value="campos" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">
+              📍 Campos
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       )}

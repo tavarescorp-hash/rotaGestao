@@ -17,6 +17,7 @@ export interface User {
   empresa_nome?: string;
   empresa_logo?: string;
   empresa_cor?: string;
+  status_assinatura?: string;
 }
 
 interface AuthContextType {
@@ -60,8 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const empresaInfo = profile?.empresas ? (Array.isArray(profile.empresas) ? profile.empresas[0] : profile.empresas) as any : null;
 
-      // Bloqueio por usuário inativo OU empresa inadimplente
-      if (profile && (profile.ativo === false || (empresaInfo && empresaInfo.status_assinatura !== "Ativa"))) {
+      // Bloqueio apenas por usuário inativo (O bloqueio de empresa será lidado nas Rotas)
+      if (profile && profile.ativo === false) {
         await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
@@ -83,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         empresa_nome: isMaster ? "Gestão de Rota" : (empresaInfo?.nome || "Gestão de Rota"),
         empresa_logo: isMaster ? "/logo-gestao-rota.png" : (empresaInfo?.logo_url || "/logo-gestao-rota.png"),
         empresa_cor: isMaster ? "#0E385D" : (empresaInfo?.cor_primaria || "#B45309"),
+        status_assinatura: isMaster ? "Ativa" : (empresaInfo?.status_assinatura || "Ativa"),
       });
     } catch (err) {
       console.error("Failed to map profile", err);

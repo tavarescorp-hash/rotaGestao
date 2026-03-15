@@ -13,6 +13,7 @@ import AdminData from "./pages/AdminData";
 import SuperAdmin from "./pages/SuperAdmin";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
+import Bloqueada from "./pages/Bloqueada";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/admin-data" element={<AdminData />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
               </Route>
+              <Route path="/bloqueio" element={<Bloqueada />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

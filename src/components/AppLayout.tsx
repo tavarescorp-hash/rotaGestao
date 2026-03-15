@@ -8,6 +8,9 @@ const AppLayout = () => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/" replace />;
+  if (user.status_assinatura !== "Ativa" && user.nivel !== "Master") {
+    return <Navigate to="/bloqueio" replace />;
+  }
 
   return (
     <SidebarProvider>

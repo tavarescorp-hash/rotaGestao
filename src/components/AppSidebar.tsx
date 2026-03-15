@@ -79,8 +79,7 @@ export function AppSidebar() {
                   if (isAnalista && item.title === "Nova Visita") return null;
                   if (!isAnalista && item.title === "Gestão de Dados") return null;
                   
-                  // Regra Visita Retroativa: apenas Gerentes(Niv3) e Supervisores(Niv4)
-                  if (item.title === "Visita Retroativa" && !isSupervisorOrGerente) return null;
+                  // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)
 
                   // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
                   if (item.title === "SaaS Admin") return null;

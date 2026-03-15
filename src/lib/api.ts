@@ -511,10 +511,13 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
       console.warn("Retentativa de Deleção total pdvs com outro filtro:", errorDel);
     }
 
+    // 1.5 Filtrar as linhas vazias/fantasmas do Excel (Garantir que todas tenham um 'codigo' obrigatório)
+    const dadosLimpados = dados.filter(row => row && row.codigo && String(row.codigo).trim() !== "");
+
     // 2. Inserir em lotes (chunks) para não estourar o limite de payload da API REST do Supabase (max 1000)
     const chunkSize = 500;
-    for (let i = 0; i < dados.length; i += chunkSize) {
-      const chunk = dados.slice(i, i + chunkSize);
+    for (let i = 0; i < dadosLimpados.length; i += chunkSize) {
+      const chunk = dadosLimpados.slice(i, i + chunkSize);
 
       // Sanitizar chaves e filtrar exclusivamente as colunas vitais para o banco
       const allowedColumns = [
@@ -542,7 +545,7 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
       if (errorIns) throw errorIns;
     }
 
-    return { success: true, message: `Base atualizada com sucesso! ${dados.length} PDVs sincronizados com o banco de dados.` };
+    return { success: true, message: `Base atualizada com sucesso! ${dadosLimpados.length} PDVs sincronizados com o banco de dados.` };
   } catch (error: any) {
     console.error("Erro técnico no upload de PDVs:", error);
     return { success: false, message: error.message || "Erro desconhecido ao atualizar tabela de PDVs." };

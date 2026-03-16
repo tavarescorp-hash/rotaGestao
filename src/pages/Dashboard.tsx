@@ -303,6 +303,7 @@ const Dashboard = () => {
       "OBSERVAÇAO": v.observacoes || "-",
       "FILIA": v.filial || "-",
       "PRODUTOS SELECIONADOS": v.produtos_selecionados || "-",
+      "PRODUTOS NAO SELECIONADOS": v.produtos_nao_selecionados || "-",
       "PONTUAÇÃO TOTAL": v.pontuacao_total ?? "-",
       "PONTOS FORTES": v.pontos_fortes || "-",
       "PONTOS DESENVOLVER": v.pontos_desenvolver || "-",
@@ -317,8 +318,7 @@ const Dashboard = () => {
       "FDS POSICIONAMENTO": v.fds_posicionamento || "-",
       "FDS REFRIGERADOR ": v.fds_refrigerados || "-", // Extra space to prevent object key duplication
       "FDS PRECIFICAÇÃO": v.fds_precificados || "-",
-      "FDS OBSERVAÇOES": v.fds_observacoes || "-",
-      "PRODUTOS NAO SELECIONADOS": v.produtos_nao_selecionados || "-"
+      "FDS OBSERVAÇOES": v.fds_observacoes || "-"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
@@ -342,6 +342,7 @@ const Dashboard = () => {
       { wch: 50 }, // OBSERVAÇAO
       { wch: 15 }, // FILIA
       { wch: 50 }, // PRODUTOS SELECIONADOS
+      { wch: 50 }, // PRODUTOS NAO SELECIONADOS
       { wch: 15 }, // PONTUAÇÃO TOTAL
       { wch: 40 }, // PONTOS FORTES
       { wch: 40 }, // PONTOS DESENVOLVER

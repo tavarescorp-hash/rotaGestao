@@ -144,7 +144,7 @@ export function AppSidebar() {
         <div className="mt-6 mb-1 flex items-center justify-center">
           <Popover>
             <PopoverTrigger asChild>
-              <img src="/logo-global.png" alt="Desenvolvido por Global Soluções" className="h-6 object-contain opacity-30 hover:opacity-100 transition-opacity duration-300 cursor-pointer invert dark:invert-0" />
+              <img src="/logo-global.png" alt="Desenvolvido por Global Soluções" className="h-6 object-contain opacity-40 hover:opacity-100 transition-opacity duration-300 cursor-pointer brightness-0 dark:brightness-100 dark:invert" />
             </PopoverTrigger>
             <PopoverContent className="w-64 bg-zinc-900 border-zinc-700/50 text-white shadow-xl z-50 p-4" side="top" align="center">
               <div className="space-y-2 text-left">

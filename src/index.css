@@ -111,6 +111,9 @@
     user-select: none;
     -webkit-user-select: none;
 
+    /* iOS e Android: Previnir Pull-to-Refresh */
+    overscroll-behavior-y: none;
+
     /* iOS PWA Safe Area */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);

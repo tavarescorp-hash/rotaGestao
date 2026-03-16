@@ -14,7 +14,7 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overscroll-none">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <header className="sticky top-0 z-50 h-16 sm:h-14 flex items-center justify-between border-b border-border px-4 bg-card gap-2 shrink-0">

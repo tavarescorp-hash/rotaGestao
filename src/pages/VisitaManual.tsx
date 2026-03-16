@@ -156,6 +156,8 @@ const NovaVisita = () => {
     pontos_desenvolver?: string;
     observacoes?: string;
     rgbData?: RgbSubmitData;
+    fdsData?: any;
+    produtosNaoSelecionados?: string[];
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -186,6 +188,14 @@ const NovaVisita = () => {
       rgb_comprando_outras: payload.rgbData?.rgb_comprando_outras || "",
       rgb_ttc_adequado: payload.rgbData?.rgb_ttc_adequado || "",
       rgb_acao_concorrencia: payload.rgbData?.rgb_acao_concorrencia || "",
+      fds_qtd_skus: payload.fdsData?.fds_qtd_skus || "",
+      fds_refrigerador: payload.fdsData?.fds_refrigerador || "",
+      fds_posicionamento: payload.fdsData?.fds_posicionamento || "",
+      fds_refrigerados: payload.fdsData?.fds_refrigerados || "",
+      fds_precificados: payload.fdsData?.fds_precificados || "",
+      fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
+      fds_observacoes: payload.fdsData?.fds_observacoes || "",
+      produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       empresa_id: user?.empresa_id || 1,
     });
 
@@ -409,11 +419,13 @@ const NovaVisita = () => {
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}
-              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[]) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
-                rgbData: rgbData
+                rgbData: rgbData,
+                fdsData: fdsData,
+                produtosNaoSelecionados: produtosNaoSelecionados
               })}
               loading={loading}
             />

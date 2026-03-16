@@ -465,12 +465,13 @@ const VisitaRetroativa = () => {
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}
-              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[]) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
                 rgbData: rgbData,
-                fdsData: fdsData
+                fdsData: fdsData,
+                produtosNaoSelecionados: produtosNaoSelecionados
               })}
               loading={loading}
             />

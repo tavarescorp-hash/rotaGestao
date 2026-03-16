@@ -204,12 +204,12 @@ const Dashboard = () => {
     let META_COACHING = Math.max(1, vendedoresUnicos) * 5;
 
     // Regra solicitada: Metas de Coaching cravadas sem mudança
-    // Gerentes (Niv3): 80. Supervisores (Niv4): 40. FDS: 10, RGB: 20.
+    // Gerentes (Niv3): 80. Supervisores (Niv4): 40. Carlos Junior/Niv1: 40. FDS: 10, RGB: 20.
     if (user?.nivel === 'Niv3') {
       META_FDS = 10;
       META_RGB = 20;
       META_COACHING = 80;
-    } else if (user?.nivel === 'Niv4') {
+    } else if (user?.nivel === 'Niv4' || user?.nivel === 'Niv1' || user?.email === 'carlos.junior@unibeer.com.br') {
       META_COACHING = 40;
     }
 

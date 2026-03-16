@@ -14,7 +14,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud, User } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -836,7 +836,8 @@ const Dashboard = () => {
                               {v.unidade}
                             </span>
                             <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50 text-foreground">
-                              {v.avaliador} • {v.cargo}
+                              <User className="w-3.5 h-3.5 text-primary" />
+                              {v.nome_vendedor || 'Vendedor não informado'}
                             </span>
                             <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
                               Cód: {v.codigo_pdv}

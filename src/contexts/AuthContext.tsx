@@ -112,7 +112,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Handle PWA resume from background / screen unlock
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+          if (error) {
+            console.error("Erro ao revalidar sessão no retorno do PWA", error);
+          }
+          if (session?.user) {
+            // Re-fetch profile in background to ensure we're fresh
+            fetchProfile(session.user);
+          }
+        });
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {

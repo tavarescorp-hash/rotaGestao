@@ -561,12 +561,19 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                 Qual o foco da visita? <span className="text-destructive ml-1">*</span>
               </Label>
               <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className={`grid gap-3 ${isFocoRgbLocked ? "opacity-90 pointer-events-none" : ""}`} disabled={isFocoRgbLocked}>
-                {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => (
-                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isFocoRgbLocked ? "cursor-not-allowed" : "cursor-pointer"} ${rgbFocoVisita === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                    <RadioGroupItem value={opt} />
-                    <span className="text-sm font-semibold">{opt}</span>
-                  </Label>
-                ))}
+                {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => {
+                  // Se for foco fixo (Gerente), só mostra a opção certa para não poluir
+                  if (isFocoRgbLocked && tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" && opt !== "RGB - Maiores COMPASS não compradores") {
+                    return null;
+                  }
+                  
+                  return (
+                    <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isFocoRgbLocked ? "cursor-not-allowed" : "cursor-pointer"} ${rgbFocoVisita === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                      <RadioGroupItem value={opt} id={opt} />
+                      <span className="text-sm font-semibold">{opt}</span>
+                    </Label>
+                  )
+                })}
               </RadioGroup>
             </div>
 

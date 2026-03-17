@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { canalProdutosExecucao } from "@/lib/canalData";
 import { buscarFdsPorCanal, getConfiguracao } from "@/lib/api";
 
@@ -16,6 +17,7 @@ export interface RgbSubmitData {
   rgb_comprando_outras: string;
   rgb_ttc_adequado: string;
   rgb_acao_concorrencia: string;
+  rgb_observacoes?: string;
 }
 
 export interface FdsSubmitData {
@@ -79,10 +81,11 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [rgbTtcAdequado, setRgbTtcAdequado] = useState("");
   const [rgbAcaoConcorrencia, setRgbAcaoConcorrencia] = useState("");
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
+  const [rgbObservacoes, setRgbObservacoes] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB";
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR";
   const isRgbValid = isRgb
-    ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== ""))
+    ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== "")) && rgbObservacoes.trim() !== ""
     : true;
 
   // FDS States
@@ -117,6 +120,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
         rgb_comprando_outras: rgbComprandoOutras,
         rgb_ttc_adequado: rgbTtcAdequado,
         rgb_acao_concorrencia: rgbAcaoConcorrencia === "Outro" ? `Outro: ${rgbAcaoConcorrenciaOutro}` : rgbAcaoConcorrencia,
+        rgb_observacoes: rgbObservacoes,
       };
     }
 
@@ -156,7 +160,10 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     };
 
     const loadGlobalConfigurations = async () => {
-      if (isRgb) {
+      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR") {
+        setRgbFocoVisita("RGB - Maiores COMPASS não compradores");
+        setIsFocoRgbLocked(true);
+      } else if (isRgb) {
         const focoRgbGlobal = await getConfiguracao('foco_rgb_mes');
         if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum') {
           setRgbFocoVisita(focoRgbGlobal);
@@ -620,6 +627,18 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                   />
                 </div>
               )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-border/40">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                OBSERVAÇÕES/ PLANO DE AÇÃO <span className="text-destructive ml-1">*</span>
+              </Label>
+              <Textarea
+                placeholder="Detalhes, justificativas ou plano de ação para a visita..."
+                value={rgbObservacoes}
+                onChange={(e) => setRgbObservacoes(e.target.value)}
+                className="min-h-[100px] resize-y bg-background/50 focus:ring-primary border-primary/20 shadow-sm"
+              />
             </div>
 
           </CardContent>

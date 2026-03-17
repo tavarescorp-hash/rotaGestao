@@ -83,7 +83,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
   const [rgbObservacoes, setRgbObservacoes] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR";
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR";
   const isRgbValid = isRgb
     ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== "")) && rgbObservacoes.trim() !== ""
     : true;

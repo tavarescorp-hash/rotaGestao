@@ -57,6 +57,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     carregarVisitas();
+
+    // Cache Buster Force for PWA
+    const currentVersion = "1.0.4"; // Change this whenever a hard refresh is needed across all clients
+    if (localStorage.getItem("app_version") !== currentVersion) {
+      localStorage.setItem("app_version", currentVersion);
+       if ('caches' in window) {
+         caches.keys().then((names) => {
+           for (let name of names) caches.delete(name);
+         });
+       }
+      window.location.reload();
+    }
   }, []);
 
   useEffect(() => {
@@ -782,12 +794,12 @@ const Dashboard = () => {
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Indicador</Label>
               <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
                 <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os indicadores" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Indicadores</SelectItem>
-                  {indicadoresUnicos.map(i => (
-                    <SelectItem key={i} value={i}>{i}</SelectItem>
-                  ))}
-                </SelectContent>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos os Indicadores</SelectItem>
+                            {user?.nivel !== 'Niv1' && <SelectItem value="FDS">FDS</SelectItem>}
+                            <SelectItem value="RGB">Foco Mês (RGB)</SelectItem>
+                            {user?.nivel !== 'Niv1' && <SelectItem value="COACHING">Coaching</SelectItem>}
+                          </SelectContent>
               </Select>
             </div>
           </div>

@@ -83,11 +83,8 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
   const [rgbObservacoes, setRgbObservacoes] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR";
-  const isRgbValid = isRgb
-    ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== "")) && rgbObservacoes.trim() !== ""
-    : true;
-
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR";
+  
   // FDS States
   const [fdsQtdSkus, setFdsQtdSkus] = useState("");
   const [fdsRefrigerador, setFdsRefrigerador] = useState("");
@@ -97,6 +94,10 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [fdsPrecificados, setFdsPrecificados] = useState("");
   const [fdsMelhoriaPrecificacao, setFdsMelhoriaPrecificacao] = useState("");
   const [fdsObservacoes, setFdsObservacoes] = useState("");
+
+  const isRgbValid = isRgb
+    ? rgbFocoVisita && rgbComprandoOutras && rgbTtcAdequado && (rgbAcaoConcorrencia && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== "")) && rgbObservacoes.trim() !== ""
+    : true;
 
   const isFds = tipoVisita === "FDS";
   const isFdsValid = isFds
@@ -160,8 +161,11 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     };
 
     const loadGlobalConfigurations = async () => {
-      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR") {
+      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR") {
         setRgbFocoVisita("RGB - Maiores COMPASS não compradores");
+        setIsFocoRgbLocked(true);
+      } else if (tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR") {
+        setRgbFocoVisita("RGB - Maiores quedas");
         setIsFocoRgbLocked(true);
       } else if (isRgb) {
         const focoRgbGlobal = await getConfiguracao('foco_rgb_mes');
@@ -563,7 +567,10 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
               <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className={`grid gap-3 ${isFocoRgbLocked ? "opacity-90 pointer-events-none" : ""}`} disabled={isFocoRgbLocked}>
                 {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => {
                   // Se for foco fixo (Gerente), só mostra a opção certa para não poluir
-                  if (isFocoRgbLocked && tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" && opt !== "RGB - Maiores COMPASS não compradores") {
+                  if (isFocoRgbLocked && (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR") && opt !== "RGB - Maiores COMPASS não compradores") {
+                    return null;
+                  }
+                  if (isFocoRgbLocked && tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" && opt !== "RGB - Maiores quedas") {
                     return null;
                   }
                   
@@ -647,7 +654,6 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                 className="min-h-[100px] resize-y bg-background/50 focus:ring-primary border-primary/20 shadow-sm"
               />
             </div>
-
           </CardContent>
         </Card>
       )}

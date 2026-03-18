@@ -5,19 +5,18 @@ export type NivelHieriaquico = "Niv0" | "Niv1" | "Niv2" | "Niv3" | "Niv4" | "Niv
 export const INDICADORES_MAP = {
     "Niv0": [],
     "Niv1": [
-        "FDS",
-        "COACHING ROTA BASICA COM VENDEDOR",
-        "MAIORES POTENCIAS BASE DE COMPRAS RGB"
+        "MAIORES POTENCIAIS BASE COMPASS em RGB BAR",
+        "MAIORES QUEDAS RGB MES ANTERIOR"
     ],
     "Niv2": [
         "FDS",
         "COACHING ROTA BASICA COM VENDEDOR",
-        "FOCO MAIORES QUEDAS RGB"
+        "MAIORES POTENCIAIS BASE COMPASS em RGB BAR"
     ],
     "Niv3": [
         "FDS",
         "COACHING ROTA BASICA COM VENDEDOR",
-        "MAIORES POTENCIAS COMPASS em RGB BAR"
+        "MAIORES POTENCIAIS COMPASS em RGB BAR"
     ],
     "Niv4": [
         "FDS",

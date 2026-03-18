@@ -142,7 +142,9 @@ const Dashboard = () => {
   const estatisticasMes = useMemo(() => {
     // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
     const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
-    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB')).length;
+    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB') && v.indicador_avaliado !== 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' && v.indicador_avaliado !== 'MAIORES QUEDAS RGB MES ANTERIOR').length;
+    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado === 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR').length;
+    const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado === 'MAIORES QUEDAS RGB MES ANTERIOR').length;
 
     // Coaching detalhado
     const coachingVisitas = filtradas.filter(v => v.indicador_avaliado?.includes('COACHING'));
@@ -215,11 +217,15 @@ const Dashboard = () => {
     let META_FDS = 10 * multi;
     let META_RGB = 20 * multi;
     let META_COACHING = Math.max(1, vendedoresUnicos) * 5;
+    let META_COMPASS = 0;
+    let META_QUEDAS = 0;
 
     // Regra solicitada: Metas de acordo com a Hierarquia ROL
     if (user?.nivel === 'Niv1') {
       META_FDS = 0;
-      META_RGB = 20; // 10 de Quedas + 10 de Compass
+      META_RGB = 0; // Desativa a visualização do card RGB agrupado
+      META_COMPASS = 10;
+      META_QUEDAS = 10;
       META_COACHING = 0;
     } else if (user?.nivel === 'Niv2') {
       META_FDS = 20;
@@ -241,8 +247,8 @@ const Dashboard = () => {
     const dias = Math.max(0, Math.ceil(difTempo / (1000 * 3600 * 24)));
 
     return {
-      qtdeFDS, qtdeRGB, qtdeCoaching,
-      META_FDS, META_RGB, META_COACHING,
+      qtdeFDS, qtdeRGB, qtdeCoaching, qtdeCompass, qtdeQuedas,
+      META_FDS, META_RGB, META_COACHING, META_COMPASS, META_QUEDAS,
       baseVendedores: vendedoresUnicos,
       vendedoresAvaliados: vendedoresCoachingCount,
       detalhesCoaching,
@@ -509,13 +515,13 @@ const Dashboard = () => {
               <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Faltam {estatisticasMes.diasRestantes} dias
             </span>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-start">
+          <div className={`grid grid-cols-1 gap-4 items-start ${user?.nivel === 'Niv1' ? 'md:grid-cols-2' : 'lg:grid-cols-[1fr_2fr]'}`}>
 
-            {/* Coluna 1 da Direita/Esquerda - FDS e RGB Empilhados */}
-            <div className="flex flex-col gap-4">
-              {/* Meta FDS */}
+            {/* Coluna 1 da Direita/Esquerda - FDS e RGB Empilhados (ou Grid Completa Niv1) */}
+            <div className={`flex gap-4 ${user?.nivel === 'Niv1' ? 'flex-row col-span-1 md:col-span-2' : 'flex-col'}`}>
+              {/* Meta FDS (Oculta para Diretor) */}
               {user?.nivel !== 'Niv1' && (
-                <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
+                <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm h-full w-full">
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
@@ -542,32 +548,92 @@ const Dashboard = () => {
                 </Card>
               )}
 
-              {/* Meta RGB */}
-              <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm">
-                <CardContent className="p-5">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-end mb-1">
-                      <div>
-                        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RGB</h3>
-                        <p className="text-xl font-black text-foreground mt-1">
-                          {estatisticasMes.qtdeRGB} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_RGB}</span>
-                        </p>
+              {/* Meta RGB Padrão */}
+              {user?.nivel !== 'Niv1' && (
+                <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm w-full">
+                  <CardContent className="p-5">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-end mb-1">
+                        <div>
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RGB</h3>
+                          <p className="text-xl font-black text-foreground mt-1">
+                            {estatisticasMes.qtdeRGB} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_RGB}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
+                            {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                          {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100)}%
-                        </span>
+                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                        <div
+                          className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100) || 0}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                      <div
-                        className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                        style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100)}%` }}
-                      />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Meta Maiores Potenciais Compass (Apenas Diretor) */}
+              {user?.nivel === 'Niv1' && (
+                <Card className="glass-card bg-card/40 border-blue-500/20 overflow-hidden relative shadow-sm w-full">
+                  <CardContent className="p-5">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-end mb-1">
+                        <div>
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores Potenciais <br/> Compass RGB Bar</h3>
+                          <p className="text-xl font-black text-foreground mt-1">
+                            {estatisticasMes.qtdeCompass} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_COMPASS}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">
+                            {Math.round((estatisticasMes.qtdeCompass / estatisticasMes.META_COMPASS) * 100) || 0}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                        <div
+                          className="h-full bg-blue-500 transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeCompass / estatisticasMes.META_COMPASS) * 100, 100) || 0}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Meta Maiores Quedas (Apenas Diretor) */}
+              {user?.nivel === 'Niv1' && (
+                <Card className="glass-card bg-card/40 border-amber-500/20 overflow-hidden relative shadow-sm w-full">
+                  <CardContent className="p-5">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-end mb-1">
+                        <div>
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores Quedas <br/> RGB Mês Anterior</h3>
+                          <p className="text-xl font-black text-foreground mt-1">
+                            {estatisticasMes.qtdeQuedas} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_QUEDAS}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
+                            {Math.round((estatisticasMes.qtdeQuedas / estatisticasMes.META_QUEDAS) * 100) || 0}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                        <div
+                          className="h-full bg-amber-500 transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / estatisticasMes.META_QUEDAS) * 100, 100) || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Meta COACHING (Coluna Larga Esticada) */}

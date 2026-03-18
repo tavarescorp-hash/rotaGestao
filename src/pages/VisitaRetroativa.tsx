@@ -62,7 +62,7 @@ const VisitaRetroativa = () => {
     coorden_y: "",
   });
 
-  const tipoVisitaOptions = user?.indicadores?.length ? user.indicadores : getIndicadoresPorNivel(user?.nivel);
+  const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

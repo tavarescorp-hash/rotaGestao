@@ -33,7 +33,7 @@ const canalOptions = [
 
 const potencialOptions = ["Diamante", "Ouro", "Prata", "Bronze"];
 
-
+import { getIndicadoresPorNivel } from "@/lib/roles";
 
 const NovaVisita = () => {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ const NovaVisita = () => {
     coorden_y: "",
   });
 
-  const tipoVisitaOptions = user?.indicadores || [];
+  const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

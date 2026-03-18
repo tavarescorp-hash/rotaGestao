@@ -549,10 +549,11 @@ const AdminData = () => {
                                                     <Select value={newUser.nivel} onValueChange={v => setNewUser({ ...newUser, nivel: v })}>
                                                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="Niv1">Niv1 (Vendedor)</SelectItem>
-                                                            <SelectItem value="Niv2">Niv2 (Avaliador Base)</SelectItem>
-                                                            <SelectItem value="Niv4">Niv4 (Supervisor)</SelectItem>
-                                                            <SelectItem value="Niv3">Niv3 (Gerente)</SelectItem>
+                                                            <SelectItem value="Niv1">Niv1 (Diretor)</SelectItem>
+                                                            <SelectItem value="Niv2">Niv2 (Gerente Comercial)</SelectItem>
+                                                            <SelectItem value="Niv3">Niv3 (Gerente de Vendas)</SelectItem>
+                                                            <SelectItem value="Niv4">Niv4 (Supervisor de Vendas)</SelectItem>
+                                                            <SelectItem value="Niv5">Niv5 (Analista)</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -563,9 +564,10 @@ const AdminData = () => {
                                                 <Select value={newUser.funcao} onValueChange={v => setNewUser({ ...newUser, funcao: v })}>
                                                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="Vendedor">Vendedor</SelectItem>
-                                                        <SelectItem value="Supervisor de Vendas">Supervisor de Vendas</SelectItem>
+                                                        <SelectItem value="Diretor">Diretor</SelectItem>
+                                                        <SelectItem value="Gerente Comercial">Gerente Comercial</SelectItem>
                                                         <SelectItem value="Gerente de Vendas">Gerente de Vendas</SelectItem>
+                                                        <SelectItem value="Supervisor de Vendas">Supervisor de Vendas</SelectItem>
                                                         <SelectItem value="Analista de Inteligência">Analista de Inteligência</SelectItem>
                                                     </SelectContent>
                                                 </Select>

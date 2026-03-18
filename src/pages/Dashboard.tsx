@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { getIndicadoresPorNivel } from "@/lib/roles";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -445,8 +446,8 @@ const Dashboard = () => {
                   Métricas de Avaliação Vinculadas
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  {user.indicadores && user.indicadores.length > 0 ? (
-                    user.indicadores.map((ind, i) => (
+                  {getIndicadoresPorNivel(user.nivel) && getIndicadoresPorNivel(user.nivel).length > 0 ? (
+                    getIndicadoresPorNivel(user.nivel).map((ind, i) => (
                       <span key={i} className="bg-background/80 backdrop-blur-sm border border-border/50 px-2.5 py-1 rounded-md text-foreground/90 font-medium shadow-sm">
                         {ind}
                       </span>

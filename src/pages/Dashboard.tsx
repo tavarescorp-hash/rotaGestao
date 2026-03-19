@@ -228,9 +228,11 @@ const Dashboard = () => {
       META_QUEDAS = 10;
       META_COACHING = 0;
     } else if (user?.nivel === 'Niv2') {
-      META_FDS = 20;
-      META_RGB = 10;
-      META_COACHING = 20;
+      META_FDS = 10;
+      META_RGB = 0;
+      META_COMPASS = 0;
+      META_QUEDAS = 10;
+      META_COACHING = 10;
     } else if (user?.nivel === 'Niv3') {
       META_FDS = 20;
       META_RGB = 10;
@@ -549,7 +551,7 @@ const Dashboard = () => {
               )}
 
               {/* Meta RGB Padrão */}
-              {user?.nivel !== 'Niv1' && (
+              {user?.nivel !== 'Niv1' && user?.nivel !== 'Niv2' && (
                 <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm w-full">
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
@@ -606,8 +608,8 @@ const Dashboard = () => {
                 </Card>
               )}
 
-              {/* Meta Maiores Quedas (Apenas Diretor) */}
-              {user?.nivel === 'Niv1' && (
+              {/* Meta Maiores Quedas */}
+              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
                 <Card className="glass-card bg-card/40 border-amber-500/20 overflow-hidden relative shadow-sm w-full">
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">

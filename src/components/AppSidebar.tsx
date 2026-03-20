@@ -50,11 +50,11 @@ export function AppSidebar() {
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
         <div className="w-full h-auto flex items-center justify-center mt-2 mb-2">
-          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-md">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-md border border-black/5">
             <img 
               src={user?.empresa_logo || "/logo-gestao-rota.png"} 
               alt={user?.empresa_nome || "Gestão"} 
-              className="h-full w-auto object-contain transition-transform hover:scale-105 duration-300" 
+              className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" 
             />
           </div>
         </div>

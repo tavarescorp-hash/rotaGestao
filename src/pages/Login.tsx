@@ -107,11 +107,11 @@ const Login = () => {
           {/* Logo container - Transparent wrapper for original unboxed logo */}
           <div className="w-full h-32 flex items-center justify-center overflow-hidden mb-2">
             {/* Inner specifically for the logo com fundo branco */}
-            <div className="h-[100px] w-[100px] sm:h-[120px] sm:w-[120px] bg-white rounded-2xl flex items-center justify-center p-3 shadow-lg">
+            <div className="h-[100px] w-[100px] sm:h-[120px] sm:w-[120px] bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border border-white/20">
               <img
                 src={tenantStyle.logo_url}
                 alt={tenantStyle.nome}
-                className="w-auto h-full object-contain transition-transform duration-500 hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
               />
             </div>
           </div>

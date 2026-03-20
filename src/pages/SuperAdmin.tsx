@@ -194,7 +194,7 @@ export default function SuperAdmin() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden border bg-white flex items-center justify-center shrink-0">
                           {empresa.logo_url ? (
-                            <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-contain p-1" />
+                            <img src={empresa.logo_url} alt={empresa.nome} className="w-full h-full object-cover" />
                           ) : (
                             <Building2 className="w-5 h-5 text-muted-foreground" />
                           )}

@@ -83,7 +83,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
   const [rgbObservacoes, setRgbObservacoes] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR";
+  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes";
   
   // FDS States
   const [fdsQtdSkus, setFdsQtdSkus] = useState("");
@@ -161,7 +161,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     };
 
     const loadGlobalConfigurations = async () => {
-      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR") {
+      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes") {
         setRgbFocoVisita("RGB - Maiores COMPASS não compradores");
         setIsFocoRgbLocked(true);
       } else if (tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR") {
@@ -567,7 +567,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
               <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className={`grid gap-3 ${isFocoRgbLocked ? "opacity-90 pointer-events-none" : ""}`} disabled={isFocoRgbLocked}>
                 {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => {
                   // Se for foco fixo (Gerente), só mostra a opção certa para não poluir
-                  if (isFocoRgbLocked && (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR") && opt !== "RGB - Maiores COMPASS não compradores") {
+                  if (isFocoRgbLocked && (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes") && opt !== "RGB - Maiores COMPASS não compradores") {
                     return null;
                   }
                   if (isFocoRgbLocked && tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" && opt !== "RGB - Maiores quedas") {

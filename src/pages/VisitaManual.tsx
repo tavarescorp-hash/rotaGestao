@@ -376,7 +376,7 @@ const NovaVisita = () => {
 
                     <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {tipoVisitaOptions.map((option) => {
-                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR"].includes(option);
+                        const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR", "RGB - Maiores clientes"].includes(option);
                         return (
                           <div key={option} className={`
                             relative rounded-xl border-2 transition-all duration-200 overflow-hidden
@@ -415,7 +415,7 @@ const NovaVisita = () => {
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
-          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR"].includes(form.tipo_visita) && (
+          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR", "RGB - Maiores clientes"].includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}

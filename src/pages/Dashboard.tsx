@@ -142,8 +142,8 @@ const Dashboard = () => {
   const estatisticasMes = useMemo(() => {
     // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
     const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
-    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB') && v.indicador_avaliado !== 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' && v.indicador_avaliado !== 'MAIORES QUEDAS RGB MES ANTERIOR').length;
-    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado === 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR').length;
+    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB') && v.indicador_avaliado !== 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' && v.indicador_avaliado !== 'RGB - Maiores clientes' && v.indicador_avaliado !== 'MAIORES QUEDAS RGB MES ANTERIOR').length;
+    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado === 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' || v.indicador_avaliado === 'RGB - Maiores clientes').length;
     const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado === 'MAIORES QUEDAS RGB MES ANTERIOR').length;
 
     // Coaching detalhado

@@ -15,6 +15,7 @@ import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 import Bloqueada from "./pages/Bloqueada";
 import { OfflineSyncManager } from "./components/OfflineSyncManager";
+import { ReloadPrompt } from "./components/ReloadPrompt";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <OfflineSyncManager />
+          <ReloadPrompt />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Login />} />

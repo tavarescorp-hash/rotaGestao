@@ -58,17 +58,6 @@ const Dashboard = () => {
   useEffect(() => {
     carregarVisitas();
 
-    // Cache Buster Force for PWA
-    const currentVersion = "1.0.4"; // Change this whenever a hard refresh is needed across all clients
-    if (localStorage.getItem("app_version") !== currentVersion) {
-      localStorage.setItem("app_version", currentVersion);
-       if ('caches' in window) {
-         caches.keys().then((names) => {
-           for (let name of names) caches.delete(name);
-         });
-       }
-      window.location.reload();
-    }
   }, []);
 
   useEffect(() => {

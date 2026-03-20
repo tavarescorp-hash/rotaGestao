@@ -15,11 +15,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       workbox: {
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
         clientsClaim: true,
       },
       manifest: {

@@ -38,13 +38,15 @@ export default function SuperAdmin() {
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [empresaSelecionada, setEmpresaSelecionada] = useState<Empresa | null>(null);
 
+  useEffect(() => {
+    if (user?.nivel === "Master") {
+      carregarEmpresas();
+    }
+  }, [user?.nivel]);
+
   if (user?.nivel !== "Master") {
     return <Navigate to="/dashboard" replace />;
   }
-
-  useEffect(() => {
-    carregarEmpresas();
-  }, []);
 
   const carregarEmpresas = async () => {
     setLoading(true);

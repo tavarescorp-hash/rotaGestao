@@ -172,11 +172,17 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
         setIsFocoRgbLocked(true);
       } else if (isRgb) {
         const focoRgbGlobal = await getConfiguracao('foco_rgb_mes', user);
-        if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum') {
+        const opcoesValidas = ["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"];
+        
+        if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum' && opcoesValidas.includes(focoRgbGlobal)) {
           setRgbFocoVisita(focoRgbGlobal);
           setIsFocoRgbLocked(true);
         } else {
           setIsFocoRgbLocked(false);
+          // Caso venha configuração inválida (ex: "Foco RGB"), reseta.
+          if (!opcoesValidas.includes(focoRgbGlobal || "")) {
+             setRgbFocoVisita("");
+          }
         }
       }
     };

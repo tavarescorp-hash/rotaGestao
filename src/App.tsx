@@ -14,6 +14,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 import Bloqueada from "./pages/Bloqueada";
+import { OfflineSyncManager } from "./components/OfflineSyncManager";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <OfflineSyncManager />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Login />} />

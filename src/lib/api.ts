@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { saveToDB, getFromDB, getAllFromDB, STORES } from "./indexedDB";
 
 const WEBHOOK_URL = "https://SEU-WEBHOOK-N8N";
 
@@ -43,8 +44,18 @@ export interface Visita {
   empresa_id?: number;
 }
 
-export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string }> {
+export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string; offline?: boolean }> {
   try {
+    // ---------------------------------------------------------
+    // ROTEAMENTO OFFLINE (PWA)
+    // ---------------------------------------------------------
+    if (!navigator.onLine) {
+      // Adicionamos um timestamp local para podermos ordenar na fila depois
+      const visitaOffline = { ...visita, _localTimestamp: Date.now() };
+      await saveToDB(STORES.OFFLINE_QUEUE, visitaOffline);
+      return { success: true, message: "Sem internet! Visita salva na Fila Offline com sucesso. Ela será enviada automaticamente quando a rede voltar.", offline: true };
+    }
+
     const { error } = await supabase.from("visitas").insert([{
       data_visita: visita.data_visita,
       unidade: visita.unidade,
@@ -226,13 +237,40 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
   try {
     let codigoBuscado = codigo;
 
-    // Se o código digitado for só números, colocamos a letra da filial automaticamente na frente (Padrão SAP/Kofre)
+    // Se o código digitado for só números, colocamos a letra da filial automaticamente (Padrão)
     if (/^\d+$/.test(codigoBuscado) && user?.unidade) {
       if (user.unidade.toUpperCase().includes('MACA')) {
         codigoBuscado = `M${codigoBuscado}`;
       } else if (user.unidade.toUpperCase().includes('CAMPOS')) {
         codigoBuscado = `C${codigoBuscado}`;
       }
+    }
+
+    // ---------------------------------------------------------
+    // ROTEAMENTO OFFLINE (PWA) - Resgata da Memória Local (IndexedDB)
+    // ---------------------------------------------------------
+    if (!navigator.onLine) {
+       console.log("🌐 Sem internet. Buscando PDV no Cache Local IndexedDB...");
+       const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
+       const dataOff = cachePdvs.find(row => row.codigo === codigoBuscado);
+       
+       if (dataOff) {
+          return {
+            nome_fantasia: dataOff.sigla || dataOff.razao_social,
+            categoria: dataOff.porte,
+            canal_cadastrado: dataOff.canal,
+            filial: dataOff.filial,
+            municipio: "",
+            codigo_vendedor: dataOff.cod_vendedor,
+            nome_vendedor: dataOff.nome_vendedor,
+            nome_supervisor: dataOff.nome_supervisor,
+            supervisor: dataOff.cod_supervisor ? dataOff.cod_supervisor.toString() : "",
+            gerente: dataOff.nome_gerente_vendas,
+            coorden_x: "",
+            coorden_y: ""
+          };
+       }
+       return null; // Não achou no modo offline
     }
 
     let query = supabase
@@ -338,7 +376,7 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
   }
 }
 
-export async function buscarFdsPorCanal(canal: string) {
+export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { nome: string; pontos: number }[]; execucao: { nome: string; pontos: number }[] }> {
   try {
     const normalize = (str: string) =>
       str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
@@ -352,20 +390,28 @@ export async function buscarFdsPorCanal(canal: string) {
 
     // Buscamos a tabela inteira (é pequena, em torno de 150 linhas) para garantir
     // que o filtro do frontend seja impecável com NFD (remoção de acentos)
-    let query = supabase
-      .from("produtos_fds")
-      .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
 
-    // MÁXIMA ATENÇÃO: Se user (global) existir, filtre a base de produtos pelo Tenant
-    // TODO: Necessária atualização de onde buscarFdsPorCanal é chamado para passar o User
-    // Deixaremos sem filtro super estrito neste fetch por enquanto até passarmos User no Front, MAS 
-    // com default fallback pra Unibeer se quiser proteger, ideal é passar user!.
-    
-    const { data, error } = await query;
+    let data;
 
-    if (error) {
-      console.error("Erro ao buscar dados FDS:", error);
-      return { produtos: [], execucao: [] };
+    if (!navigator.onLine) {
+       console.log("🌐 Sem internet. Buscando FDS no Cache Local IndexedDB...");
+       const cacheData = await getFromDB(STORES.METRICAS_CACHE, 'FDS_FULL');
+       if (cacheData && cacheData.data) {
+          data = cacheData.data;
+       } else {
+          return { produtos: [], execucao: [] };
+       }
+    } else {
+       let query = supabase
+         .from("produtos_fds")
+         .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
+       
+       const res = await query;
+       if (res.error) {
+         console.error("Erro ao buscar dados FDS:", res.error);
+         return { produtos: [], execucao: [] };
+       }
+       data = res.data;
     }
 
     // Filtra apenas os registros cujo CANAL normalizado bate perfeitamente
@@ -379,14 +425,14 @@ export async function buscarFdsPorCanal(canal: string) {
       .map((row: any) => ({ nome: row.PRODUTO.trim(), pontos: row.PONTOS || 0 }));
 
     // Remove produtos duplicados baseados no nome, preservando o objeto
-    const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values());
+    const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values()) as {nome: string, pontos: number}[];
 
     const execucaoRaw = dataFiltrada
       .filter((row: any) => row.EXECUCAO && row.EXECUCAO.trim() !== "")
       .map((row: any) => ({ nome: row.EXECUCAO.trim(), pontos: row.PONTOS || 0 }));
 
     // Remove execuções duplicadas baseadas no nome, preservando o objeto
-    const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values());
+    const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values()) as {nome: string, pontos: number}[];
 
     return { produtos, execucao };
   } catch (error) {
@@ -420,7 +466,27 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
     if (gerenteRef?.toUpperCase() === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
     if (gerenteRef?.toUpperCase() === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
 
-    while (hasMore) {
+    // ---------------------------------------------------------
+    // ROTEAMENTO OFFLINE (PWA) - Resgata da Memória Local (IndexedDB)
+    // ---------------------------------------------------------
+    if (!navigator.onLine) {
+       console.log("🌐 Sem internet. Buscando Vendedores no Cache Local IndexedDB...");
+       const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
+       
+       allData = cachePdvs.filter(pdv => {
+          if (user?.nivel === 'Niv4' && supervisorId) {
+             return pdv.cod_supervisor === supervisorId || pdv.cod_supervisor?.toString() === supervisorId;
+          } else if (user?.nivel === 'Niv3') {
+             if (user.unidade?.toUpperCase().includes("MACA")) {
+                return pdv.filial === 'M' || pdv.filial?.toUpperCase().includes('MACAE') || pdv.filial?.toUpperCase().includes('MACAÉ') || pdv.nome_gerente_vendas === gerenteRef;
+             } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+                return pdv.filial === 'C' || pdv.filial?.toUpperCase().includes('CAMPOS') || pdv.nome_gerente_vendas === gerenteRef;
+             }
+          }
+          return true;
+       });
+    } else {
+      while (hasMore) {
       let baseQuery = supabase
         .from("pdvs")
         .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente');
@@ -462,6 +528,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         hasMore = false;
       }
     }
+    } // Fim Else Navigator.OnLine
 
     if (allData.length === 0) return [];
 
@@ -893,5 +960,38 @@ export async function setConfiguracao(chave: string, valor: string, user?: any):
   } catch (error) {
     console.error(`Erro ao salvar configuração ${chave}:`, error);
     return false;
+  }
+}
+
+// ---------------------------------------------------------
+// MOTOR DE SINCRONIZAÇÃO OFFLINE (DOWNLOAD DO MUNDO) PARA O PWA
+// ---------------------------------------------------------
+export async function syncOfflineCache(user?: any): Promise<void> {
+  if (!navigator.onLine) return; // Se está sem internet, não tem como puxar
+
+  try {
+     console.log("🔄 Baixando dados para uso Offline...");
+     
+     // 1. Baixar Tabela de Clientes (Pdvs)
+     let queryPdv = supabase.from("pdvs").select('filial, codigo, cod_vendedor, nome_vendedor, cod_supervisor, nome_supervisor, cod_gerente, nome_gerente_vendas, nome_gerente_comercial, rota, canal, cnpj_cpf, sigla, razao_social, porte');
+     if (user?.empresa_id) queryPdv = queryPdv.eq('empresa_id', user.empresa_id);
+     
+     const responsePdv = await queryPdv;
+     if (responsePdv.data) {
+        const payloadPdvs = responsePdv.data.map(r => ({...r, cod_pdv: r.codigo}));
+        await saveToDB(STORES.PDVS_CACHE, payloadPdvs);
+     }
+
+     // 2. Tabela de FDS
+     let queryFds = supabase.from("produtos_fds").select('*');
+     if (user?.empresa_id) queryFds = queryFds.eq('empresa_id', user.empresa_id);
+     const responseFds = await queryFds;
+     if (responseFds.data) {
+        await saveToDB(STORES.METRICAS_CACHE, { id: 'FDS_FULL', data: responseFds.data });
+     }
+
+     console.log("✅ Downloads Offline Concluídos. App Ciente de Rede.");
+  } catch(e) {
+     console.error("⚠️ Fallback: Erro ao preencher cache offline.", e);
   }
 }

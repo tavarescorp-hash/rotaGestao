@@ -35,7 +35,7 @@ const potencialOptions = ["Diamante", "Ouro", "Prata", "Bronze"];
 
 
 
-import { getIndicadoresPorNivel } from "@/lib/roles";
+import { getIndicadoresPorNivel, REQUER_PRODUTOS_EXECUCAO, REQUER_COACHING } from "@/lib/roles";
 
 const NovaVisita = () => {
   const navigate = useNavigate();
@@ -424,7 +424,7 @@ const NovaVisita = () => {
               <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
                 <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {tipoVisitaOptions.map((option) => {
-                    const isDisabled = !["FDS", "COACHING ROTA BASICA COM VENDEDOR", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR", "RGB - Maiores clientes"].includes(option);
+                    const isDisabled = false; // Agora opções vêm restritas do nível, nunca bloqueadas
                     return (
                       <div key={option} className={`
                         relative rounded-xl border-2 transition-all duration-200 overflow-hidden
@@ -445,11 +445,6 @@ const NovaVisita = () => {
                           <span className={`text-sm font-semibold text-center ${form.tipo_visita === option ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {option}
                           </span>
-                          {isDisabled && (
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border/50 shadow-sm mt-1">
-                              Em Breve
-                            </span>
-                          )}
                         </Label>
                       </div>
                     );
@@ -461,7 +456,7 @@ const NovaVisita = () => {
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
-          {["FDS", "FOCO RGB", "FOCO MAIORES QUEDAS RGB", "MAIORES QUEDAS RGB MES ANTERIOR", "MAIORES POTENCIAS BASE DE COMPRAS RGB", "MAIORES POTENCIAIS COMPASS em RGB BAR", "MAIORES POTENCIAIS BASE COMPASS em RGB BAR", "RGB - Maiores clientes"].includes(form.tipo_visita) && (
+          {REQUER_PRODUTOS_EXECUCAO.includes(form.tipo_visita) && (
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}
@@ -477,7 +472,7 @@ const NovaVisita = () => {
             />
           )}
 
-          {form.tipo_visita === "COACHING ROTA BASICA COM VENDEDOR" && (
+          {REQUER_COACHING.includes(form.tipo_visita) && (
             <StepCoaching
               onSubmit={(data: CoachingSubmitData) => handleSubmitFinal({
                 passos_coaching: data.passos_coaching,

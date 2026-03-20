@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { canalProdutosExecucao } from "@/lib/canalData";
 import { buscarFdsPorCanal, getConfiguracao } from "@/lib/api";
+import { INDICADORES_TIPO_RGB, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED } from "@/lib/roles";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface RgbSubmitData {
   rgb_foco_visita: string;
@@ -69,6 +71,7 @@ interface StepProdutosExecucaoProps {
 }
 
 const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }: StepProdutosExecucaoProps) => {
+  const { user } = useAuth();
   const [produtosSelecionados, setProdutosSelecionados] = useState<string[]>([]);
   const [execucaoSelecionada, setExecucaoSelecionada] = useState<string[]>([]);
   const [config, setConfig] = useState<ConfigType>(null);
@@ -83,7 +86,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const [rgbAcaoConcorrenciaOutro, setRgbAcaoConcorrenciaOutro] = useState("");
   const [rgbObservacoes, setRgbObservacoes] = useState("");
 
-  const isRgb = tipoVisita === "FOCO RGB" || tipoVisita === "FOCO MAIORES QUEDAS RGB" || tipoVisita === "MAIORES POTENCIAS BASE DE COMPRAS RGB" || tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes";
+  const isRgb = INDICADORES_TIPO_RGB.includes(tipoVisita);
   
   // FDS States
   const [fdsQtdSkus, setFdsQtdSkus] = useState("");
@@ -161,14 +164,14 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     };
 
     const loadGlobalConfigurations = async () => {
-      if (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes") {
+      if (INDICADORES_COMPASS_LOCKED.includes(tipoVisita)) {
         setRgbFocoVisita("RGB - Maiores COMPASS não compradores");
         setIsFocoRgbLocked(true);
-      } else if (tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR") {
+      } else if (INDICADORES_QUEDAS_LOCKED.includes(tipoVisita)) {
         setRgbFocoVisita("RGB - Maiores quedas");
         setIsFocoRgbLocked(true);
       } else if (isRgb) {
-        const focoRgbGlobal = await getConfiguracao('foco_rgb_mes');
+        const focoRgbGlobal = await getConfiguracao('foco_rgb_mes', user);
         if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum') {
           setRgbFocoVisita(focoRgbGlobal);
           setIsFocoRgbLocked(true);
@@ -565,22 +568,27 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                 Qual o foco da visita? <span className="text-destructive ml-1">*</span>
               </Label>
               <RadioGroup value={rgbFocoVisita} onValueChange={setRgbFocoVisita} className={`grid gap-3 ${isFocoRgbLocked ? "opacity-90 pointer-events-none" : ""}`} disabled={isFocoRgbLocked}>
-                {["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"].map((opt) => {
-                  // Se for foco fixo (Gerente), só mostra a opção certa para não poluir
-                  if (isFocoRgbLocked && (tipoVisita === "MAIORES POTENCIAS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS COMPASS em RGB BAR" || tipoVisita === "MAIORES POTENCIAIS BASE COMPASS em RGB BAR" || tipoVisita === "RGB - Maiores clientes") && opt !== "RGB - Maiores COMPASS não compradores") {
-                    return null;
+                {(() => {
+                  const allOptions = ["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"];
+                  let visibleOptions = allOptions;
+
+                  if (isFocoRgbLocked) {
+                    if (INDICADORES_COMPASS_LOCKED.includes(tipoVisita)) {
+                      visibleOptions = ["RGB - Maiores COMPASS não compradores"];
+                    } else if (INDICADORES_QUEDAS_LOCKED.includes(tipoVisita)) {
+                      visibleOptions = ["RGB - Maiores quedas"];
+                    } else if (rgbFocoVisita) {
+                      visibleOptions = [rgbFocoVisita];
+                    }
                   }
-                  if (isFocoRgbLocked && tipoVisita === "MAIORES QUEDAS RGB MES ANTERIOR" && opt !== "RGB - Maiores quedas") {
-                    return null;
-                  }
-                  
-                  return (
-                    <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isFocoRgbLocked ? "cursor-not-allowed" : "cursor-pointer"} ${rgbFocoVisita === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+
+                  return visibleOptions.map((opt) => (
+                    <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isFocoRgbLocked ? "cursor-not-allowed border-primary bg-primary/5 shadow-sm" : "cursor-pointer"} ${rgbFocoVisita === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
                       <RadioGroupItem value={opt} id={opt} />
                       <span className="text-sm font-semibold">{opt}</span>
                     </Label>
-                  )
-                })}
+                  ));
+                })()}
               </RadioGroup>
             </div>
 

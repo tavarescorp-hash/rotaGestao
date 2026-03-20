@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { getIndicadoresPorNivel } from "@/lib/roles";
+import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -142,12 +142,19 @@ const Dashboard = () => {
   const estatisticasMes = useMemo(() => {
     // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
     const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
-    const qtdeRGB = filtradas.filter(v => v.indicador_avaliado?.includes('RGB') && v.indicador_avaliado !== 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' && v.indicador_avaliado !== 'RGB - Maiores clientes' && v.indicador_avaliado !== 'MAIORES QUEDAS RGB MES ANTERIOR').length;
-    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado === 'MAIORES POTENCIAIS BASE COMPASS em RGB BAR' || v.indicador_avaliado === 'RGB - Maiores clientes').length;
-    const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado === 'MAIORES QUEDAS RGB MES ANTERIOR').length;
+    
+    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado && INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado)).length;
+    const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado && INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado)).length;
+    
+    const qtdeRGB = filtradas.filter(v => {
+      if (!v.indicador_avaliado) return false;
+      return INDICADORES_TIPO_RGB.includes(v.indicador_avaliado) && 
+             !INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado) && 
+             !INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado);
+    }).length;
 
     // Coaching detalhado
-    const coachingVisitas = filtradas.filter(v => v.indicador_avaliado?.includes('COACHING'));
+    const coachingVisitas = filtradas.filter(v => v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado));
     const qtdeCoaching = coachingVisitas.length;
 
     // Calculando base de vendedores
@@ -273,8 +280,8 @@ const Dashboard = () => {
 
       const curr = mapa.get(nomeAvaliador)!;
       if (v.indicador_avaliado === 'FDS') curr.FDS++;
-      else if (v.indicador_avaliado?.includes('RGB')) curr.RGB++;
-      else if (v.indicador_avaliado?.includes('COACHING')) curr.Coaching++;
+      else if (v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado)) curr.RGB++;
+      else if (v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado)) curr.Coaching++;
     });
 
     return Array.from(mapa.values()).sort((a, b) => (b.FDS + b.RGB + b.Coaching) - (a.FDS + a.RGB + a.Coaching));

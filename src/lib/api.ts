@@ -40,6 +40,7 @@ export interface Visita {
   fds_melhoria_precificacao?: string;
   fds_observacoes?: string;
   produtos_nao_selecionados?: string;
+  execucao_nao_selecionada?: string;
   status_aprovacao?: string;
   empresa_id?: number;
 }
@@ -92,6 +93,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
       fds_observacoes: visita.fds_observacoes,
       produtos_nao_selecionados: visita.produtos_nao_selecionados,
+      execucao_nao_selecionada: visita.execucao_nao_selecionada,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
       empresa_id: visita.empresa_id || 1, // Fallback para Unibeer em caso extremo
     }]);

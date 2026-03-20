@@ -49,7 +49,7 @@ const Login = () => {
     }
 
     try {
-      const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim() });
+      const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim().toLowerCase() });
       if (!error && data) {
         setTenantStyle({
           logo_url: data.logo_url || "/logo-gestao-rota.png",
@@ -66,7 +66,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const success = await login(email, password);
+      const success = await login(email.trim().toLowerCase(), password);
       if (success) {
         // O `user` vai ser atualizado via contexto e o `useEffect` acima fará o redirect correto.
       } else {

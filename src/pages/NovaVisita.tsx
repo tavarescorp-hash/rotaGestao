@@ -173,6 +173,7 @@ const NovaVisita = () => {
       fds_observacoes: string;
     };
     produtosNaoSelecionados?: string[];
+    execucaoNaoSelecionada?: string[];
     empresa_id?: number;
   }) => {
     setLoading(true);
@@ -212,6 +213,7 @@ const NovaVisita = () => {
       fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
       fds_observacoes: payload.fdsData?.fds_observacoes || "",
       produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
+      execucao_nao_selecionada: payload.execucaoNaoSelecionada ? payload.execucaoNaoSelecionada.join("; ") : "",
       empresa_id: user?.empresa_id || 1,
     });
 
@@ -460,13 +462,14 @@ const NovaVisita = () => {
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}
-              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[]) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[], execucaoNaoSelecionada?: string[]) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
                 rgbData: rgbData,
                 fdsData: fdsData,
-                produtosNaoSelecionados: produtosNaoSelecionados
+                produtosNaoSelecionados: produtosNaoSelecionados,
+                execucaoNaoSelecionada: execucaoNaoSelecionada
               })}
               loading={loading}
             />

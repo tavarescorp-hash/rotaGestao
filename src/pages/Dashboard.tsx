@@ -14,13 +14,15 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud, User, Users, Search, Settings2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
+import { TeamHierarchyView } from '@/components/TeamHierarchyView';
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -40,6 +42,8 @@ const Dashboard = () => {
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
   const [activeTab, setActiveTab] = useState("minhas");
   const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
   const isGerenteComercial = user?.nivel === 'Niv2';
@@ -78,13 +82,24 @@ const Dashboard = () => {
     }
     // Niv2 (Gerente Comercial): filtra por unidade conforme aba ativa (Macaé/Campos)
     if (isGerenteComercial) {
-      const unidadeAba = activeTab === 'macae' ? 'Macaé' : activeTab === 'campos' ? 'Campos' : null;
-      if (unidadeAba) return visitas.filter(v => v.unidade === unidadeAba);
+      if (activeTab === 'macae') {
+        return visitas.filter(v => v.unidade?.toUpperCase().includes('MACA') || v.unidade === 'M');
+      } else if (activeTab === 'campos') {
+        return visitas.filter(v => v.unidade?.toUpperCase().includes('CAMPO') || v.unidade === 'C');
+      }
       return visitas;
     }
     // Aba "Supervisores": Exibe os da unidade logada GERAL, EXCETO os relatórios feitos pelos PRÓPRIOS gerentes
     if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-      return visitas.filter(v => v.unidade === user?.unidade && !v.cargo?.toUpperCase().includes('GERENTE'));
+      const uLogada = user?.unidade?.toUpperCase() || "";
+      return visitas.filter(v => {
+        const dUnidade = v.unidade?.toUpperCase() || "";
+        const isSameUnidade = (uLogada.includes('MACA') && (dUnidade.includes('MACA') || dUnidade === 'M')) ||
+                              (uLogada.includes('CAMPO') && (dUnidade.includes('CAMPO') || dUnidade === 'C')) ||
+                              (dUnidade === uLogada);
+        
+        return isSameUnidade && !v.cargo?.toUpperCase().includes('GERENTE');
+      });
     }
     // Aba "Minhas Avaliações": Exibe EXATAMENTE as que o Logado fez
     return visitas.filter(v => v.avaliador === user?.name);
@@ -101,6 +116,13 @@ const Dashboard = () => {
 
   const filtradas = useMemo(() => {
     return minhasVisitas.filter((v) => {
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase().trim();
+        const nomeS = v.nome_vendedor?.toLowerCase() || '';
+        const avalS = v.avaliador?.toLowerCase() || '';
+        if (!nomeS.includes(term) && !avalS.includes(term)) return false;
+      }
+
       if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return false;
 
       if (dateRange?.from || dateRange?.to) {
@@ -126,7 +148,34 @@ const Dashboard = () => {
       if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return false;
       return true;
     });
-  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro, avaliadorFiltro]);
+  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro, avaliadorFiltro, searchTerm]);
+
+  // Base exclusiva para a Árvore de Performance: ignora filtros textuais e Dropdowns para nunca zerar a tela
+  const visitasHierarchy = useMemo(() => {
+    // A Performance da Equipe mostra todos os subordinados da hierarquia do Logado invariavelmente, 
+    // desconsiderando abas de 'Campos/Macaé' ou 'Minhas/Equipe' no front-end.
+    const baseHierarchy = visitas;
+
+    return baseHierarchy.filter((v) => {
+      // Aplica APENAS o filtro de Data, o resto ignora completamente.
+      if (dateRange?.from || dateRange?.to) {
+        const [anoStr, mesStr, diaStr] = (v.data_visita || "").split("-");
+        if (!anoStr || !mesStr || !diaStr) return false;
+
+        const visitaDate = new Date(parseInt(anoStr), parseInt(mesStr) - 1, parseInt(diaStr), 12, 0, 0);
+
+        if (dateRange?.from) {
+          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate(), 0, 0, 0);
+          if (visitaDate < fromStart) return false;
+        }
+        if (dateRange?.to) {
+          const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59);
+          if (visitaDate > toEnd) return false;
+        }
+      }
+      return true;
+    });
+  }, [minhasVisitas, dateRange]);
 
   const estatisticasMes = useMemo(() => {
     // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
@@ -752,22 +801,29 @@ const Dashboard = () => {
 
 
       <div className="space-y-6">
-        {/* Horizontal Filters Bar */}
-        <div className="bg-card/40 border border-border/40 p-3 sm:p-6 rounded-xl shadow-sm">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Filter className="w-4 h-4 text-primary shrink-0" />
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Filtros de Pesquisa</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-1.5 md:col-span-2 lg:col-span-1 min-w-0">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Período</Label>
+        {/* Horizontal Filters Bar (Novo Layout) */}
+        <div className="bg-card/40 border border-border/40 p-3 sm:p-6 rounded-xl shadow-sm space-y-4">
+          
+          {/* Top Bar: Busca, Data e Toggle */}
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Pesquisar vendedor, supervisor ou avaliador..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 w-full bg-background/60"
+              />
+            </div>
+            
+            <div className="flex gap-2">
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
                     className={cn(
-                      "w-full h-9 justify-start text-left font-normal bg-background/50 text-sm overflow-hidden",
+                      "w-[200px] h-10 justify-start text-left font-normal bg-background/60",
                       !dateRange && "text-muted-foreground"
                     )}
                   >
@@ -788,7 +844,7 @@ const Dashboard = () => {
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0" align="end">
                   <CalendarComponent
                     initialFocus
                     mode="range"
@@ -812,62 +868,82 @@ const Dashboard = () => {
                   )}
                 </PopoverContent>
               </Popover>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
-              <Select value={unidade} onValueChange={setUnidade}>
-                <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as unidades" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as Unidades</SelectItem>
-                  {unidadesUnicas.map(u => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Avaliador Select */}
-            {user?.nivel === 'Niv3' && activeTab === 'unidade' && (
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Avaliador</Label>
-                <Select value={avaliadorFiltro} onValueChange={setAvaliadorFiltro}>
-                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os avaliadores" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os Avaliadores</SelectItem>
-                    {avaliadoresUnicos.map(a => (
-                      <SelectItem key={a} value={a}>{a}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {!(user?.nivel === 'Niv3' && activeTab === 'unidade') && (
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Função (Cargo)</Label>
-                <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
-                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as funções" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todas as Funções</SelectItem>
-                    {cargosUnicos.map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Indicador</Label>
-              <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
-                <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os indicadores" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos os Indicadores</SelectItem>
-                            {user?.nivel !== 'Niv1' && <SelectItem value="FDS">FDS</SelectItem>}
-                            <SelectItem value="RGB">Foco Mês (RGB)</SelectItem>
-                            {user?.nivel !== 'Niv1' && <SelectItem value="COACHING">Coaching</SelectItem>}
-                          </SelectContent>
-              </Select>
+
+              <Button 
+                variant={showAdvancedFilters ? "secondary" : "outline"} 
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="h-10 px-3 bg-background/60"
+              >
+                <Settings2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Filtros Avançados</span>
+              </Button>
             </div>
           </div>
+
+          {/* Collapsible: Gaveta Oculta de Filtros */}
+          {showAdvancedFilters && (
+            <div className="pt-4 border-t border-border/50 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
+                <Select value={unidade} onValueChange={setUnidade}>
+                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as unidades" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Unidades</SelectItem>
+                    {unidadesUnicas.map(u => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!(user?.nivel === 'Niv3' && activeTab === 'unidade') ? (
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Função (Cargo)</Label>
+                  <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
+                    <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as funções" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Funções</SelectItem>
+                      {cargosUnicos.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Indicador</Label>
+                <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
+                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os indicadores" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Indicadores</SelectItem>
+                    {user?.nivel !== 'Niv1' && <SelectItem value="FDS">FDS</SelectItem>}
+                    <SelectItem value="RGB">Foco Mês (RGB)</SelectItem>
+                    {user?.nivel !== 'Niv1' && <SelectItem value="COACHING">Coaching</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+
+            </div>
+          )}
         </div>
+
+        {!isAnalista && (
+          <div className="mb-6">
+            <h3 className="text-xl font-extrabold text-foreground tracking-tight mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Performance da Equipe
+            </h3>
+            <TeamHierarchyView 
+              visitas={visitasHierarchy} 
+              vendedores={vendedoresBaseReal} 
+              userLevel={user?.nivel} 
+              userName={user?.name} 
+              userUnidade={unidade === "todas" ? user?.unidade : unidade} 
+            />
+          </div>
+        )}
 
         {/* Visit List Content Area */}
         <div className="space-y-4">

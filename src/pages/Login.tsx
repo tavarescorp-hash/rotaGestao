@@ -17,7 +17,7 @@ const Login = () => {
   // Estado Dinâmico do Tenant (SaaS)
   const [tenantStyle, setTenantStyle] = useState({
     logo_url: "/logo-gestao-rota.png",
-    cor_primaria: "#d9e7e9ff",
+    cor_primaria: "#0E385D", // Dark Blue to contrast with white text
     nome: "Gestão de Rota"
   });
 

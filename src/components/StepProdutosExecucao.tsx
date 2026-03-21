@@ -59,7 +59,8 @@ interface SubmitFnPops {
     pontuacaoTotal: number,
     rgbData?: RgbSubmitData,
     fdsData?: FdsSubmitData,
-    produtosNaoSelecionados?: string[]
+    produtosNaoSelecionados?: string[],
+    execucaoNaoSelecionada?: string[]
   ): void;
 }
 
@@ -146,7 +147,12 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
       ? config.produtos.map(p => p.nome).filter(nome => !produtosSelecionados.includes(nome))
       : [];
 
-    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData, produtosNaoSelecionados);
+    // Calcular Gaps (Execuções Não Selecionadas)
+    const execucaoNaoSelecionada = config
+      ? config.execucao.map(e => e.nome).filter(nome => !execucaoSelecionada.includes(nome))
+      : [];
+
+    onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData, produtosNaoSelecionados, execucaoNaoSelecionada);
   };
 
   useEffect(() => {

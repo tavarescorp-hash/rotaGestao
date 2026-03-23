@@ -86,9 +86,9 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
           </div>
         </div>
         
-        <div className="flex gap-4 items-center w-full sm:w-auto">
-          <div className="hidden md:flex flex-col items-end">
-             <span className="text-xs text-muted-foreground font-semibold">FDS/RGB</span>
+        <div className="flex gap-4 items-center w-full sm:w-auto mt-2 sm:mt-0">
+          <div className="flex flex-col items-center sm:items-end shrink-0">
+             <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">FDS/RGB</span>
              <Badge variant="secondary" className="mt-1 font-mono">{m.fds} / {m.rgb}</Badge>
           </div>
           <div className="flex-1 sm:w-32 flex flex-col items-end">

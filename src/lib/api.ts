@@ -544,18 +544,28 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       const vend = row.nome_vendedor?.trim();
       const supName = row.nome_supervisor?.trim() || "";
       const supCode = row.cod_supervisor?.toString() || "";
-      const municipio = ""; // Sem município na base atual 
+      const municipio = ""; // Sem município na base atual
+      const extractedCodVendedor = row.cod_vendedor?.toString().trim() || row.codigo_vendedor?.toString().trim() || "";
 
-      if (vend && !unicosMap.has(vend)) {
-        unicosMap.set(vend, {
-          nome_vendedor: vend,
-          nome_supervisor: supName,
-          codigo_sup: supCode,
-          municipio: municipio,
-          filial: row.filial?.trim() || "",
-          gerente: row.nome_gerente_vendas?.trim() || "",
-          cod_vendedor: row.cod_vendedor?.toString().trim() || ""
-        });
+      if (vend) {
+        if (!unicosMap.has(vend)) {
+          unicosMap.set(vend, {
+            nome_vendedor: vend,
+            nome_supervisor: supName,
+            codigo_sup: supCode,
+            municipio: municipio,
+            filial: row.filial?.trim() || "",
+            gerente: row.nome_gerente_vendas?.trim() || "",
+            cod_vendedor: extractedCodVendedor
+          });
+        } else {
+          // Se já existe mas está sem rota, tenta injetar a rota desta linha atual
+          const existing = unicosMap.get(vend)!;
+          if (!existing.cod_vendedor && extractedCodVendedor) {
+            existing.cod_vendedor = extractedCodVendedor;
+            unicosMap.set(vend, existing);
+          }
+        }
       }
     });
 

@@ -451,6 +451,7 @@ export interface VendedorAtivo {
   municipio: string;
   filial: string;
   gerente: string;
+  cod_vendedor?: string;
 }
 
 export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[]> {
@@ -491,7 +492,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       while (hasMore) {
         let baseQuery = supabase
           .from("pdvs")
-          .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente');
+          .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente, cod_vendedor');
 
         // Isolamento Multi-Tenant SaaS
         if (user?.empresa_id) {
@@ -552,7 +553,8 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           codigo_sup: supCode,
           municipio: municipio,
           filial: row.filial?.trim() || "",
-          gerente: row.nome_gerente_vendas?.trim() || ""
+          gerente: row.nome_gerente_vendas?.trim() || "",
+          cod_vendedor: row.cod_vendedor?.toString().trim() || ""
         });
       }
     });

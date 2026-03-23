@@ -82,7 +82,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
           </div>
           <div className="min-w-0 w-full overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{vendedor.nome_vendedor}</p>
-            <p className="text-xs text-muted-foreground truncate">{vendedor.filial} • {vendedor.municipio}</p>
+            <p className="text-xs text-muted-foreground truncate">{vendedor.cod_vendedor || vendedor.filial}</p>
           </div>
         </div>
 

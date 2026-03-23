@@ -76,13 +76,13 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
 
     return (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-4 hover:bg-muted/30 border-t border-border/40 transition-colors">
-        <div className="flex items-center gap-3 mb-2 sm:mb-0">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20">
+        <div className="flex items-center gap-3 mb-2 w-full sm:w-auto sm:mb-0 min-w-0 flex-1">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20 shrink-0">
             {vendedor.nome_vendedor.substring(0, 2).toUpperCase()}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{vendedor.nome_vendedor}</p>
-            <p className="text-xs text-muted-foreground">{vendedor.filial} • {vendedor.municipio}</p>
+          <div className="min-w-0 w-full overflow-hidden">
+            <p className="text-sm font-semibold text-foreground truncate">{vendedor.nome_vendedor}</p>
+            <p className="text-xs text-muted-foreground truncate">{vendedor.filial} • {vendedor.municipio}</p>
           </div>
         </div>
         
@@ -140,17 +140,17 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
         const blocoGerente = (
           <Collapsible key={gerente} className="border border-border/60 bg-card rounded-xl shadow-sm overflow-hidden" defaultOpen={shouldHideGerenteHeader}>
             {!shouldHideGerenteHeader && (
-              <CollapsibleTrigger className="w-full flex justify-between items-center p-4 hover:bg-muted/30 transition focus:outline-none group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <CollapsibleTrigger className="w-full flex justify-between items-center p-4 hover:bg-muted/30 transition focus:outline-none group gap-2">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
                     <TrendingUp className="w-5 h-5" />
                   </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">Gerente: {gerente}</h3>
-                    <p className="text-xs text-muted-foreground font-medium">{qtdeSup} Supervisores • {totalVends} Vendedores</p>
+                  <div className="text-left min-w-0 overflow-hidden w-full">
+                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors truncate">Gerente: {gerente}</h3>
+                    <p className="text-xs text-muted-foreground font-medium truncate">{qtdeSup} Supervisores • {totalVends} Vendedores</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 shrink-0">
                   <div className="hidden sm:flex items-center gap-4 mr-4 text-right">
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total FDS</p>
@@ -178,15 +178,15 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
 
                     return (
                       <Collapsible key={supervisor} className="border border-border/50 bg-background rounded-lg shadow-sm">
-                        <CollapsibleTrigger className="w-full flex justify-between items-center p-3 hover:bg-muted/50 transition focus:outline-none group">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            <div className="text-left">
-                              <h4 className="font-bold text-sm">{supervisor}</h4>
-                              <p className="text-[11px] text-muted-foreground">{vends.length} vendedores ativos</p>
+                        <CollapsibleTrigger className="w-full flex justify-between items-center p-3 hover:bg-muted/50 transition focus:outline-none group gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                            <div className="text-left min-w-0 overflow-hidden w-full">
+                              <h4 className="font-bold text-sm truncate">{supervisor}</h4>
+                              <p className="text-[11px] text-muted-foreground truncate">{vends.length} vendedores ativos</p>
                             </div>
                           </div>
-                          <div className="flex gap-4 items-center">
+                          <div className="flex gap-4 items-center shrink-0">
                             <div className="w-24 hidden md:block text-right">
                               <Progress value={pctSC} className="h-1.5 w-full bg-border" indicatorColor={pctSC >= 100 ? "bg-green-500" : "bg-primary"} />
                               <span className="text-[10px] text-muted-foreground font-semibold mt-1 inline-block">{pctSC}% da Equipe</span>

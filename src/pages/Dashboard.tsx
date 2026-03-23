@@ -554,12 +554,12 @@ const Dashboard = () => {
       {/* Metas e Progresso Mensal */}
       {user && !isAnalista && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> Metas do Período Selecionado
+              <Calendar className="w-4 h-4 text-primary shrink-0" /> <span className="truncate">Metas do Período Selecionado</span>
             </h3>
-            <span className="text-[10px] sm:text-xs font-bold text-amber-500 bg-amber-500/10 px-2 sm:px-3 py-1 rounded-full flex items-center border border-amber-500/20 shadow-sm">
-              <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Faltam {estatisticasMes.diasRestantes} dias
+            <span className="text-[10px] sm:text-xs font-bold text-amber-500 bg-amber-500/10 px-2 sm:px-3 py-1 rounded-full flex items-center border border-amber-500/20 shadow-sm w-fit shrink-0">
+              <AlertCircle className="w-3.5 h-3.5 mr-1.5 shrink-0" /> Faltam {estatisticasMes.diasRestantes} dias
             </span>
           </div>
           <div className={`grid grid-cols-1 gap-4 items-start ${user?.nivel === 'Niv1' ? 'md:grid-cols-2' : 'lg:grid-cols-[1fr_2fr]'}`}>
@@ -816,14 +816,14 @@ const Dashboard = () => {
               />
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto overflow-hidden">
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
                     className={cn(
-                      "w-[200px] h-10 justify-start text-left font-normal bg-background/60",
+                      "w-[160px] sm:w-[200px] h-10 justify-start text-left font-normal bg-background/60 flex-shrink-0",
                       !dateRange && "text-muted-foreground"
                     )}
                   >
@@ -872,10 +872,11 @@ const Dashboard = () => {
               <Button 
                 variant={showAdvancedFilters ? "secondary" : "outline"} 
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="h-10 px-3 bg-background/60"
+                className="h-10 px-3 bg-background/60 flex-1 whitespace-nowrap"
               >
-                <Settings2 className="h-4 w-4 sm:mr-2" />
+                <Settings2 className="h-4 w-4 sm:mr-2 shrink-0" />
                 <span className="hidden sm:inline">Filtros Avançados</span>
+                <span className="sm:hidden inline ml-2 text-xs">Filtros</span>
               </Button>
             </div>
           </div>

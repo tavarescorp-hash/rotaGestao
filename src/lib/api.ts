@@ -120,7 +120,7 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
 
     // Isolamento Multi-Tenant SaaS
     if (user?.empresa_id) {
-       query = query.eq('empresa_id', user.empresa_id);
+      query = query.eq('empresa_id', user.empresa_id);
     }
 
     // Se não for Analista nem Diretor, filtramos estritamente pela árvore ou filial da pessoa para não vazar dados
@@ -156,7 +156,7 @@ export async function buscarVisitasPendentes(user?: any): Promise<Visita[]> {
 
     // Isolamento Multi-Tenant SaaS
     if (user?.empresa_id) {
-       query = query.eq('empresa_id', user.empresa_id);
+      query = query.eq('empresa_id', user.empresa_id);
     }
 
     const { data, error } = await query;
@@ -176,18 +176,18 @@ export async function aprovarVisita(id: string): Promise<boolean> {
       .update({ status_aprovacao: "Aprovado" })
       .eq("id", id)
       .select();
-      
+
     if (error) {
       console.error("Erro Supabase Aprovar:", error);
       return false;
     }
-    
+
     // Confirma que pelo menos 1 linha foi modificada
     if (!data || data.length === 0) {
       console.error("Nenhuma visita foi encontrada ou atualizada com o ID:", id);
       return false;
     }
-    
+
     return true;
   } catch (err) {
     console.error("Exception em aprovarVisita:", err);
@@ -202,7 +202,7 @@ export async function recusarVisita(id: string): Promise<boolean> {
       .delete()
       .eq("id", id)
       .select();
-      
+
     if (error) {
       console.error("Erro Supabase Recusar/Deletar:", error);
       return false;
@@ -212,7 +212,7 @@ export async function recusarVisita(id: string): Promise<boolean> {
       console.error("Nenhuma visita foi encontrada ou deletada com o ID:", id);
       return false;
     }
-    
+
     return true;
   } catch (err) {
     console.error("Exception em recusarVisita:", err);
@@ -252,27 +252,27 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     // ROTEAMENTO OFFLINE (PWA) - Resgata da Memória Local (IndexedDB)
     // ---------------------------------------------------------
     if (!navigator.onLine) {
-       console.log("🌐 Sem internet. Buscando PDV no Cache Local IndexedDB...");
-       const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
-       const dataOff = cachePdvs.find(row => row.codigo === codigoBuscado);
-       
-       if (dataOff) {
-          return {
-            nome_fantasia: dataOff.sigla || dataOff.razao_social,
-            categoria: dataOff.porte,
-            canal_cadastrado: dataOff.canal,
-            filial: dataOff.filial,
-            municipio: "",
-            codigo_vendedor: dataOff.cod_vendedor,
-            nome_vendedor: dataOff.nome_vendedor,
-            nome_supervisor: dataOff.nome_supervisor,
-            supervisor: dataOff.cod_supervisor ? dataOff.cod_supervisor.toString() : "",
-            gerente: dataOff.nome_gerente_vendas,
-            coorden_x: "",
-            coorden_y: ""
-          };
-       }
-       return null; // Não achou no modo offline
+      console.log("🌐 Sem internet. Buscando PDV no Cache Local IndexedDB...");
+      const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
+      const dataOff = cachePdvs.find(row => row.codigo === codigoBuscado);
+
+      if (dataOff) {
+        return {
+          nome_fantasia: dataOff.sigla || dataOff.razao_social,
+          categoria: dataOff.porte,
+          canal_cadastrado: dataOff.canal,
+          filial: dataOff.filial,
+          municipio: "",
+          codigo_vendedor: dataOff.cod_vendedor,
+          nome_vendedor: dataOff.nome_vendedor,
+          nome_supervisor: dataOff.nome_supervisor,
+          supervisor: dataOff.cod_supervisor ? dataOff.cod_supervisor.toString() : "",
+          gerente: dataOff.nome_gerente_vendas,
+          coorden_x: "",
+          coorden_y: ""
+        };
+      }
+      return null; // Não achou no modo offline
     }
 
     let query = supabase
@@ -282,7 +282,7 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
 
     // Isolamento Multi-Tenant SaaS
     if (user?.empresa_id) {
-       query = query.eq('empresa_id', user.empresa_id);
+      query = query.eq('empresa_id', user.empresa_id);
     }
 
     // Aplicação de Restrição RBAC Dinâmica para Pesquisas
@@ -360,7 +360,7 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
       .lt("data_visita", nextDate);
 
     if (user?.empresa_id) {
-       query = query.eq('empresa_id', user.empresa_id);
+      query = query.eq('empresa_id', user.empresa_id);
     }
 
     const { data, error } = await query;
@@ -396,24 +396,24 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
     let data;
 
     if (!navigator.onLine) {
-       console.log("🌐 Sem internet. Buscando FDS no Cache Local IndexedDB...");
-       const cacheData = await getFromDB(STORES.METRICAS_CACHE, 'FDS_FULL');
-       if (cacheData && cacheData.data) {
-          data = cacheData.data;
-       } else {
-          return { produtos: [], execucao: [] };
-       }
+      console.log("🌐 Sem internet. Buscando FDS no Cache Local IndexedDB...");
+      const cacheData = await getFromDB(STORES.METRICAS_CACHE, 'FDS_FULL');
+      if (cacheData && cacheData.data) {
+        data = cacheData.data;
+      } else {
+        return { produtos: [], execucao: [] };
+      }
     } else {
-       let query = supabase
-         .from("produtos_fds")
-         .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
-       
-       const res = await query;
-       if (res.error) {
-         console.error("Erro ao buscar dados FDS:", res.error);
-         return { produtos: [], execucao: [] };
-       }
-       data = res.data;
+      let query = supabase
+        .from("produtos_fds")
+        .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
+
+      const res = await query;
+      if (res.error) {
+        console.error("Erro ao buscar dados FDS:", res.error);
+        return { produtos: [], execucao: [] };
+      }
+      data = res.data;
     }
 
     // Filtra apenas os registros cujo CANAL normalizado bate perfeitamente
@@ -427,14 +427,14 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
       .map((row: any) => ({ nome: row.PRODUTO.trim(), pontos: row.PONTOS || 0 }));
 
     // Remove produtos duplicados baseados no nome, preservando o objeto
-    const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values()) as {nome: string, pontos: number}[];
+    const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values()) as { nome: string, pontos: number }[];
 
     const execucaoRaw = dataFiltrada
       .filter((row: any) => row.EXECUCAO && row.EXECUCAO.trim() !== "")
       .map((row: any) => ({ nome: row.EXECUCAO.trim(), pontos: row.PONTOS || 0 }));
 
     // Remove execuções duplicadas baseadas no nome, preservando o objeto
-    const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values()) as {nome: string, pontos: number}[];
+    const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values()) as { nome: string, pontos: number }[];
 
     return { produtos, execucao };
   } catch (error) {
@@ -472,64 +472,64 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
     // ROTEAMENTO OFFLINE (PWA) - Resgata da Memória Local (IndexedDB)
     // ---------------------------------------------------------
     if (!navigator.onLine) {
-       console.log("🌐 Sem internet. Buscando Vendedores no Cache Local IndexedDB...");
-       const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
-       
-       allData = cachePdvs.filter(pdv => {
-          if (user?.nivel === 'Niv4' && supervisorId) {
-             return pdv.cod_supervisor === supervisorId || pdv.cod_supervisor?.toString() === supervisorId;
-          } else if (user?.nivel === 'Niv3') {
-             if (user.unidade?.toUpperCase().includes("MACA")) {
-                return pdv.filial === 'M' || pdv.filial?.toUpperCase().includes('MACAE') || pdv.filial?.toUpperCase().includes('MACAÉ') || pdv.nome_gerente_vendas === gerenteRef;
-             } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
-                return pdv.filial === 'C' || pdv.filial?.toUpperCase().includes('CAMPOS') || pdv.nome_gerente_vendas === gerenteRef;
-             }
+      console.log("🌐 Sem internet. Buscando Vendedores no Cache Local IndexedDB...");
+      const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
+
+      allData = cachePdvs.filter(pdv => {
+        if (user?.nivel === 'Niv4' && supervisorId) {
+          return pdv.cod_supervisor === supervisorId || pdv.cod_supervisor?.toString() === supervisorId;
+        } else if (user?.nivel === 'Niv3') {
+          if (user.unidade?.toUpperCase().includes("MACA")) {
+            return pdv.filial === 'M' || pdv.filial?.toUpperCase().includes('MACAE') || pdv.filial?.toUpperCase().includes('MACAÉ') || pdv.nome_gerente_vendas === gerenteRef;
+          } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+            return pdv.filial === 'C' || pdv.filial?.toUpperCase().includes('CAMPOS') || pdv.nome_gerente_vendas === gerenteRef;
           }
-          return true;
-       });
+        }
+        return true;
+      });
     } else {
       while (hasMore) {
-      let baseQuery = supabase
-        .from("pdvs")
-        .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente');
+        let baseQuery = supabase
+          .from("pdvs")
+          .select('nome_vendedor, nome_supervisor, filial, nome_gerente_vendas, cod_supervisor, cod_gerente');
 
-      // Isolamento Multi-Tenant SaaS
-      if (user?.empresa_id) {
-         baseQuery = baseQuery.eq('empresa_id', user.empresa_id);
-      }
-
-      // Aplicação de Restrição RBAC Dinâmica no Banco de Dados
-      if (user?.nivel === 'Niv4' && supervisorId) {
-        baseQuery = baseQuery.eq('cod_supervisor', supervisorId);
-      } else if (user?.nivel === 'Niv3') {
-        // Gerente pode ver a própria equipe ou da própria filial inteira no overview
-        if (user.unidade?.toUpperCase().includes("MACA")) {
-          // Acesso Gerente Macaé (M ou MACAÉ)
-          baseQuery = baseQuery.or('filial.eq.M,filial.ilike.%MACAE%');
-        } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
-          // Acesso Gerente Campos (C ou CAMPOS)
-          baseQuery = baseQuery.or('filial.eq.C,filial.ilike.%CAMPOS%');
+        // Isolamento Multi-Tenant SaaS
+        if (user?.empresa_id) {
+          baseQuery = baseQuery.eq('empresa_id', user.empresa_id);
         }
-      }
 
-      const { data, error } = await baseQuery.range(from, from + step - 1);
+        // Aplicação de Restrição RBAC Dinâmica no Banco de Dados
+        if (user?.nivel === 'Niv4' && supervisorId) {
+          baseQuery = baseQuery.eq('cod_supervisor', supervisorId);
+        } else if (user?.nivel === 'Niv3') {
+          // Gerente pode ver a própria equipe ou da própria filial inteira no overview
+          if (user.unidade?.toUpperCase().includes("MACA")) {
+            // Acesso Gerente Macaé (M ou MACAÉ)
+            baseQuery = baseQuery.or('filial.eq.M,filial.ilike.%MACAE%');
+          } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+            // Acesso Gerente Campos (C ou CAMPOS)
+            baseQuery = baseQuery.or('filial.eq.C,filial.ilike.%CAMPOS%');
+          }
+        }
 
-      if (error) {
-        console.error("Erro ao buscar base real de vendedores:", error);
-        break; // Tenta usar o que já pegou se falhar no meio
-      }
+        const { data, error } = await baseQuery.range(from, from + step - 1);
 
-      if (data && data.length > 0) {
-        allData = [...allData, ...data];
-        if (data.length < step) {
-          hasMore = false; // ÚItima página
+        if (error) {
+          console.error("Erro ao buscar base real de vendedores:", error);
+          break; // Tenta usar o que já pegou se falhar no meio
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < step) {
+            hasMore = false; // ÚItima página
+          } else {
+            from += step;
+          }
         } else {
-          from += step;
+          hasMore = false;
         }
-      } else {
-        hasMore = false;
       }
-    }
     } // Fim Else Navigator.OnLine
 
     if (allData.length === 0) return [];
@@ -597,14 +597,14 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
 
       const cleanChunk = chunk.map(row => {
         const cleanRow: any = {};
-        
+
         // Em vez de iterar sobre todas as 150 chaves do Excel velho, puxamos apenas as 20 que precisamos
         for (const allowedKey of allowedColumns) {
           if (row[allowedKey] !== undefined && row[allowedKey] !== null) {
             cleanRow[allowedKey] = String(row[allowedKey]);
           }
         }
-        
+
         // Injeta empresa_id ativamente para forçar o vinculo
         cleanRow.empresa_id = empresaId;
         return cleanRow;
@@ -679,7 +679,7 @@ export async function downloadBasePDVs(user?: any) {
     let from = 0;
     const step = 1000;
     let fetchMore = true;
-    
+
     const empresaId = user?.empresa_id || 1;
 
     while (fetchMore) {
@@ -711,7 +711,7 @@ export async function downloadProdutosFDS(user?: any) {
     let from = 0;
     const step = 1000;
     let fetchMore = true;
-    
+
     const empresaId = user?.empresa_id || 1;
 
     while (fetchMore) {
@@ -751,7 +751,7 @@ export async function getUsers(user?: any) {
 
     // Isolamento Multi-Tenant SaaS
     if (user?.empresa_id) {
-       query = query.eq('empresa_id', user.empresa_id);
+      query = query.eq('empresa_id', user.empresa_id);
     }
 
     const { data, error } = await query;
@@ -838,7 +838,7 @@ export async function createUserAdmin(userData: any): Promise<{ success: boolean
     // Usando o supabase "principal" que está logado como Analista, permitindo a edição por RLS
     // Garante vincular à empresa do Analista que o convocou
     const empresaId = userData.empresa_id || 1;
-    
+
     const { error: profileError } = await supabase.from("profiles").update({
       Nome: userData.Nome,
       nivel: userData.nivel,
@@ -879,7 +879,7 @@ export async function getEmpresas() {
       .from('empresas')
       .select('*')
       .order('id', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -894,7 +894,7 @@ export async function updateEmpresaStatus(id: number, novoStatus: string): Promi
       .from('empresas')
       .update({ status_assinatura: novoStatus })
       .eq('id', id);
-    
+
     if (error) throw error;
     return true;
   } catch (error) {
@@ -903,7 +903,7 @@ export async function updateEmpresaStatus(id: number, novoStatus: string): Promi
   }
 }
 
-export async function createEmpresa(empresa: any): Promise<{success: boolean, message: string, data?: any}> {
+export async function createEmpresa(empresa: any): Promise<{ success: boolean, message: string, data?: any }> {
   try {
     // Injeta status default ativo
     const payload = { ...empresa, status_assinatura: 'Ativa' };
@@ -911,7 +911,7 @@ export async function createEmpresa(empresa: any): Promise<{success: boolean, me
       .from('empresas')
       .insert([payload])
       .select();
-    
+
     if (error) throw error;
     return { success: true, message: "Empresa criada com sincronismo ativo!", data: data[0] };
   } catch (error: any) {
@@ -972,28 +972,28 @@ export async function syncOfflineCache(user?: any): Promise<void> {
   if (!navigator.onLine) return; // Se está sem internet, não tem como puxar
 
   try {
-     console.log("🔄 Baixando dados para uso Offline...");
-     
-     // 1. Baixar Tabela de Clientes (Pdvs)
-     let queryPdv = supabase.from("pdvs").select('filial, codigo, cod_vendedor, nome_vendedor, cod_supervisor, nome_supervisor, cod_gerente, nome_gerente_vendas, nome_gerente_comercial, rota, canal, cnpj_cpf, sigla, razao_social, porte');
-     if (user?.empresa_id) queryPdv = queryPdv.eq('empresa_id', user.empresa_id);
-     
-     const responsePdv = await queryPdv;
-     if (responsePdv.data) {
-        const payloadPdvs = responsePdv.data.map(r => ({...r, cod_pdv: r.codigo}));
-        await saveToDB(STORES.PDVS_CACHE, payloadPdvs);
-     }
+    console.log("🔄 Baixando dados para uso Offline...");
 
-     // 2. Tabela de FDS
-     let queryFds = supabase.from("produtos_fds").select('*');
-     if (user?.empresa_id) queryFds = queryFds.eq('empresa_id', user.empresa_id);
-     const responseFds = await queryFds;
-     if (responseFds.data) {
-        await saveToDB(STORES.METRICAS_CACHE, { id: 'FDS_FULL', data: responseFds.data });
-     }
+    // 1. Baixar Tabela de Clientes (Pdvs)
+    let queryPdv = supabase.from("pdvs").select('filial, codigo, cod_vendedor, nome_vendedor, cod_supervisor, nome_supervisor, cod_gerente, nome_gerente_vendas, nome_gerente_comercial, rota, canal, cnpj_cpf, sigla, razao_social, porte');
+    if (user?.empresa_id) queryPdv = queryPdv.eq('empresa_id', user.empresa_id);
 
-     console.log("✅ Downloads Offline Concluídos. App Ciente de Rede.");
-  } catch(e) {
-     console.error("⚠️ Fallback: Erro ao preencher cache offline.", e);
+    const responsePdv = await queryPdv;
+    if (responsePdv.data) {
+      const payloadPdvs = responsePdv.data.map(r => ({ ...r, cod_pdv: r.codigo }));
+      await saveToDB(STORES.PDVS_CACHE, payloadPdvs);
+    }
+
+    // 2. Tabela de FDS
+    let queryFds = supabase.from("produtos_fds").select('*');
+    if (user?.empresa_id) queryFds = queryFds.eq('empresa_id', user.empresa_id);
+    const responseFds = await queryFds;
+    if (responseFds.data) {
+      await saveToDB(STORES.METRICAS_CACHE, { id: 'FDS_FULL', data: responseFds.data });
+    }
+
+    console.log("✅ Downloads Offline Concluídos. App Ciente de Rede.");
+  } catch (e) {
+    console.error("⚠️ Fallback: Erro ao preencher cache offline.", e);
   }
 }

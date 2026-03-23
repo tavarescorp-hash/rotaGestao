@@ -31,7 +31,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
 
     // Filtrar base de vendedores pela visão do usuário logado
     const vendsValidos = vendedores.filter(v => {
-      if (userLevel === 'Niv1' || (userLevel === 'Niv2' && (userUnidade?.toUpperCase() === 'TODAS' || !userUnidade))) return true; 
+      if (userLevel === 'Niv1' || (userLevel === 'Niv2' && (userUnidade?.toUpperCase() === 'TODAS' || !userUnidade))) return true;
       if (userLevel === 'Niv2') return v.filial === userUnidade; // Comercial enxerga a filial inteira (Gerentes de Vendas + Supervisores + Vendedores)
       if (userLevel === 'Niv3') return v.gerente === userName || v.filial === userUnidade; // Gerente de Vendas enxerga SEUS supervisores
       if (userLevel === 'Niv4') return v.nome_supervisor === userName; // Supervisor vê SEUS vendedores
@@ -85,11 +85,11 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
             <p className="text-xs text-muted-foreground truncate">{vendedor.filial} • {vendedor.municipio}</p>
           </div>
         </div>
-        
+
         <div className="flex gap-4 items-center w-full sm:w-auto mt-2 sm:mt-0">
           <div className="flex flex-col items-center sm:items-end shrink-0">
-             <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">FDS/RGB</span>
-             <Badge variant="secondary" className="mt-1 font-mono">{m.fds} / {m.rgb}</Badge>
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">FDS/RGB</span>
+            <Badge variant="secondary" className="mt-1 font-mono">{m.fds} / {m.rgb}</Badge>
           </div>
           <div className="flex-1 sm:w-32 flex flex-col items-end">
             <div className="flex justify-between w-full mb-1">
@@ -107,11 +107,11 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
     // Achatamos a árvore para o Supervisor
     const meusVendedores = Object.values(tree).flatMap(g => Object.values(g).flatMap(s => s));
     if (meusVendedores.length === 0) return <p className="text-muted-foreground text-sm p-4 text-center">Nenhum vendedor encontrado na sua carteira.</p>;
-    
+
     return (
       <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
         <div className="p-4 bg-muted/20 border-b border-border">
-          <h3 className="font-bold flex items-center gap-2"><Briefcase className="w-4 h-4 text-primary"/> Minha Equipe ({meusVendedores.length})</h3>
+          <h3 className="font-bold flex items-center gap-2"><Briefcase className="w-4 h-4 text-primary" /> Minha Equipe ({meusVendedores.length})</h3>
         </div>
         {meusVendedores.map((v, i) => <VendedorRow key={i} vendedor={v} />)}
       </div>
@@ -122,7 +122,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {Object.entries(tree).map(([gerente, supervisores]) => {
-        
+
         // Pula o agrupamento visual pelo nome do gerente se quem está logado for O PRÓPRIO Gerente de Vendas (Niv3).
         // Isso faz com que a tela dele mostre apenas os Cards de Supervisor (seus subordinados) sem precisar expandir a si mesmo.
         const shouldHideGerenteHeader = isGerenteVendas;
@@ -132,7 +132,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
 
         const qtdeSup = Object.keys(supervisores).length;
         const totalVends = Object.values(supervisores).flat().length;
-        
+
         // Totais Agregados do Gerente
         const tFDS = Object.values(supervisores).flat().reduce((acc, v) => acc + v.metricas.fds, 0);
         const tCoaching = Object.values(supervisores).flat().reduce((acc, v) => acc + v.metricas.coaching, 0);
@@ -169,10 +169,10 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
             <CollapsibleContent className="bg-muted/10">
               <div className={!shouldHideGerenteHeader ? "p-3 pt-0" : "p-0"}>
                 <div className={`flex flex-col gap-2 rounded-lg ${!shouldHideGerenteHeader ? "border-l-2 border-primary/20 ml-2 pl-2 mt-2" : ""}`}>
-                  
+
                   {Object.entries(supervisores).map(([supervisor, vends]) => {
-                    const sFDS = vends.reduce((a,v) => a + v.metricas.fds, 0);
-                    const sCoaching = vends.reduce((a,v) => a + v.metricas.coaching, 0);
+                    const sFDS = vends.reduce((a, v) => a + v.metricas.fds, 0);
+                    const sCoaching = vends.reduce((a, v) => a + v.metricas.coaching, 0);
                     const sMetaCoaching = vends.length * 5;
                     const pctSC = Math.min(100, Math.round((sCoaching / sMetaCoaching) * 100)) || 0;
 
@@ -194,7 +194,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
                             <ChevronDown className="w-4 h-4 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform duration-200" />
                           </div>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent>
                           <div className="bg-card">
                             {vends.map((v, i) => <VendedorRow key={i} vendedor={v} />)}

@@ -106,6 +106,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
   const isFds = tipoVisita === "FDS";
   const isFdsValid = isFds
     ? !!(
+        rgbAcaoConcorrencia !== "" && (rgbAcaoConcorrencia !== "Outro" || rgbAcaoConcorrenciaOutro.trim() !== "") &&
         fdsQtdSkus &&
         fdsRefrigerador &&
         fdsPosicionamento &&
@@ -119,13 +120,13 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
 
   const handleFinalizar = () => {
     let rgbData = undefined;
-    if (isRgb) {
+    if (isRgb || isFds) {
       rgbData = {
-        rgb_foco_visita: rgbFocoVisita,
-        rgb_comprando_outras: rgbComprandoOutras,
-        rgb_ttc_adequado: rgbTtcAdequado,
+        rgb_foco_visita: isRgb ? rgbFocoVisita : "",
+        rgb_comprando_outras: isRgb ? rgbComprandoOutras : "",
+        rgb_ttc_adequado: isRgb ? rgbTtcAdequado : "",
         rgb_acao_concorrencia: rgbAcaoConcorrencia === "Outro" ? `Outro: ${rgbAcaoConcorrenciaOutro}` : rgbAcaoConcorrencia,
-        rgb_observacoes: rgbObservacoes,
+        rgb_observacoes: isRgb ? rgbObservacoes : "",
       };
     }
 
@@ -415,6 +416,37 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
           </CardHeader>
           <CardContent className="pt-6 space-y-8">
             <div className="space-y-4">
+              <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                Há alguma ação vigente da concorrência no PDV? <span className="text-destructive ml-1">*</span>
+              </Label>
+              <RadioGroup value={rgbAcaoConcorrencia} onValueChange={setRgbAcaoConcorrencia} className="grid gap-3">
+                {[
+                  "Sim, ação de preço para volume.",
+                  "Sim, ação promocional para consumidor final.",
+                  "Sim, contrato de visibilidade/exclusividade.",
+                  "Não.",
+                  "Outro"
+                ].map((opt) => (
+                  <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${rgbAcaoConcorrencia === opt ? "border-primary bg-primary/5" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                    <RadioGroupItem value={opt} />
+                    <span className="text-sm font-semibold">{opt === "Outro" ? "Outro:" : opt}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
+
+              {rgbAcaoConcorrencia === "Outro" && (
+                <div className="pl-8 pt-2 animate-in fade-in slide-in-from-top-2">
+                  <Input
+                    placeholder="Descreva a ação da concorrência..."
+                    value={rgbAcaoConcorrenciaOutro}
+                    onChange={(e) => setRgbAcaoConcorrenciaOutro(e.target.value)}
+                    className="h-12 bg-background/50"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-border/40">
               <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
                 Quantos SKUs há no PDV? <span className="text-destructive ml-1">*</span>
               </Label>

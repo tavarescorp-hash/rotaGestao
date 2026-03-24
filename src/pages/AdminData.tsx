@@ -875,6 +875,62 @@ const AdminData = () => {
                                                             </div>
                                                         )}
 
+                                                        {visitaSelecionada.indicador_avaliado === "FDS" && (
+                                                            <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
+                                                                <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                                                                    📋 Questionário FDS
+                                                                </h4>
+                                                                {visitaSelecionada.rgb_acao_concorrencia && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_acao_concorrencia}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_qtd_skus && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_qtd_skus}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_refrigerador && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerador}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_posicionamento && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_posicionamento}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_refrigerados && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerados}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_precificados && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_precificados}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_melhoria_precificacao && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_melhoria_precificacao}</span>
+                                                                    </div>
+                                                                )}
+                                                                {visitaSelecionada.fds_observacoes && (
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
+                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_observacoes}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         <div className="flex items-center justify-between">
                                                             <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
                                                                 <CheckCircle2 className="w-4 h-4 text-green-500" />

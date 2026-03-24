@@ -1201,6 +1201,62 @@ const Dashboard = () => {
                         </div>
                       )}
 
+                      {selectedVisita.indicador_avaliado === "FDS" && (
+                        <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
+                          <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                            📋 Questionário FDS
+                          </h4>
+                          {selectedVisita.rgb_acao_concorrencia && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
+                              <span className="text-sm font-semibold">{selectedVisita.rgb_acao_concorrencia}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_qtd_skus && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_qtd_skus}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_refrigerador && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_refrigerador}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_posicionamento && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_posicionamento}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_refrigerados && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_refrigerados}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_precificados && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_precificados}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_melhoria_precificacao && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_melhoria_precificacao}</span>
+                            </div>
+                          )}
+                          {selectedVisita.fds_observacoes && (
+                            <div>
+                              <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
+                              <span className="text-sm font-semibold">{selectedVisita.fds_observacoes}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-green-500" />

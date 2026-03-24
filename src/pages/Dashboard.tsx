@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getQuestionsForIndicator } from "@/lib/formulariosConfig";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1164,11 +1165,28 @@ const Dashboard = () => {
 
                 {/* Dinâmico por Tipo de Visita */}
                 <div className="space-y-6 pt-4 border-t border-border/50">
-
-                  {/* FDS ou RGB - Produtos e Execução */}
-                  {(selectedVisita.indicador_avaliado === "FDS" || selectedVisita.indicador_avaliado?.includes("RGB")) && (
+                  {/* Motor Dinâmico de Exibição ou Retrocompatibilidade */}
+                  {selectedVisita.respostas_json_dynamic && Object.keys(selectedVisita.respostas_json_dynamic).length > 0 ? (
+                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
+                      <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
+                        📋 Questionário: {selectedVisita.indicador_avaliado}
+                      </h4>
+                      {(() => {
+                        const qs = getQuestionsForIndicator(selectedVisita.indicador_avaliado || "");
+                        return qs.map(q => {
+                          const answer = selectedVisita.respostas_json_dynamic?.[q.id];
+                          if (!answer) return null;
+                          return (
+                            <div key={q.id}>
+                              <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
+                              <span className="text-sm font-semibold">{answer}</span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  ) : (
                     <div className="space-y-4">
-
                       {selectedVisita.indicador_avaliado?.includes("RGB") && (
                         <div className="bg-purple-500/5 border border-purple-500/20 p-4 rounded-xl space-y-3 mb-6">
                           <h4 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-widest flex items-center gap-2">

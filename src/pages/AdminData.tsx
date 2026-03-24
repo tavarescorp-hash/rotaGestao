@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
 import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao, getEmpresas } from '@/lib/api';
 import { format } from 'date-fns';
-
+import { getQuestionsForIndicator } from '@/lib/formulariosConfig';
 const AdminData = () => {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -838,176 +838,117 @@ const AdminData = () => {
 
                                             {/* Dinâmico por Tipo de Visita */}
                                             <div className="space-y-6 pt-4 border-t border-border/50">
-
-                                                {/* FDS ou RGB - Produtos e Execução */}
-                                                {(visitaSelecionada.indicador_avaliado === "FDS" || visitaSelecionada.indicador_avaliado?.includes("RGB")) && (
-                                                    <div className="space-y-4">
-
-                                                        {visitaSelecionada.indicador_avaliado?.includes("RGB") && (
-                                                            <div className="bg-purple-500/5 border border-purple-500/20 p-4 rounded-xl space-y-3 mb-6">
-                                                                <h4 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                                                                    📋 Questionário RGB
-                                                                </h4>
-                                                                {visitaSelecionada.rgb_foco_visita && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Foco da visita</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_foco_visita}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.rgb_comprando_outras && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Comprando de outra fonte?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_comprando_outras}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.rgb_ttc_adequado && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">TTC adequado?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_ttc_adequado}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.rgb_acao_concorrencia && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_acao_concorrencia}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {visitaSelecionada.indicador_avaliado === "FDS" && (
-                                                            <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
-                                                                <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                                                                    📋 Questionário FDS
-                                                                </h4>
-                                                                {visitaSelecionada.rgb_acao_concorrencia && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_acao_concorrencia}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_qtd_skus && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_qtd_skus}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_refrigerador && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerador}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_posicionamento && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_posicionamento}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_refrigerados && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerados}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_precificados && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_precificados}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_melhoria_precificacao && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_melhoria_precificacao}</span>
-                                                                    </div>
-                                                                )}
-                                                                {visitaSelecionada.fds_observacoes && (
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
-                                                                        <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_observacoes}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center justify-between">
-                                                            <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                                                                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                                                Mix Padrão Localizado
+                                            {/* Motor Dinâmico de Exibição ou Retrocompatibilidade */}
+                                            {visitaSelecionada.respostas_json_dynamic && Object.keys(visitaSelecionada.respostas_json_dynamic).length > 0 ? (
+                                                <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
+                                                    <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
+                                                        📋 Questionário: {visitaSelecionada.indicador_avaliado}
+                                                    </h4>
+                                                    {(() => {
+                                                        const qs = getQuestionsForIndicator(visitaSelecionada.indicador_avaliado || "");
+                                                        return qs.map(q => {
+                                                            const answer = visitaSelecionada.respostas_json_dynamic?.[q.id];
+                                                            if (!answer) return null;
+                                                            return (
+                                                                <div key={q.id} className="mb-2">
+                                                                    <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
+                                                                    <span className="text-sm font-semibold text-foreground bg-muted/40 px-2 py-1 rounded inline-block mt-1">{answer}</span>
+                                                                </div>
+                                                            );
+                                                        });
+                                                    })()}
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {visitaSelecionada.indicador_avaliado?.includes("RGB") && (
+                                                        <div className="bg-purple-500/5 border border-purple-500/20 p-4 rounded-xl space-y-3 mb-6">
+                                                            <h4 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                                                                📋 Questionário RGB
                                                             </h4>
-                                                            <Badge variant="outline" className="font-bold border-primary shadow-sm text-foreground">
-                                                                Score: {visitaSelecionada.pontuacao_total || 0} pts
-                                                            </Badge>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="p-4 rounded-xl bg-card border border-border/40">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos Encontrados ({visitaSelecionada.produtos_selecionados ? visitaSelecionada.produtos_selecionados.split(";").length : 0})</span>
-                                                                {visitaSelecionada.produtos_selecionados ? (
-                                                                      <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                          {visitaSelecionada.produtos_selecionados.split(';').map((p: string, i: number) => {
-                                                                              const trimmed = p.trim();
-                                                                              if (!trimmed) return null;
-                                                                              return <Badge key={i} variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">{trimmed}</Badge>;
-                                                                          })}
-                                                                      </div>
-                                                                ) : (
-                                                                    <span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-4 rounded-xl bg-card border border-border/40">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução POSITIVA ({visitaSelecionada.execucao_selecionada ? visitaSelecionada.execucao_selecionada.split(";").length : 0})</span>
-                                                                {visitaSelecionada.execucao_selecionada ? (
-                                                                      <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                          {visitaSelecionada.execucao_selecionada.split(';').map((e: string, i: number) => {
-                                                                              const trimmed = e.trim();
-                                                                              if (!trimmed) return null;
-                                                                              return <Badge key={i} variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">{trimmed}</Badge>;
-                                                                          })}
-                                                                      </div>
-                                                                ) : (
-                                                                    <span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        {visitaSelecionada.produtos_nao_selecionados && (
-                                                            <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 mt-4">
-                                                                <span className="text-[10px] uppercase font-bold text-destructive mb-3 block">Gaps (Produtos Faltantes) ({visitaSelecionada.produtos_nao_selecionados.split(";").length})</span>
-                                                                <div className="flex flex-wrap gap-1.5 pt-1 text-sm">
-                                                                    {visitaSelecionada.produtos_nao_selecionados.split(';').map((p: string, i: number) => {
-                                                                        const trimmed = p.trim();
-                                                                        if (!trimmed) return null;
-                                                                        return <Badge key={i} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">{trimmed}</Badge>;
-                                                                    })}
+                                                            {visitaSelecionada.rgb_foco_visita && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Foco da visita</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_foco_visita}</span>
                                                                 </div>
-                                                            </div>
-                                                        )}
-
-                                                        {(visitaSelecionada.fds_qtd_skus || visitaSelecionada.fds_refrigerador || visitaSelecionada.fds_posicionamento || visitaSelecionada.fds_refrigerados || visitaSelecionada.fds_precificados) && (
-                                                            <div className="p-4 rounded-xl flex flex-col gap-3 bg-secondary/20 border border-secondary mt-4">
-                                                                <h4 className="text-sm font-extrabold text-foreground mb-1 uppercase tracking-widest flex items-center gap-2">
-                                                                    📋 Detalhamento FDS Extra
-                                                                </h4>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                                                    {visitaSelecionada.fds_qtd_skus && <div><span className="text-xs font-bold text-muted-foreground block">Qtd SKUs:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_qtd_skus}</span></div>}
-                                                                    {visitaSelecionada.fds_refrigerador && <div><span className="text-xs font-bold text-muted-foreground block">Refrigerador FDS:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_refrigerador}</span></div>}
-                                                                    {visitaSelecionada.fds_posicionamento && <div><span className="text-xs font-bold text-muted-foreground block">Posicionamento Cerveja:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_posicionamento}</span></div>}
-                                                                    {visitaSelecionada.fds_refrigerados && <div><span className="text-xs font-bold text-muted-foreground block">Min. 30% Refrigerados:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_refrigerados}</span></div>}
-                                                                    {visitaSelecionada.fds_precificados && <div><span className="text-xs font-bold text-muted-foreground block">Mix 100% Precificado:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_precificados}</span></div>}
-                                                                    {visitaSelecionada.fds_melhoria_precificacao && <div><span className="text-xs font-bold text-muted-foreground block">Melhoria Preços:</span> <span className="font-semibold text-foreground">{visitaSelecionada.fds_melhoria_precificacao}</span></div>}
+                                                            )}
+                                                            {visitaSelecionada.rgb_comprando_outras && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Comprando de outra fonte?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_comprando_outras}</span>
                                                                 </div>
-                                                                {visitaSelecionada.fds_observacoes && (
-                                                                    <div className="mt-2 text-xs italic text-zinc-400 border-t border-secondary/30 pt-2">
-                                                                        "{visitaSelecionada.fds_observacoes}"
-                                                                    </div>
-                                                                )}
+                                                            )}
+                                                            {visitaSelecionada.rgb_ttc_adequado && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">TTC adequado?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_ttc_adequado}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.rgb_acao_concorrencia && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_acao_concorrencia}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {visitaSelecionada.indicador_avaliado === "FDS" && (
+                                                        <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
+                                                            <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                                                                📋 Questionário FDS
+                                                            </h4>
+                                                            {visitaSelecionada.rgb_acao_concorrencia && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.rgb_acao_concorrencia}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_qtd_skus && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_qtd_skus}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_refrigerador && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerador}</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                            )}
+                                                            {visitaSelecionada.fds_posicionamento && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_posicionamento}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_refrigerados && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_refrigerados}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_precificados && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_precificados}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_melhoria_precificacao && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_melhoria_precificacao}</span>
+                                                                </div>
+                                                            )}
+                                                            {visitaSelecionada.fds_observacoes && (
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
+                                                                    <span className="text-sm font-semibold text-foreground">{visitaSelecionada.fds_observacoes}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
                                                 {/* COACHING */}
                                                 {visitaSelecionada.indicador_avaliado?.toUpperCase().includes("COACHING") && (

@@ -43,6 +43,7 @@ export interface Visita {
   execucao_nao_selecionada?: string;
   status_aprovacao?: string;
   empresa_id?: number;
+  respostas_json_dynamic?: Record<string, string>;
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string; offline?: boolean }> {

@@ -175,6 +175,7 @@ const NovaVisita = () => {
     produtosNaoSelecionados?: string[];
     execucaoNaoSelecionada?: string[];
     empresa_id?: number;
+    respostasDinamicas?: Record<string, string>;
   }) => {
     setLoading(true);
     const result = await enviarVisita({
@@ -215,6 +216,7 @@ const NovaVisita = () => {
       produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       execucao_nao_selecionada: payload.execucaoNaoSelecionada ? payload.execucaoNaoSelecionada.join("; ") : "",
       empresa_id: user?.empresa_id || 1,
+      respostas_json_dynamic: payload.respostasDinamicas || {},
     });
 
     toast({
@@ -462,14 +464,15 @@ const NovaVisita = () => {
             <StepProdutosExecucao
               canalCadastrado={form.canal_cadastrado}
               tipoVisita={form.tipo_visita}
-              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[], execucaoNaoSelecionada?: string[]) => handleSubmitFinal({
+              onSubmit={(produtos: string[], execucoes: string[], pontuacao: number, rgbData?: RgbSubmitData, fdsData?: any, produtosNaoSelecionados?: string[], execucaoNaoSelecionada?: string[], respostasDinamicas?: Record<string, string>) => handleSubmitFinal({
                 produtosSelecionados: produtos,
                 execucaoSelecionada: execucoes,
                 pontuacaoTotal: pontuacao,
                 rgbData: rgbData,
                 fdsData: fdsData,
                 produtosNaoSelecionados: produtosNaoSelecionados,
-                execucaoNaoSelecionada: execucaoNaoSelecionada
+                execucaoNaoSelecionada: execucaoNaoSelecionada,
+                respostasDinamicas: respostasDinamicas
               })}
               loading={loading}
             />

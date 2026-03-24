@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscarVisitas, excluirVisita, buscarVendedoresAtivos, type Visita, type VendedorAtivo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -6,24 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getQuestionsForIndicator } from "@/lib/formulariosConfig";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, XCircle, AlertCircle, DownloadCloud, User, Users, Search, Settings2 } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, DownloadCloud, User, Users, Search, Settings2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
+import { getIndicadoresPorNivel } from "@/lib/roles";
 import { TeamHierarchyView } from '@/components/TeamHierarchyView';
+import { useDashboardMetrics } from "@/features/relatorios/hooks/useDashboardMetrics";
+import { VisitaModalDialog } from "@/features/relatorios/components/VisitaModalDialog";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -32,22 +30,20 @@ const Dashboard = () => {
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [vendedoresBaseReal, setVendedoresBaseReal] = useState<VendedorAtivo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date())
-  });
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [unidade, setUnidade] = useState("todas");
-  const [indicadorFiltro, setIndicadorFiltro] = useState("todos");
-  const [cargoFiltro, setCargoFiltro] = useState("todos");
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
-  const [activeTab, setActiveTab] = useState("minhas");
-  const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
-  const [searchTerm, setSearchTerm] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA');
-  const isGerenteComercial = user?.nivel === 'Niv2';
+  const {
+    dateRange, setDateRange,
+    unidade, setUnidade,
+    indicadorFiltro, setIndicadorFiltro,
+    cargoFiltro, setCargoFiltro,
+    activeTab, setActiveTab,
+    searchTerm, setSearchTerm,
+    isAnalista, isGerenteComercial,
+    filtradas, visitasHierarchy,
+    estatisticasMes, dadosGraficoAnalista, cargosUnicos, unidadesUnicas
+  } = useDashboardMetrics(visitas, vendedoresBaseReal, user);
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -62,284 +58,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     carregarVisitas();
-
   }, []);
 
   useEffect(() => {
     if (user?.unidade && user.unidade !== "todas" && unidade === "todas") {
       setUnidade(user.unidade);
     }
-    // Gerente Comercial (Niv2) inicia na aba Macaé por padrão
-    if (user?.nivel === 'Niv2' && activeTab === 'minhas') {
-      setActiveTab('macae');
-    }
-  }, [user?.unidade, user?.nivel]);
-
-
-
-  const minhasVisitas = useMemo(() => {
-    if (isAnalista) {
-      return visitas;
-    }
-    // Niv2 (Gerente Comercial): filtra por unidade conforme aba ativa (Macaé/Campos)
-    if (isGerenteComercial) {
-      if (activeTab === 'macae') {
-        return visitas.filter(v => v.unidade?.toUpperCase().includes('MACA') || v.unidade === 'M');
-      } else if (activeTab === 'campos') {
-        return visitas.filter(v => v.unidade?.toUpperCase().includes('CAMPO') || v.unidade === 'C');
-      }
-      return visitas;
-    }
-    // Aba "Supervisores": Exibe os da unidade logada GERAL, EXCETO os relatórios feitos pelos PRÓPRIOS gerentes
-    if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-      const uLogada = user?.unidade?.toUpperCase() || "";
-      return visitas.filter(v => {
-        const dUnidade = v.unidade?.toUpperCase() || "";
-        const isSameUnidade = (uLogada.includes('MACA') && (dUnidade.includes('MACA') || dUnidade === 'M')) ||
-                              (uLogada.includes('CAMPO') && (dUnidade.includes('CAMPO') || dUnidade === 'C')) ||
-                              (dUnidade === uLogada);
-        
-        return isSameUnidade && !v.cargo?.toUpperCase().includes('GERENTE');
-      });
-    }
-    // Aba "Minhas Avaliações": Exibe EXATAMENTE as que o Logado fez
-    return visitas.filter(v => v.avaliador === user?.name);
-  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab, isAnalista, isGerenteComercial]);
-
-  const avaliadoresUnicos = useMemo(() => {
-    const avaliadoresValidos = minhasVisitas
-      .map(v => v.avaliador)
-      .filter(Boolean) as string[];
-
-    const unicos = Array.from(new Set(avaliadoresValidos));
-    return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
-
-  const filtradas = useMemo(() => {
-    return minhasVisitas.filter((v) => {
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase().trim();
-        const nomeS = v.nome_vendedor?.toLowerCase() || '';
-        const avalS = v.avaliador?.toLowerCase() || '';
-        if (!nomeS.includes(term) && !avalS.includes(term)) return false;
-      }
-
-      if (avaliadorFiltro !== "todos" && v.avaliador !== avaliadorFiltro) return false;
-
-      if (dateRange?.from || dateRange?.to) {
-        // Separa YYYY-MM-DD em números inteiros para criar 
-        // uma data "limpa" ao meio-dia, totalmente blindada contra fuso horário.
-        const [anoStr, mesStr, diaStr] = (v.data_visita || "").split("-");
-        if (!anoStr || !mesStr || !diaStr) return false;
-
-        const visitaDate = new Date(parseInt(anoStr), parseInt(mesStr) - 1, parseInt(diaStr), 12, 0, 0);
-
-        if (dateRange?.from) {
-          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate(), 0, 0, 0);
-          if (visitaDate < fromStart) return false;
-        }
-        if (dateRange?.to) {
-          const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59);
-          if (visitaDate > toEnd) return false;
-        }
-      }
-
-      if (unidade !== "todas" && v.unidade !== unidade) return false;
-      if (indicadorFiltro !== "todos" && v.indicador_avaliado !== indicadorFiltro) return false;
-      if (cargoFiltro !== "todos" && v.cargo !== cargoFiltro) return false;
-      return true;
-    });
-  }, [minhasVisitas, dateRange, unidade, indicadorFiltro, cargoFiltro, avaliadorFiltro, searchTerm]);
-
-  // Base exclusiva para a Árvore de Performance: ignora filtros textuais e Dropdowns para nunca zerar a tela
-  const visitasHierarchy = useMemo(() => {
-    // A Performance da Equipe mostra todos os subordinados da hierarquia do Logado invariavelmente, 
-    // desconsiderando abas de 'Campos/Macaé' ou 'Minhas/Equipe' no front-end.
-    const baseHierarchy = visitas;
-
-    return baseHierarchy.filter((v) => {
-      // Aplica APENAS o filtro de Data, o resto ignora completamente.
-      if (dateRange?.from || dateRange?.to) {
-        const [anoStr, mesStr, diaStr] = (v.data_visita || "").split("-");
-        if (!anoStr || !mesStr || !diaStr) return false;
-
-        const visitaDate = new Date(parseInt(anoStr), parseInt(mesStr) - 1, parseInt(diaStr), 12, 0, 0);
-
-        if (dateRange?.from) {
-          const fromStart = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate(), 0, 0, 0);
-          if (visitaDate < fromStart) return false;
-        }
-        if (dateRange?.to) {
-          const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59);
-          if (visitaDate > toEnd) return false;
-        }
-      }
-      return true;
-    });
-  }, [minhasVisitas, dateRange]);
-
-  const estatisticasMes = useMemo(() => {
-    // Usamos a base 'filtradas' para as contagens, assim os cards respeitam o Período, Cargo e Unidade escolhidos.
-    const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
-    
-    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado && INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado)).length;
-    const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado && INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado)).length;
-    
-    const qtdeRGB = filtradas.filter(v => {
-      if (!v.indicador_avaliado) return false;
-      return INDICADORES_TIPO_RGB.includes(v.indicador_avaliado) && 
-             !INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado) && 
-             !INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado);
-    }).length;
-
-    // Coaching detalhado
-    const coachingVisitas = filtradas.filter(v => v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado));
-    const qtdeCoaching = coachingVisitas.length;
-
-    // Calculando base de vendedores
-    // Pegamos a base oficial de Vendedores vindas do banco de clientes para 
-    // listar sempre 0 visitas para quem a equipe tem sob responsabilidade, 
-    // preenchendo o Coaching com a equipe completa esteticamente.
-    const mapaVendedores = new Map<string, number>();
-    const baseVendedoresOficiais = new Set<string>();
-
-    const normalizeStr = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
-
-    const userLogadoNome = normalizeStr(user?.name);
-    const avaliadorEscolhido = normalizeStr(avaliadorFiltro);
-    const avaliadoresHistoricoNormalizados = avaliadoresUnicos.map(normalizeStr);
-
-    // Extrai possível código numérico se a função do usuário for 'SUPERVISOR 200'
-    const userSupCode = user?.funcao?.match(/\d+/)?.[0] || "";
-
-    vendedoresBaseReal.forEach(v => {
-      let match = true;
-      const supName = normalizeStr(v.nome_supervisor);
-
-      if (avaliadorFiltro !== "todos") {
-        match = supName === avaliadorEscolhido;
-      }
-
-      // O backend Supabase AGORA JÁ FILTROU a lista vendedoresBaseReal via Superv(1) ou Gerente(1).
-      // Então, se o usuário não filtrou um avaliador específico acima, todo mundo que veio
-      // da API pertence a ele legitimamente.
-
-      if (match && v.nome_vendedor) {
-        // Apenas contabiliza a base oficial para fins de Teto de Meta,
-        // mas não exibe o vendedor visualmente até ele receber uma avaliação de fato.
-        const vNomeNormalizado = v.nome_vendedor.toUpperCase().trim();
-        baseVendedoresOficiais.add(vNomeNormalizado);
-      }
-    });
-
-    const vendedoresBaseCount = baseVendedoresOficiais.size;
-
-    // Cria um Set apenas com vendedores avaliados em Coaching
-    const vendedoresCoachingAtuais = new Set<string>();
-
-    coachingVisitas.forEach(v => {
-      if (v.nome_vendedor) {
-        const vNomeNormalizado = v.nome_vendedor.toUpperCase().trim();
-        vendedoresCoachingAtuais.add(vNomeNormalizado);
-        mapaVendedores.set(vNomeNormalizado, (mapaVendedores.get(vNomeNormalizado) || 0) + 1);
-      }
-    });
-
-    // Se houve avaliações de coaching para alguém fora da base oficial (ex: transferência),
-    // incluímos ele no teto total de vendedores da equipe para não estourar 100%.
-    const vendedoresCoachingCount = vendedoresCoachingAtuais.size;
-    const vendedoresUnicos = Math.max(vendedoresBaseCount, vendedoresCoachingCount);
-
-    const detalhesCoaching = Array.from(mapaVendedores.entries()).map(([nome, atual]) => ({
-      nome,
-      atual,
-      meta: 5 // Meta fixa por vendedor (5)
-    })).sort((a, b) => b.atual - a.atual); // Ordena pelos que tem mais visitas
-
-    const multi = (user?.nivel === 'Niv3' && activeTab === 'unidade' && avaliadorFiltro === 'todos')
-      ? Math.max(1, avaliadoresUnicos.length)
-      : 1;
-
-    let META_FDS = 10 * multi;
-    let META_RGB = 20 * multi;
-    let META_COACHING = Math.max(1, vendedoresUnicos) * 5;
-    let META_COMPASS = 0;
-    let META_QUEDAS = 0;
-
-    // Regra solicitada: Metas de acordo com a Hierarquia ROL
-    if (user?.nivel === 'Niv1') {
-      META_FDS = 0;
-      META_RGB = 0; // Desativa a visualização do card RGB agrupado
-      META_COMPASS = 10;
-      META_QUEDAS = 10;
-      META_COACHING = 0;
-    } else if (user?.nivel === 'Niv2') {
-      META_FDS = 10;
-      META_RGB = 0;
-      META_COMPASS = 0;
-      META_QUEDAS = 10;
-      META_COACHING = 10;
-    } else if (user?.nivel === 'Niv3') {
-      META_FDS = 20;
-      META_RGB = 10;
-      META_COACHING = 20;
-    } else if (user?.nivel === 'Niv4' || user?.email === 'carlos.junior@unibeer.com.br') { // Supervisor
-      META_COACHING = 40;
-    }
-
-    // Calcular dias restantes com base no filtro final
-    const hoje = new Date();
-    // Se há um dateRange.to, calculamos em relação a ele, senão final do mês atual.
-    const fim = dateRange?.to || new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    const difTempo = fim.getTime() - hoje.getTime();
-    const dias = Math.max(0, Math.ceil(difTempo / (1000 * 3600 * 24)));
-
-    return {
-      qtdeFDS, qtdeRGB, qtdeCoaching, qtdeCompass, qtdeQuedas,
-      META_FDS, META_RGB, META_COACHING, META_COMPASS, META_QUEDAS,
-      baseVendedores: vendedoresUnicos,
-      vendedoresAvaliados: vendedoresCoachingCount,
-      detalhesCoaching,
-      diasRestantes: dias
-    };
-  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab, vendedoresBaseReal, user?.name]);
-
-  const dadosGraficoAnalista = useMemo(() => {
-    if (!isAnalista) return [];
-
-    const mapa = new Map<string, { name: string, FDS: number, RGB: number, Coaching: number }>();
-
-    filtradas.forEach(v => {
-      const nomeAvaliador = v.avaliador;
-      if (!nomeAvaliador) return;
-
-      if (!mapa.has(nomeAvaliador)) {
-        mapa.set(nomeAvaliador, { name: nomeAvaliador, FDS: 0, RGB: 0, Coaching: 0 });
-      }
-
-      const curr = mapa.get(nomeAvaliador)!;
-      if (v.indicador_avaliado === 'FDS') curr.FDS++;
-      else if (v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado)) curr.RGB++;
-      else if (v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado)) curr.Coaching++;
-    });
-
-    return Array.from(mapa.values()).sort((a, b) => (b.FDS + b.RGB + b.Coaching) - (a.FDS + a.RGB + a.Coaching));
-  }, [filtradas, isAnalista]);
-
-  const indicadoresUnicos = useMemo(() => {
-    const unicos = Array.from(new Set(minhasVisitas.map(v => v.indicador_avaliado).filter(Boolean) as string[]));
-    return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
-
-  const cargosUnicos = useMemo(() => {
-    const unicos = Array.from(new Set(minhasVisitas.map(v => v.cargo).filter(Boolean) as string[]));
-    return unicos.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
-
-  const unidadesUnicas = useMemo(() => {
-    const unicas = Array.from(new Set(minhasVisitas.map(v => v.unidade).filter(Boolean) as string[]));
-    return unicas.sort((a, b) => a.localeCompare(b));
-  }, [minhasVisitas]);
+  }, [user?.unidade, user?.nivel, unidade, setUnidade]);
 
   const handleExcluir = async (id: string) => {
     const result = await excluirVisita(id);
@@ -818,7 +543,7 @@ const Dashboard = () => {
             </div>
             
             <div className="flex gap-2 w-full md:w-auto overflow-hidden">
-              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
@@ -853,16 +578,13 @@ const Dashboard = () => {
                     selected={dateRange}
                     onSelect={(range) => {
                       setDateRange(range);
-                      if (range?.from && range?.to) {
-                        setIsCalendarOpen(false);
-                      }
                     }}
                     numberOfMonths={1}
                     locale={ptBR}
                   />
                   {(dateRange?.from || dateRange?.to) && (
                     <div className="p-3 border-t">
-                      <Button variant="ghost" size="sm" className="w-full" onClick={() => { setDateRange(undefined); setIsCalendarOpen(false); }}>
+                      <Button variant="ghost" size="sm" className="w-full" onClick={() => { setDateRange(undefined); }}>
                         Limpar Datas
                       </Button>
                     </div>
@@ -1064,323 +786,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Dialog para Detalhes da Visita */}
-      <Dialog open={!!selectedVisita} onOpenChange={(open) => !open && setSelectedVisita(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0 border-primary/20 bg-background/95 backdrop-blur-xl">
-          <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/30">
-            <div className="flex items-start justify-between">
-              <div>
-                <DialogTitle className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-                  <ClipboardList className="w-6 h-6 text-primary" />
-                  Detalhes do Registro
-                </DialogTitle>
-                <DialogDescription className="mt-1 font-medium">
-                  {selectedVisita && (() => {
-                    const [a, m, d] = (selectedVisita.data_visita || "").split("-");
-                    return a && m && d ? `${d}/${m}/${a}` : selectedVisita.data_visita;
-                  })()} • {selectedVisita?.unidade}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
-            {selectedVisita && (
-              <div className="space-y-6 pb-6">
-
-                <div className="bg-card border border-border/50 p-6 rounded-xl shadow-sm space-y-5">
-
-                  {/* Linha 1: 1. Data, 2. Unidade, 3. Avaliador, 4. Cargo */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/30">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Data da Visita</span>
-                      <span className="text-sm font-bold flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        {(() => {
-                          const [a, m, d] = (selectedVisita.data_visita || "").split("-");
-                          return a && m && d ? `${d}/${m}/${a}` : selectedVisita.data_visita;
-                        })()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Unidade</span>
-                      <span className="text-sm font-semibold flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        {selectedVisita.unidade}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Avaliador</span>
-                      <span className="text-sm font-semibold">{selectedVisita.avaliador}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Cargo</span>
-                      <Badge variant="secondary" className="text-[10px] font-bold py-0.5">{selectedVisita.cargo}</Badge>
-                    </div>
-                  </div>
-
-                  {/* Linha 2: 5. Vendedor, 6. Codigo, 7. Fantasia, 8. Potencial */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/30">
-                    <div className="col-span-2 lg:col-span-1">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Vendedor Rep.</span>
-                      <span className="text-sm font-semibold">
-                        {selectedVisita.codigo_vendedor ? `${selectedVisita.codigo_vendedor} - ${selectedVisita.nome_vendedor}` : selectedVisita.nome_vendedor || "-"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Código PDV</span>
-                      <span className="text-sm font-mono font-bold bg-muted/50 px-2 py-0.5 rounded">{selectedVisita.codigo_pdv}</span>
-                    </div>
-                    <div className="col-span-2 lg:col-span-1">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Nome Fantasia do PDV</span>
-                      <span className="text-sm font-bold truncate block" title={selectedVisita.nome_fantasia_pdv}>
-                        {selectedVisita.nome_fantasia_pdv}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Potencial Cliente</span>
-                      <span className="text-sm font-semibold">{selectedVisita.potencial_cliente || "-"}</span>
-                    </div>
-                  </div>
-
-                  {/* Linha 3: 9. Canal Cad., 10. Canal Identificado, 11. Indicador Avaliado */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Canal Cadastrado</span>
-                      <span className="text-sm font-semibold">{selectedVisita.canal_cadastrado || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Canal Identificado</span>
-                      <span className="text-sm font-semibold">{selectedVisita.canal_identificado || selectedVisita.canal_cadastrado || "-"}</span>
-                    </div>
-                    <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 -mt-2">
-                      <span className="text-[10px] uppercase font-bold text-primary block mb-1">Indicador Avaliado</span>
-                      <Badge className="bg-primary text-primary-foreground font-bold shadow-sm whitespace-normal text-center w-full block">
-                        {selectedVisita.indicador_avaliado}
-                      </Badge>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Dinâmico por Tipo de Visita */}
-                <div className="space-y-6 pt-4 border-t border-border/50">
-                  {/* Motor Dinâmico de Exibição ou Retrocompatibilidade */}
-                  {selectedVisita.respostas_json_dynamic && Object.keys(selectedVisita.respostas_json_dynamic).length > 0 ? (
-                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
-                      <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
-                        📋 Questionário: {selectedVisita.indicador_avaliado}
-                      </h4>
-                      {(() => {
-                        const qs = getQuestionsForIndicator(selectedVisita.indicador_avaliado || "");
-                        return qs.map(q => {
-                          const answer = selectedVisita.respostas_json_dynamic?.[q.id];
-                          if (!answer) return null;
-                          return (
-                            <div key={q.id}>
-                              <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
-                              <span className="text-sm font-semibold">{answer}</span>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {selectedVisita.indicador_avaliado?.includes("RGB") && (
-                        <div className="bg-purple-500/5 border border-purple-500/20 p-4 rounded-xl space-y-3 mb-6">
-                          <h4 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                            📋 Questionário RGB
-                          </h4>
-                          {selectedVisita.rgb_foco_visita && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Foco da visita</span>
-                              <span className="text-sm font-semibold">{selectedVisita.rgb_foco_visita}</span>
-                            </div>
-                          )}
-                          {selectedVisita.rgb_comprando_outras && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Comprando de outra fonte?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.rgb_comprando_outras}</span>
-                            </div>
-                          )}
-                          {selectedVisita.rgb_ttc_adequado && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">TTC adequado?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.rgb_ttc_adequado}</span>
-                            </div>
-                          )}
-                          {selectedVisita.rgb_acao_concorrencia && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.rgb_acao_concorrencia}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {selectedVisita.indicador_avaliado === "FDS" && (
-                        <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
-                          <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                            📋 Questionário FDS
-                          </h4>
-                          {selectedVisita.rgb_acao_concorrencia && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.rgb_acao_concorrencia}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_qtd_skus && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_qtd_skus}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_refrigerador && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_refrigerador}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_posicionamento && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_posicionamento}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_refrigerados && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_refrigerados}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_precificados && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_precificados}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_melhoria_precificacao && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_melhoria_precificacao}</span>
-                            </div>
-                          )}
-                          {selectedVisita.fds_observacoes && (
-                            <div>
-                              <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
-                              <span className="text-sm font-semibold">{selectedVisita.fds_observacoes}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          Mix Padrão Localizado
-                        </h4>
-                        <Badge variant="outline" className="font-bold border-primary shadow-sm">
-                          Score: {selectedVisita.pontuacao_total} pts
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 rounded-xl bg-card border border-border/40">
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos ({selectedVisita.produtos_selecionados ? selectedVisita.produtos_selecionados.split(";").length : 0})</span>
-                          {selectedVisita.produtos_selecionados ? (
-                            <ul className="space-y-1.5 text-sm">
-                              {selectedVisita.produtos_selecionados.split("; ").map((p, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                                  {p}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>
-                          )}
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-card border border-border/40">
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução ({selectedVisita.execucao_selecionada ? selectedVisita.execucao_selecionada.split(";").length : 0})</span>
-                          {selectedVisita.execucao_selecionada ? (
-                            <ul className="space-y-1.5 text-sm">
-                              {selectedVisita.execucao_selecionada.split("; ").map((e, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-secondary-foreground/30 mt-1.5 shrink-0" />
-                                  {e}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* COACHING */}
-                  {selectedVisita.indicador_avaliado === "COACHING ROTA BASICA COM VENDEDOR" && (
-                    <div className="space-y-6 pt-2">
-                      <div>
-                        <h4 className="text-sm font-extrabold text-blue-500 mb-3 flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" /> Passos da Rotina Básica Realizados
-                        </h4>
-                        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                          {selectedVisita.passos_coaching ? (
-                            <ul className="space-y-2 text-sm">
-                              {selectedVisita.passos_coaching.split("; ").map((p, idx) => (
-                                <li key={idx} className="flex items-start gap-2 font-semibold text-foreground/80">
-                                  {p.includes("Não realizou") ? <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" /> : <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />}
-                                  {p}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-sm text-muted-foreground italic">Nada computado</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <span className="text-xs font-bold uppercase tracking-widest text-green-500">Pontos Fortes</span>
-                          <div className="p-4 text-sm font-medium bg-green-500/5 rounded-xl border border-green-500/20 min-h-[100px] whitespace-pre-wrap">
-                            {selectedVisita.pontos_fortes || "-"}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <span className="text-xs font-bold uppercase tracking-widest text-destructive">Pontos a Desenvolver</span>
-                          <div className="p-4 text-sm font-medium bg-destructive/5 rounded-xl border border-destructive/20 min-h-[100px] whitespace-pre-wrap">
-                            {selectedVisita.pontos_desenvolver || "-"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Observações Gerais */}
-                {selectedVisita.observacoes && (
-                  <div className="pt-6 border-t border-border/50">
-                    <h4 className="text-sm font-extrabold text-foreground mb-3 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-orange-400" />
-                      Observações Finais / Plano de Ação
-                    </h4>
-                    <div className="p-4 rounded-xl bg-orange-400/5 border border-orange-400/20 text-sm font-medium text-foreground/80 italic leading-relaxed whitespace-pre-wrap">
-                      "{selectedVisita.observacoes}"
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <VisitaModalDialog 
+        selectedVisita={selectedVisita} 
+        onClose={() => setSelectedVisita(null)} 
+      />
     </div >
   );
 };

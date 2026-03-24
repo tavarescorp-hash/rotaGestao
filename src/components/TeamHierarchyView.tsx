@@ -6,14 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronDown, ChevronRight, User, Users, Briefcase, TrendingUp } from 'lucide-react';
 import { INDICADORES_TIPO_RGB, REQUER_COACHING } from '@/lib/roles';
 
-interface VendedorAtivo {
-  nome_vendedor: string;
-  nome_supervisor: string;
-  codigo_sup: string;
-  municipio: string;
-  filial: string;
-  gerente: string;
-}
+import { VendedorAtivo } from '@/lib/api';
 
 interface HierarchyProps {
   visitas: any[];

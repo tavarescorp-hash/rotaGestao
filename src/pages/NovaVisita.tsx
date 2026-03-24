@@ -1,258 +1,42 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { enviarVisita, buscarPdvPorCodigo, verificarVisitaMensal } from "@/lib/api";
+import { useVisitaForm } from "@/features/visitas/hooks/useVisitaForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, ArrowRight, Loader2, Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import StepProdutosExecucao, { RgbSubmitData } from "@/components/StepProdutosExecucao";
-import StepCoaching, { CoachingSubmitData } from "@/components/StepCoaching";
-
-const canalOptions = [
-  "Padaria/Confeitaria",
-  "Armazém/Mercearia",
-  "Adega",
-  "Lanchonete",
-  "Restaurante C/D",
-  "Restaurante A/B",
-  "Bar C/D",
-  "Bar A/B",
-  "Entretenimento Espec.",
-  "Loja de Conveniência",
-  "Mini C/D",
-  "Mini A/B",
-  "Super C/D",
-  "Super A/B",
-];
-
-const potencialOptions = ["Diamante", "Ouro", "Prata", "Bronze"];
-
-
+import { ArrowLeft, Loader2, Search } from "lucide-react";
+import StepProdutosExecucao, { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
+import StepCoaching, { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
 
 import { getIndicadoresPorNivel, REQUER_PRODUTOS_EXECUCAO, REQUER_COACHING } from "@/lib/roles";
 
+const canalOptions = [
+  "Padaria/Confeitaria", "Armazém/Mercearia", "Adega", "Lanchonete",
+  "Restaurante C/D", "Restaurante A/B", "Bar C/D", "Bar A/B",
+  "Entretenimento Espec.", "Loja de Conveniência", "Mini C/D", "Mini A/B",
+  "Super C/D", "Super A/B",
+];
+
 const NovaVisita = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [isSearchingPdv, setIsSearchingPdv] = useState(false);
-  const [pdvBuscado, setPdvBuscado] = useState(false);
-
-  const [form, setForm] = useState({
-    data_visita: new Date().toISOString().split("T")[0],
-    tipo_visita: "",
-    observacoes: "",
-    codigo_pdv: "",
-    nome_fantasia_pdv: "",
-    potencial_cliente: "",
-    canal_identificado: "",
-    canal_cadastrado: "",
-    filial: "",
-    municipio: "",
-    codigo_vendedor: "",
-    nome_vendedor: "",
-    coorden_x: "",
-    coorden_y: "",
-  });
+  const {
+    user,
+    form,
+    loading,
+    isSearchingPdv,
+    pdvBuscado,
+    handleChange,
+    handlePesquisarPdv,
+    handleSubmitFinal,
+    setPdvBuscado
+  } = useVisitaForm();
 
   const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
-  const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handlePesquisarPdv = async () => {
-    if (!form.data_visita || !user?.unidade || !user?.funcao || !form.codigo_pdv) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha a data e o código do cliente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSearchingPdv(true);
-    try {
-      // O banco de dados salva o código como "C12171" ou "M12171", mas o input agora só aceita "12171".
-      // Vamos adicionar o prefixo dinâmico baseado na unidade caso o usuário tenha digitado apenas números.
-      let prefixo = "";
-      const isMacae = user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ');
-
-      if (isMacae) {
-        prefixo = "M";
-      } else if (user?.unidade?.toUpperCase().includes('CAMPOS')) {
-        prefixo = "C";
-      } else {
-        prefixo = "C"; // Fallback
-      }
-
-      const codigoBusca = form.codigo_pdv.match(/^\d+$/) ? `${prefixo}${form.codigo_pdv}` : form.codigo_pdv;
-
-      const currentUserName = user?.name?.toUpperCase() || "";
-
-      // Verifica se o PDV já foi visitado pelo usuário logado no mês selecionado
-      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita);
-
-      if (jaVisitado) {
-        toast({
-          title: "Ação Bloqueada",
-          description: "Você já realizou uma visita para este PDV neste mês.",
-          variant: "destructive",
-        });
-        setPdvBuscado(false);
-        return;
-      }
-
-      const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
-      const isGerente = user?.nivel === 'Niv3';
-      const supervisorId = (!isGerente && user?.funcao?.includes('SUPERVISOR'))
-        ? user.funcao.replace('SUPERVISOR ', '')
-        : undefined;
-
-      const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
-      if (pdvData) {
-        // Obter nome em caixa alta para comparação insensível
-
-        setForm((prev) => ({
-          ...prev,
-          nome_fantasia_pdv: pdvData.nome_fantasia || "",
-          canal_cadastrado: pdvData.canal_cadastrado || "",
-          potencial_cliente: pdvData.categoria || "",
-          filial: pdvData.filial || "",
-          municipio: pdvData.municipio || "",
-          codigo_vendedor: pdvData.codigo_vendedor || "",
-          nome_vendedor: pdvData.nome_vendedor || "",
-          coorden_x: pdvData.coorden_x || "",
-          coorden_y: pdvData.coorden_y || "",
-        }));
-        setPdvBuscado(true);
-        toast({
-          title: "Cliente Localizado",
-          description: "Dados do PDV preenchidos com sucesso.",
-        });
-      } else {
-        setPdvBuscado(false);
-        setForm(prev => ({
-          ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", codigo_vendedor: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
-        }));
-        toast({
-          title: "Cliente não encontrado",
-          description: "O código não foi encontrado na base de dados. Não é possível prosseguir.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsSearchingPdv(false);
-    }
-  };
-
-
-  const handleSubmitFinal = async (payload: {
-    produtosSelecionados?: string[];
-    execucaoSelecionada?: string[];
-    pontuacaoTotal?: number;
-    passos_coaching?: string[];
-    pontos_fortes?: string;
-    pontos_desenvolver?: string;
-    observacoes?: string;
-    rgbData?: RgbSubmitData;
-    fdsData?: {
-      fds_qtd_skus: string;
-      fds_refrigerador: string;
-      fds_posicionamento: string;
-      fds_refrigerados: string;
-      fds_precificados: string;
-      fds_melhoria_precificacao: string;
-      fds_observacoes: string;
-    };
-    produtosNaoSelecionados?: string[];
-    execucaoNaoSelecionada?: string[];
-    empresa_id?: number;
-    respostasDinamicas?: Record<string, string>;
-  }) => {
-    setLoading(true);
-    const result = await enviarVisita({
-      data_visita: form.data_visita,
-      unidade: user?.unidade || "",
-      avaliador: user?.name || "",
-      cargo: user?.funcao || "",
-      indicador_avaliado: form.tipo_visita,
-      observacoes: payload.observacoes || "",
-      codigo_pdv: form.codigo_pdv,
-      nome_fantasia_pdv: form.nome_fantasia_pdv,
-      potencial_cliente: form.potencial_cliente,
-      canal_identificado: form.canal_identificado,
-      canal_cadastrado: form.canal_cadastrado,
-      filial: form.filial,
-      municipio: form.municipio,
-      codigo_vendedor: form.codigo_vendedor,
-      nome_vendedor: form.nome_vendedor,
-      coorden_x: form.coorden_x,
-      coorden_y: form.coorden_y,
-      produtos_selecionados: payload.produtosSelecionados ? payload.produtosSelecionados.join("; ") : "",
-      execucao_selecionada: payload.execucaoSelecionada ? payload.execucaoSelecionada.join("; ") : "",
-      pontuacao_total: payload.pontuacaoTotal || 0,
-      pontos_fortes: payload.pontos_fortes || "",
-      pontos_desenvolver: payload.pontos_desenvolver || "",
-      passos_coaching: payload.passos_coaching ? payload.passos_coaching.join("; ") : "",
-      rgb_foco_visita: payload.rgbData?.rgb_foco_visita || "",
-      rgb_comprando_outras: payload.rgbData?.rgb_comprando_outras || "",
-      rgb_ttc_adequado: payload.rgbData?.rgb_ttc_adequado || "",
-      rgb_acao_concorrencia: payload.rgbData?.rgb_acao_concorrencia || "",
-      fds_qtd_skus: payload.fdsData?.fds_qtd_skus || "",
-      fds_refrigerador: payload.fdsData?.fds_refrigerador || "",
-      fds_posicionamento: payload.fdsData?.fds_posicionamento || "",
-      fds_refrigerados: payload.fdsData?.fds_refrigerados || "",
-      fds_precificados: payload.fdsData?.fds_precificados || "",
-      fds_melhoria_precificacao: payload.fdsData?.fds_melhoria_precificacao || "",
-      fds_observacoes: payload.fdsData?.fds_observacoes || "",
-      produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
-      execucao_nao_selecionada: payload.execucaoNaoSelecionada ? payload.execucaoNaoSelecionada.join("; ") : "",
-      empresa_id: user?.empresa_id || 1,
-      respostas_json_dynamic: payload.respostasDinamicas || {},
-    });
-
-    toast({
-      title: result.success ? "Sucesso!" : "Erro",
-      description: result.message,
-      variant: result.success ? "default" : "destructive",
-    });
-
-    if (result.success) {
-      setForm({
-        data_visita: new Date().toISOString().split("T")[0],
-        tipo_visita: "",
-        observacoes: "",
-        codigo_pdv: "",
-        nome_fantasia_pdv: "",
-        potencial_cliente: "",
-        canal_identificado: "",
-        canal_cadastrado: "",
-        filial: "",
-        municipio: "",
-        codigo_vendedor: "",
-        nome_vendedor: "",
-        coorden_x: "",
-        coorden_y: "",
-      });
-      setPdvBuscado(false);
-      window.scrollTo(0, 0);
-      navigate("/dashboard");
-    }
-    setLoading(false);
-  };
-
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-      {/* Header with Progress Tracker */}
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button
@@ -272,7 +56,6 @@ const NovaVisita = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Top Info: Date and Search */}
           <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden">
             <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6 bg-card/40 relative z-10">
               <div className="flex items-center gap-2">
@@ -350,7 +133,6 @@ const NovaVisita = () => {
             </CardContent>
           </div>
 
-          {/* 2 - Informações do PDV */}
           {pdvBuscado && (
             <Card className="glass-card bg-card/40 border-primary/10 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
               <CardHeader className="pb-3 sm:pb-4 border-b border-border/40 p-4 sm:p-6">
@@ -428,7 +210,7 @@ const NovaVisita = () => {
               <CardContent className="p-4 sm:p-6 pt-5 sm:pt-6">
                 <RadioGroup value={form.tipo_visita} onValueChange={(v) => handleChange("tipo_visita", v)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {tipoVisitaOptions.map((option) => {
-                    const isDisabled = false; // Agora opções vêm restritas do nível, nunca bloqueadas
+                    const isDisabled = false;
                     return (
                       <div key={option} className={`
                         relative rounded-xl border-2 transition-all duration-200 overflow-hidden

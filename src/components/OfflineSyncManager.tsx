@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { CloudOff, RefreshCw, UploadCloud, Wifi } from "lucide-react";
 import { getAllFromDB, deleteFromDB, STORES } from "../lib/indexedDB";
-import { supabase } from "../lib/supabase";
+import { processOfflineQueue } from "@/features/offline/api/syncEngine.service";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
 
@@ -20,7 +20,7 @@ export const OfflineSyncManager = () => {
     }
   }, []);
 
-  const processOfflineQueue = async () => {
+  const processQueue = async () => {
     if (!navigator.onLine) {
       toast({
         title: "Atenção",
@@ -33,28 +33,7 @@ export const OfflineSyncManager = () => {
     if (pendingVisits.length === 0) return;
 
     setIsSyncing(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const visita of pendingVisits) {
-      try {
-        // Remover timestamp de controle interno antes de mandar ao Supabase
-        const { id, _localTimestamp, ...payloadToInsert } = visita; 
-
-        const { error } = await supabase.from("visitas").insert([payloadToInsert]);
-        
-        if (error) {
-          console.error("Falha ao sincronizar visita pendente", error);
-          failCount++;
-        } else {
-          await deleteFromDB(STORES.OFFLINE_QUEUE, id);
-          successCount++;
-        }
-      } catch (e) {
-         console.error("Exception no processamento da fila", e);
-         failCount++;
-      }
-    }
+    const { successCount, failCount } = await processOfflineQueue();
 
     setIsSyncing(false);
     await checkPendingQueue(); // Atualiza contador UI
@@ -88,7 +67,7 @@ export const OfflineSyncManager = () => {
       setTimeout(() => {
         checkPendingQueue().then(() => {
            // Tenta auto-processar se houver itens
-           processOfflineQueue();
+           processQueue();
         });
       }, 3000);
     };
@@ -141,7 +120,7 @@ export const OfflineSyncManager = () => {
 
         {isOnline && pendingVisits.length > 0 && (
           <Button 
-            onClick={processOfflineQueue}
+            onClick={processQueue}
             disabled={isSyncing}
             size="sm"
             className="w-full mt-1 bg-amber-600 hover:bg-amber-700 text-white shadow-md active:scale-95 transition-all text-xs h-8 font-bold"

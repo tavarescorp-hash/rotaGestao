@@ -34,7 +34,7 @@ export function TeamHierarchyView({ visitas, vendedores, userLevel, userName, us
       if (userLevel === 'Niv1' || (userLevel === 'Niv2' && (userUnidade?.toUpperCase() === 'TODAS' || !userUnidade))) return true;
       if (userLevel === 'Niv2') return v.filial === userUnidade; // Comercial enxerga a filial inteira (Gerentes de Vendas + Supervisores + Vendedores)
       if (userLevel === 'Niv3') return v.gerente === userName || v.filial === userUnidade; // Gerente de Vendas enxerga SEUS supervisores
-      if (userLevel === 'Niv4') return v.nome_supervisor === userName; // Supervisor vê SEUS vendedores
+      if (userLevel === 'Niv4') return true; // Supervisor já recebe a lista 100% filtrada e segura da API via "cod_supervisor"
       return true; // fallback analista
     });
 

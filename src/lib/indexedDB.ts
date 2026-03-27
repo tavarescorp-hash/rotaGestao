@@ -7,7 +7,8 @@ export const STORES = {
   OFFLINE_QUEUE: "offline_queue",
   PDVS_CACHE: "pdvs_cache",
   VENDEDORES_CACHE: "vendedores_cache",
-  METRICAS_CACHE: "metricas_cache"
+  METRICAS_CACHE: "metricas_cache",
+  VISITAS_CACHE: "visitas_cache"
 };
 
 /**
@@ -15,24 +16,26 @@ export const STORES = {
  */
 export const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(DB_NAME, 2); // Aumentar versão para trigger de upgrade
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
 
       // Cria as Object Stores se não existirem
       if (!db.objectStoreNames.contains(STORES.OFFLINE_QUEUE)) {
-        // Cada visita salva offline ganha um ID auto-incrementado interno
         db.createObjectStore(STORES.OFFLINE_QUEUE, { keyPath: "id", autoIncrement: true });
       }
       if (!db.objectStoreNames.contains(STORES.PDVS_CACHE)) {
         db.createObjectStore(STORES.PDVS_CACHE, { keyPath: "cod_pdv" });
       }
       if (!db.objectStoreNames.contains(STORES.VENDEDORES_CACHE)) {
-        db.createObjectStore(STORES.VENDEDORES_CACHE, { keyPath: "email" });
+        db.createObjectStore(STORES.VENDEDORES_CACHE, { keyPath: "cod_vendedor" });
       }
       if (!db.objectStoreNames.contains(STORES.METRICAS_CACHE)) {
         db.createObjectStore(STORES.METRICAS_CACHE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORES.VISITAS_CACHE)) {
+        db.createObjectStore(STORES.VISITAS_CACHE, { keyPath: "id" });
       }
     };
 

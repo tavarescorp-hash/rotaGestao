@@ -47,6 +47,3 @@ export async function createEmpresa(empresa: any): Promise<{ success: boolean, m
   }
 }
 
-export async function createUserAdminForEmpresa(userData: any): Promise<{ success: boolean; message: string }> {
-  return createUserAdmin(userData);
-}

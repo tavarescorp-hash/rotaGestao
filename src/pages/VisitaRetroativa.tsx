@@ -112,9 +112,6 @@ const VisitaRetroativa = () => {
 
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
       const isGerente = user?.nivel === 'Niv3';
-      const supervisorId = (!isGerente && user?.funcao?.includes('SUPERVISOR'))
-        ? user.funcao.replace('SUPERVISOR ', '')
-        : undefined;
 
       const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
       if (pdvData) {

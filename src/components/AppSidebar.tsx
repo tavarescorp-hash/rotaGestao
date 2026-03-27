@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Database, CalendarPlus, Globe } from "lucide-react";
+import { LayoutDashboard, PlusCircle, LogOut, Shield, User, Users, Database, CalendarPlus, Globe } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Equipe", url: "/performance-equipe", icon: Users },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
   { title: "Visita Retroativa", url: "/retroativa", icon: CalendarPlus },
   { title: "Gestão de Dados", url: "/admin-data", icon: Database },
@@ -76,9 +77,11 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 // Nível Master de SaaS não mistura operações de rua (ocultar relatórios)
                 if (isMaster) {
-                  if (item.title === "Dashboard" || item.title === "Nova Visita" || item.title === "Visita Retroativa") return null;
+                  if (item.title === "Dashboard" || item.title === "Equipe" || item.title === "Nova Visita" || item.title === "Visita Retroativa") return null;
                 } else {
-                  if (isAnalista && item.title === "Nova Visita") return null;
+                  const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
+                  
+                  if (isAnalista && !isGestor && (item.title === "Nova Visita" || item.title === "Equipe")) return null;
                   if (!isAnalista && item.title === "Gestão de Dados") return null;
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)

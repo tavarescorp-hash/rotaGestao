@@ -23,6 +23,33 @@ export async function syncOfflineCache(user?: any): Promise<void> {
       await saveToDB(STORES.METRICAS_CACHE, { id: 'FDS_FULL', data: responseFds.data });
     }
 
+    let queryVend = supabase.from("vendedores").select(`
+      cod_vendedor,
+      nome,
+      cidade,
+      supervisores (
+        id,
+        nome,
+        filial,
+        gerente
+      )
+    `);
+    if (user?.empresa_id) queryVend = queryVend.eq('empresa_id', user.empresa_id);
+    const responseVend = await queryVend;
+    
+    if (responseVend.data) {
+      const payloadVend = responseVend.data.map((r: any) => ({
+        cod_vendedor: r.cod_vendedor,
+        nome_vendedor: r.nome,
+        nome_supervisor: r.supervisores?.nome || "",
+        codigo_sup: r.supervisores?.id?.toString() || "",
+        municipio: r.cidade || "",
+        filial: r.supervisores?.filial || "",
+        gerente: r.supervisores?.gerente || ""
+      }));
+      await saveToDB(STORES.VENDEDORES_CACHE, payloadVend);
+    }
+
     console.log("✅ Downloads Offline Concluídos. App Ciente de Rede.");
   } catch (e) {
     console.error("⚠️ Fallback: Erro ao preencher cache offline.", e);

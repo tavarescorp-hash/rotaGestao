@@ -1,5 +1,5 @@
 import { supabase } from '@/core/api/supabaseClient';
-import { STORES } from '@/lib/indexedDB';
+import { STORES, getAllFromDB } from '@/lib/indexedDB';
 import { addPendingActionToQueue } from '@/features/offline/api/syncEngine.service';
 
 export interface Visita {
@@ -43,6 +43,7 @@ export interface Visita {
   status_aprovacao?: string;
   empresa_id?: number;
   respostas_json_dynamic?: Record<string, string>;
+  id_avaliador?: string;
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string; offline?: boolean }> {
@@ -108,6 +109,17 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
 
 export async function buscarVisitas(user?: any): Promise<Visita[]> {
   try {
+    if (!navigator.onLine) {
+      console.log("🌐 Sem internet. Buscando Visitas no Cache Local...");
+      const cache = await getAllFromDB(STORES.VISITAS_CACHE);
+      
+      // Aplicar filtros básicos de segurança (empresa_id) se existirem no cache
+      return cache.filter(v => {
+        if (user?.empresa_id && v.empresa_id !== user.empresa_id) return false;
+        return true;
+      });
+    }
+
     let query = supabase
       .from("visitas")
       .select("*")

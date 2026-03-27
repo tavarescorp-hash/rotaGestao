@@ -24,6 +24,50 @@ export async function syncOfflineCache(user?: any): Promise<void> {
       await saveToDB(STORES.METRICAS_CACHE, { id: 'FDS_FULL', data: responseFds.data });
     }
 
+    // 3. Vendedores e Supervisores (Fase 6 - Sincronismo Relacional)
+    console.log("👥 Baixando Hierarquia para Performance Offline...");
+    
+    let queryVend = supabase.from("vendedores").select(`
+      cod_vendedor, 
+      nome, 
+      cidade, 
+      supervisor_id,
+      supervisores!inner (
+        id,
+        nome,
+        filial,
+        gerente,
+        gerente_comercial
+      )
+    `);
+    if (user?.empresa_id) queryVend = queryVend.eq('empresa_id', user.empresa_id);
+    const responseVend = await queryVend;
+    
+    if (responseVend.data) {
+      // Formatamos para o padrão VendedorAtivo esperado pelo App
+      const payloadVendedores = responseVend.data.map((r: any) => ({
+        cod_vendedor: r.cod_vendedor,
+        nome_vendedor: r.nome,
+        nome_supervisor: r.supervisores?.nome || "",
+        codigo_sup: r.supervisores?.id?.toString() || "",
+        municipio: r.cidade || "",
+        filial: r.supervisores?.filial || "",
+        gerente: r.supervisores?.gerente || "",
+        gerente_comercial: r.supervisores?.gerente_comercial || ""
+      }));
+      await saveToDB(STORES.VENDEDORES_CACHE, payloadVendedores);
+    }
+
+    // 4. Visitas Aprovadas (Fase 6 - Indicadores Offline)
+    console.log("📊 Baixando Histórico de Visitas para Indicadores...");
+    let queryVis = supabase.from("visitas").select("*").eq("status_aprovacao", "Aprovado");
+    if (user?.empresa_id) queryVis = queryVis.eq('empresa_id', user.empresa_id);
+    
+    const responseVis = await queryVis;
+    if (responseVis.data) {
+      await saveToDB(STORES.VISITAS_CACHE, responseVis.data);
+    }
+
     console.log("✅ Downloads Offline Concluídos. App Ciente de Rede.");
   } catch (e) {
     console.error("⚠️ Fallback: Erro ao preencher cache offline.", e);

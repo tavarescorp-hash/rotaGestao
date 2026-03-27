@@ -144,7 +144,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     }
 
     let fdsData = undefined;
-    if (isFds) {
+    if (isFds || isRgb) {
       fdsData = {
         fds_qtd_skus: respostasDinamicas["qtd_skus"],
         fds_refrigerador: respostasDinamicas["possui_refrigerador"],
@@ -344,12 +344,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {produto.nome}
                       </span>
-                      <Badge
-                        variant={isChecked ? "default" : "secondary"}
-                        className={`text-xs shrink-0 font-bold ${isChecked ? 'shadow-sm shadow-primary/20' : 'opacity-70'}`}
-                      >
-                        +{produto.pontos}
-                      </Badge>
+
                     </label>
                   );
                 })}
@@ -395,16 +390,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {item.nome}
                       </span>
-                      <Badge
-                        variant={isChecked ? "default" : "secondary"}
-                        className={`text-xs shrink-0 font-bold ${isChecked ? 'shadow-sm shadow-primary/20' : 'opacity-70'}`}
-                      >
-                        {tipoVisita === "FDS" ? (
-                          <span className="text-[10px] uppercase font-normal tracking-wider">Vinculado</span>
-                        ) : (
-                          <>+{item.pontos}</>
-                        )}
-                      </Badge>
+
                     </label>
                   );
                 })}

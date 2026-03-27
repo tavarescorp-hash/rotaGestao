@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscarVisitas, excluirVisita, buscarVendedoresAtivos, type Visita, type VendedorAtivo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -11,17 +11,17 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, DownloadCloud, User, Users, Search, Settings2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, DownloadCloud, User, Users, Settings2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { getIndicadoresPorNivel } from "@/lib/roles";
-import { TeamHierarchyView } from '@/components/TeamHierarchyView';
+import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 import { useDashboardMetrics } from "@/features/relatorios/hooks/useDashboardMetrics";
 import { VisitaModalDialog } from "@/features/relatorios/components/VisitaModalDialog";
+import { HierarchyLeaderboard } from "@/features/relatorios/components/HierarchyLeaderboard";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -32,6 +32,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filtroIndicadorModal, setFiltroIndicadorModal] = useState<string | null>(null);
+
 
   const {
     dateRange, setDateRange,
@@ -39,11 +41,36 @@ const Dashboard = () => {
     indicadorFiltro, setIndicadorFiltro,
     cargoFiltro, setCargoFiltro,
     activeTab, setActiveTab,
-    searchTerm, setSearchTerm,
+    avaliadorFiltro, setAvaliadorFiltro,
+    usuarioFiltro, setUsuarioFiltro,
     isAnalista, isGerenteComercial,
     filtradas, visitasHierarchy,
     estatisticasMes, dadosGraficoAnalista, cargosUnicos, unidadesUnicas
   } = useDashboardMetrics(visitas, vendedoresBaseReal, user);
+
+  const handleSelectHierarchy = (level: string, name: string) => {
+    // Limpar filtros anteriores
+    setUnidade("todas");
+    setAvaliadorFiltro("todos");
+    setUsuarioFiltro("todos");
+    setIndicadorFiltro("todos");
+    setCargoFiltro("todos");
+
+    if (level === "filial") {
+      const u = name.toUpperCase().includes("MACA") ? "MACAÉ" : name.toUpperCase().includes("CAMPO") ? "CAMPOS" : "todas";
+      setUnidade(u);
+    } else if (level === "comercial" || level === "gerente") {
+      setUsuarioFiltro(name);
+    } else if (level === "supervisor") {
+      setAvaliadorFiltro(name);
+    }
+
+    setShowAdvancedFilters(true);
+    toast({
+      title: `Filtrando por ${level}: ${name}`,
+      description: "As métricas acima agora refletem apenas este grupo.",
+    });
+  };
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -253,48 +280,32 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Gerenciamento de Camadas para Gerente (Niv3) */}
-      {user?.nivel === 'Niv3' && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-in fade-in slide-in-from-top-2">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[500px] h-12 bg-background/50 border border-border/40 shadow-sm">
-            <TabsTrigger value="minhas" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Minhas Avaliações</TabsTrigger>
-            <TabsTrigger value="unidade" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">Supervisores ({user?.unidade})</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
-      {/* Abas de Unidades para Gerente Comercial (Niv2) */}
-      {isGerenteComercial && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-in fade-in slide-in-from-top-2">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] h-12 bg-background/50 border border-border/40 shadow-sm">
-            <TabsTrigger value="macae" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">
-              📍 Macaé
-            </TabsTrigger>
-            <TabsTrigger value="campos" className="font-bold uppercase tracking-widest text-[10px] sm:text-xs h-full">
-              📍 Campos
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
       {/* Metas e Progresso Mensal */}
       {user && !isAnalista && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary shrink-0" /> <span className="truncate">Metas do Período Selecionado</span>
-            </h3>
-            <span className="text-[10px] sm:text-xs font-bold text-amber-500 bg-amber-500/10 px-2 sm:px-3 py-1 rounded-full flex items-center border border-amber-500/20 shadow-sm w-fit shrink-0">
-              <AlertCircle className="w-3.5 h-3.5 mr-1.5 shrink-0" /> Faltam {estatisticasMes.diasRestantes} dias
-            </span>
-          </div>
-          <div className={`grid grid-cols-1 gap-4 items-start ${user?.nivel === 'Niv1' ? 'md:grid-cols-2' : 'lg:grid-cols-[1fr_2fr]'}`}>
+        <>
+          <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0 shadow-inner">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold uppercase tracking-widest text-primary leading-tight">
+                  {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? "Performance da Gestão" : "Meus Indicadores"}
+                </h2>
+                <p className="text-xs text-muted-foreground font-semibold">Toda a sua performance detalhada do período.</p>
+              </div>
+            </div>
+
+            <div className={`grid grid-cols-1 gap-4 items-start ${user?.nivel === 'Niv1' ? 'md:grid-cols-2' : 'lg:grid-cols-[1fr_2fr]'}`}>
 
             {/* Coluna 1 da Direita/Esquerda - FDS e RGB Empilhados (ou Grid Completa Niv1) */}
             <div className={`flex gap-4 ${user?.nivel === 'Niv1' ? 'flex-row col-span-1 md:col-span-2' : 'flex-col'}`}>
               {/* Meta FDS (Oculta para Diretor) */}
               {user?.nivel !== 'Niv1' && (
-                <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm h-full w-full">
+                <Card 
+                  onClick={() => setFiltroIndicadorModal('FDS')}
+                  className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm h-full w-full transition-all"
+                >
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
@@ -323,7 +334,10 @@ const Dashboard = () => {
 
               {/* Meta RGB Padrão */}
               {user?.nivel !== 'Niv1' && user?.nivel !== 'Niv2' && (
-                <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm w-full">
+                <Card 
+                  onClick={() => setFiltroIndicadorModal('RGB')}
+                  className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
+                >
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
@@ -352,7 +366,10 @@ const Dashboard = () => {
 
               {/* Meta Maiores Potenciais Compass (Apenas Diretor) */}
               {user?.nivel === 'Niv1' && (
-                <Card className="glass-card bg-card/40 border-blue-500/20 overflow-hidden relative shadow-sm w-full">
+                <Card 
+                  onClick={() => setFiltroIndicadorModal('COMPASS')}
+                  className="glass-card bg-card/40 border-blue-500/20 hover:border-blue-500/50 hover:bg-blue-500/10 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
+                >
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
@@ -381,7 +398,10 @@ const Dashboard = () => {
 
               {/* Meta Maiores Quedas */}
               {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
-                <Card className="glass-card bg-card/40 border-amber-500/20 overflow-hidden relative shadow-sm w-full">
+                <Card 
+                  onClick={() => setFiltroIndicadorModal('QUEDAS')}
+                  className="glass-card bg-card/40 border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
+                >
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
@@ -411,7 +431,10 @@ const Dashboard = () => {
 
             {/* Meta COACHING (Coluna Larga Esticada) */}
             {user?.nivel !== 'Niv1' && (
-              <Card className="glass-card bg-card/40 border-primary/10 overflow-hidden relative shadow-sm flex flex-col h-full min-h-[220px]">
+              <Card 
+                onClick={() => setFiltroIndicadorModal('COACHING')}
+                className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm flex flex-col h-full min-h-[220px] transition-all"
+              >
                 <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex flex-col gap-3 mb-4">
                   <div className="flex justify-between items-end mb-1">
@@ -473,8 +496,91 @@ const Dashboard = () => {
             </Card>
             )}
 
+            </div>
           </div>
-        </div>
+
+          {/* Seção de Hierarquia (Fase 7: Visão 360º Diretor/Gerente Comercial) */}
+          {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
+            <div className="pt-2 animate-in fade-in slide-in-from-bottom-3 duration-700">
+              <HierarchyLeaderboard 
+                visitas={visitasHierarchy} 
+                vendedores={vendedoresBaseReal}
+                onSelectLevel={handleSelectHierarchy}
+              />
+            </div>
+          )}
+
+          <Dialog open={!!filtroIndicadorModal} onOpenChange={(open) => !open && setFiltroIndicadorModal(null)}>
+            <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-background/95 backdrop-blur-md border-primary/20">
+              <DialogHeader className="mb-4">
+                <div className="flex items-start sm:items-center gap-3">
+                  <Button variant="ghost" size="icon" onClick={() => setFiltroIndicadorModal(null)} className="h-8 w-8 hover:bg-secondary/50 shrink-0">
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
+                  </Button>
+                  <div>
+                    <DialogTitle className="text-lg sm:text-xl font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      Avaliações: {filtroIndicadorModal}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">
+                      Tickets de avaliação registrados no período com esta métrica.
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                {(() => {
+                  let filtradasDoModal = [];
+                  if (filtroIndicadorModal === 'FDS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado === 'FDS');
+                  else if (filtroIndicadorModal === 'COMPASS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado));
+                  else if (filtroIndicadorModal === 'QUEDAS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado));
+                  else if (filtroIndicadorModal === 'COACHING') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado));
+                  else if (filtroIndicadorModal === 'RGB') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado) && !INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado) && !INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado));
+
+                  if (filtradasDoModal.length === 0) {
+                    return (
+                      <div className="text-center py-10 bg-secondary/10 rounded-xl border border-dashed border-border/50 shadow-inner">
+                        <ClipboardList className="w-8 h-8 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm font-semibold text-muted-foreground">Nenhuma visita de {filtroIndicadorModal} encontrada no período.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid gap-3">
+                      {filtradasDoModal.map((v, i) => (
+                        <Card 
+                          key={v.id || i} 
+                          onClick={() => setSelectedVisita(v)}
+                          className="group glass-card bg-card/60 hover:bg-card hover:shadow-md cursor-pointer transition-all duration-300 border-border/40 hover:border-primary/40"
+                        >
+                          <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-foreground uppercase tracking-wider">{v.avaliador || "Avaliador não informado"}</span>
+                                {v.coaching_realizado && (
+                                  <span className="text-[10px] uppercase tracking-wider font-bold bg-blue-500/20 text-blue-500 px-1.5 py-0.5 rounded">
+                                    Coaching
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold">
+                                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {v.data_visita ? format(new Date(v.data_visita), "dd/MM/yy") : "--/--/--"}</span>
+                                <span className="text-border/50">•</span>
+                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {(v.pdv_nome || "PDV Desconhecido").split(' ').slice(0, 3).join(' ')}</span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground opacity-50 group-hover:opacity-100 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
 
       {/* Painel Visão Global do Analista */}
@@ -530,17 +636,8 @@ const Dashboard = () => {
         {/* Horizontal Filters Bar (Novo Layout) */}
         <div className="bg-card/40 border border-border/40 p-3 sm:p-6 rounded-xl shadow-sm space-y-4">
           
-          {/* Top Bar: Busca, Data e Toggle */}
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Pesquisar vendedor, supervisor ou avaliador..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 w-full bg-background/60"
-              />
-            </div>
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full justify-between">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest hidden md:block">Metas e Performance</h2>
             
             <div className="flex gap-2 w-full md:w-auto overflow-hidden">
               <Popover>
@@ -653,27 +750,11 @@ const Dashboard = () => {
           )}
         </div>
 
-        {!isAnalista && (
-          <div className="mb-6">
-            <h3 className="text-xl font-extrabold text-foreground tracking-tight mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Performance da Equipe
-            </h3>
-            <TeamHierarchyView 
-              visitas={visitasHierarchy} 
-              vendedores={vendedoresBaseReal} 
-              userLevel={user?.nivel} 
-              userName={user?.name} 
-              userUnidade={unidade === "todas" ? user?.unidade : unidade} 
-            />
-          </div>
-        )}
-
         {/* Visit List Content Area */}
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Registros Recentes</h3>
-            <span className="text-xs font-bold text-muted-foreground">{filtradas.length} encontrados</span>
+            <span className="text-xs font-bold text-muted-foreground">{filtradas.length} encontrados (Exibindo últimos 5)</span>
           </div>
 
           {filtradas.length === 0 ? (
@@ -692,7 +773,7 @@ const Dashboard = () => {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {filtradas.map((v, i) => (
+              {filtradas.slice(0, 5).map((v, i) => (
                 <Card key={v.id || i} className="group glass-card bg-card/40 hover:bg-card/80 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300">
                   <CardContent className="p-5">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -790,7 +871,7 @@ const Dashboard = () => {
         selectedVisita={selectedVisita} 
         onClose={() => setSelectedVisita(null)} 
       />
-    </div >
+    </div>
   );
 };
 

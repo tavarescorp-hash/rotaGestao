@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { CloudOff, RefreshCw, UploadCloud, Wifi } from "lucide-react";
-import { getAllFromDB, deleteFromDB, STORES } from "../lib/indexedDB";
-import { processOfflineQueue } from "@/features/offline/api/syncEngine.service";
+import { CloudOff, RefreshCw, UploadCloud, Wifi, Database } from "lucide-react";
+import { getAllFromDB, STORES } from "../lib/indexedDB";
+import { processOfflineQueue, syncOfflineCache } from "@/features/offline/api/syncEngine.service";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const OfflineSyncManager = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingVisits, setPendingVisits] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRefreshingBase, setIsRefreshingBase] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const checkPendingQueue = useCallback(async () => {
@@ -51,6 +54,23 @@ export const OfflineSyncManager = () => {
         description: `${successCount} enviadas. ${failCount} falharam. Tente novamente.`,
         variant: "destructive"
       });
+    }
+  };
+
+  const refreshBaseData = async () => {
+    if (!navigator.onLine) return;
+    setIsRefreshingBase(true);
+    try {
+      await syncOfflineCache(user);
+      toast({
+        title: "Dados Atualizados",
+        description: "A base de vendedores e produtos foi baixada com sucesso!",
+        className: "bg-blue-600 text-white border-none",
+      });
+    } catch (e) {
+      console.error("Erro ao atualizar base offline:", e);
+    } finally {
+      setIsRefreshingBase(false);
     }
   };
 
@@ -129,6 +149,22 @@ export const OfflineSyncManager = () => {
               <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" /> Sincronizando...</>
             ) : (
               <><Wifi className="w-3.5 h-3.5 mr-2" /> Sincronizar Agora</>
+            )}
+          </Button>
+        )}
+
+        {isOnline && (
+           <Button 
+            onClick={refreshBaseData}
+            disabled={isRefreshingBase}
+            variant="ghost"
+            size="sm"
+            className="w-full mt-1 border border-border/50 hover:bg-muted text-muted-foreground transition-all text-[10px] h-7 font-bold"
+          >
+            {isRefreshingBase ? (
+              <><RefreshCw className="w-3 h-3 mr-2 animate-spin" /> Atualizando Base...</>
+            ) : (
+              <><Database className="w-3 h-3 mr-2" /> Atualizar Dados para Campo</>
             )}
           </Button>
         )}

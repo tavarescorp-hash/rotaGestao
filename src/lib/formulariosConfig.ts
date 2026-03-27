@@ -87,20 +87,13 @@ export const FDS_QUESTIONS: FormQuestion[] = [
     dependsOn: { questionId: "posicionamento", valueToMatch: "Outro" },
     required: true,
   },
-  // Opcional para o sistema legado do app, caso a resposta seja negativa
-  {
-    id: "posicionamento_negativo",
-    label: "Justificativa (Sem Geladeira da Cia)",
-    type: "text",
-    dependsOn: { questionId: "possui_refrigerador", valueToMatch: "PDV POSSUI GELADEIRA DA CIA", matchType: "not_equals" },
-    required: false, // O FDS antigo preenchia silenciosamente, mas agora daremos o campo opcional.
-  },
+
   {
     id: "refrigerados",
     label: "OS PRODUTOS DA MARCA DA CIA ESTÃO DEVIDAMENTE REFRIGERADOS?",
     type: "radio",
     options: ["SIM", "NÃO"],
-    dependsOn: { questionId: "possui_refrigerador", valueToMatch: ["PDV NÃO POSSUI GELADEIRA OU POSSUI APENAS GELADEIRA DA CONCORRÊNCIA"], matchType: "not_equals" }, 
+    dependsOn: { questionId: "possui_refrigerador", valueToMatch: [""], matchType: "not_equals" }, 
     required: true,
   },
   {
@@ -166,6 +159,84 @@ export const RGB_QUESTIONS: FormQuestion[] = [
     label: "Descreva a ação da concorrência...",
     type: "text",
     dependsOn: { questionId: "acao_concorrencia", valueToMatch: "Outro" },
+    required: true,
+  },
+  {
+    id: "qtd_skus",
+    label: "Quantos SKUs há no PDV?",
+    type: "select",
+    options: [
+      "Não, 1  SKU",
+      "Não, 2  SKUs",
+      "Não, 3  SKUs",
+      "Não, 4  SKUs",
+      "Não, 5  SKUs",
+      "Sim, 6  SKUs",
+      "Sim, 7  SKUs",
+      "Sim, 8  SKUs",
+      "Sim, 9  SKUs",
+      "Sim, 10 SKUs",
+      "Sim, +10 SKUs",
+      "Nenhum SKU no PDV."
+    ],
+    required: true,
+  },
+  {
+    id: "possui_refrigerador",
+    label: "PDV POSSUI ALGUM REFRIGERADOR?",
+    type: "radio",
+    options: [
+      "PDV NÃO POSSUI GELADEIRA OU POSSUI APENAS GELADEIRA DA CONCORRÊNCIA",
+      "PDV POSSUI APENAS GELADEIRA SEM MARCA",
+      "PDV POSSUI GELADEIRA DA CIA"
+    ],
+    required: true,
+  },
+  {
+    id: "posicionamento",
+    label: "POSICIONAMENTO: O REFRIGERADOR DA CIA ESTÁ COM NO MÍNIMO 50% ABASTECIDO COM A MARCA DA GELADEIRA?",
+    type: "radio",
+    options: [
+      "SIM, 50% da marca do equipamento",
+      "Sim, 75% da marca do equipamento",
+      "Sim, 100% da marca do equipamento",
+      "Não, 25% da marca do equipamento",
+      "Não, 10% da marca do equipamento",
+      "Não há produto da marca do equipamento",
+      "NÃO POSSUI REFRIGERADOR DA CIA",
+      "Outro"
+    ],
+    dependsOn: { questionId: "possui_refrigerador", valueToMatch: "PDV POSSUI GELADEIRA DA CIA" },
+    required: true,
+  },
+  {
+    id: "posicionamento_outro",
+    label: "Especifique o posicionamento do refrigerador...",
+    type: "text",
+    dependsOn: { questionId: "posicionamento", valueToMatch: "Outro" },
+    required: true,
+  },
+  {
+    id: "refrigerados",
+    label: "OS PRODUTOS DA MARCA DA CIA ESTÃO DEVIDAMENTE REFRIGERADOS?",
+    type: "radio",
+    options: ["SIM", "NÃO"],
+    dependsOn: { questionId: "possui_refrigerador", valueToMatch: [""], matchType: "not_equals" }, 
+    required: true,
+  },
+  {
+    id: "precificados",
+    label: "TODOS OS SKUs OBRIGATÓRIOS PRESENTES ESTÃO PRECIFICADOS?",
+    type: "radio",
+    options: ["SIM", "NÃO"],
+    dependsOn: { questionId: "possui_refrigerador", valueToMatch: [""], matchType: "not_equals" }, // Mostra sempre se passou do refri 
+    required: true,
+  },
+  {
+    id: "melhoria_precificacao",
+    label: "SE NÃO, O QUE PODE SER FEITO PARA MELHORAR A PRECIFICAÇÃO?",
+    type: "text",
+    dependsOn: { questionId: "precificados", valueToMatch: "NÃO" },
     required: true,
   },
   {

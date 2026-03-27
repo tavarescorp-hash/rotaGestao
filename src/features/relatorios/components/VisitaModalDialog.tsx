@@ -165,10 +165,10 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
                     </div>
                   )}
 
-                  {selectedVisita.indicador_avaliado === "FDS" && (
+                  {(selectedVisita.indicador_avaliado === "FDS" || (selectedVisita.indicador_avaliado || "").toUpperCase().includes("RGB")) && (
                     <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
                       <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                        📋 Questionário FDS
+                        📋 Questionário de Execução
                       </h4>
                       {selectedVisita.rgb_acao_concorrencia && (
                         <div>
@@ -214,7 +214,7 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
                       )}
                       {selectedVisita.fds_observacoes && (
                         <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Observações / Plano (FDS)</span>
+                          <span className="text-xs font-bold text-muted-foreground block">Observações / Plano de Ação</span>
                           <span className="text-sm font-semibold">{selectedVisita.fds_observacoes}</span>
                         </div>
                       )}

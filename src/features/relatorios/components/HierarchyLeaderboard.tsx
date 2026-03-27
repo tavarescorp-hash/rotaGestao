@@ -141,7 +141,7 @@ export function HierarchyLeaderboard({ visitas, vendedores, onSelectLevel }: Hie
                       <span className="text-muted-foreground uppercase">FDS</span>
                       <span>{item.fds} / {item.metaFds}</span>
                     </div>
-                    <Progress value={item.pctFds} className="h-1.5" indicatorColor={item.pctFds >= 100 ? "bg-green-500" : "bg-primary"} />
+                    <Progress value={item.pctFds} className="h-1.5" indicatorColor={item.pctFds >= 100 ? "bg-green-500" : "bg-emerald-500"} />
                   </div>
 
                   {/* Coaching */}
@@ -150,7 +150,7 @@ export function HierarchyLeaderboard({ visitas, vendedores, onSelectLevel }: Hie
                       <span className="text-muted-foreground uppercase">Coaching</span>
                       <span>{item.coaching} / {item.metaCoaching}</span>
                     </div>
-                    <Progress value={item.pctCoaching} className="h-1.5" indicatorColor={item.pctCoaching >= 100 ? "bg-green-500" : "bg-blue-500"} />
+                    <Progress value={item.pctCoaching} className="h-1.5" indicatorColor={item.pctCoaching >= 100 ? "bg-green-500" : "bg-orange-500"} />
                   </div>
 
                   <ChevronRight className="hidden md:block w-4 h-4 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />

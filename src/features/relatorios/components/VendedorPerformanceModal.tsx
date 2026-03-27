@@ -83,38 +83,38 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
               {/* Resumo de Performance */}
               <div className="grid grid-cols-3 gap-3">
                 <Card 
-                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'FDS' ? 'border-primary ring-2 ring-primary/20 bg-primary/5 scale-[1.02]' : 'border-primary/10 hover:border-primary/30 hover:scale-[1.02]'}`}
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'FDS' ? 'border-emerald-500 ring-4 ring-emerald-500/20 bg-emerald-500/10 scale-[1.02]' : 'border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'FDS' ? null : 'FDS')}
                 >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <Target className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'FDS' ? 'text-primary' : 'text-primary/70'}`} />
+                    <Target className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'FDS' ? 'text-emerald-500' : 'text-emerald-500/60'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">FDS</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.fds}</span>
-                    {filtroAtivo === 'FDS' && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
+                    {filtroAtivo === 'FDS' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />}
                   </CardContent>
                 </Card>
 
                 <Card 
-                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'RGB' ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-500/5 scale-[1.02]' : 'border-blue-500/10 hover:border-blue-500/30 hover:scale-[1.02]'}`}
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'RGB' ? 'border-blue-500 ring-4 ring-blue-500/20 bg-blue-500/10 scale-[1.02]' : 'border-blue-500/20 bg-blue-500/5 hover:border-blue-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'RGB' ? null : 'RGB')}
                 >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <TrendingUp className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'RGB' ? 'text-blue-500' : 'text-blue-500/70'}`} />
+                    <TrendingUp className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'RGB' ? 'text-blue-500' : 'text-blue-500/60'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">RGB</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.rgb}</span>
-                    {filtroAtivo === 'RGB' && <div className="w-1 h-1 rounded-full bg-blue-500 mt-1" />}
+                    {filtroAtivo === 'RGB' && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
                   </CardContent>
                 </Card>
 
                 <Card 
-                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'COACHING' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 scale-[1.02]' : 'border-amber-500/10 hover:border-amber-500/30 hover:scale-[1.02]'}`}
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'COACHING' ? 'border-orange-500 ring-4 ring-orange-500/20 bg-orange-500/10 scale-[1.02]' : 'border-orange-500/20 bg-orange-500/5 hover:border-orange-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'COACHING' ? null : 'COACHING')}
                 >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <Award className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'COACHING' ? 'text-amber-500' : 'text-amber-500/70'}`} />
+                    <Award className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'COACHING' ? 'text-orange-500' : 'text-orange-500/60'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">Coaching</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.coaching}</span>
-                    {filtroAtivo === 'COACHING' && <div className="w-1 h-1 rounded-full bg-amber-500 mt-1" />}
+                    {filtroAtivo === 'COACHING' && <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />}
                   </CardContent>
                 </Card>
               </div>
@@ -162,9 +162,9 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                                {vis.nome_fantasia_pdv || "PDV Sem Nome"}
                              </span>
                              <Badge variant="outline" className={`text-[9px] font-black py-0 px-1.5 uppercase bg-background ${
-                               vis.indicador_avaliado === 'FDS' ? 'text-primary border-primary/20' : 
+                               vis.indicador_avaliado === 'FDS' ? 'text-emerald-500 border-emerald-500/20' : 
                                vis.indicador_avaliado?.includes('RGB') ? 'text-blue-500 border-blue-500/20' : 
-                               'text-amber-500 border-amber-500/20'
+                               'text-orange-500 border-orange-500/20'
                              }`}>
                                {vis.indicador_avaliado === 'FDS' ? 'FDS' : vis.indicador_avaliado?.includes('RGB') ? 'RGB' : 'Coaching'}
                              </Badge>

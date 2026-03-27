@@ -95,7 +95,7 @@ const NovaVisita = () => {
       const currentUserName = user?.name?.toUpperCase() || "";
 
       // Verifica se o PDV já foi visitado pelo usuário logado no mês selecionado
-      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita);
+      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita, user);
 
       if (jaVisitado) {
         toast({
@@ -197,6 +197,7 @@ const NovaVisita = () => {
       fds_observacoes: payload.fdsData?.fds_observacoes || "",
       produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       empresa_id: user?.empresa_id || 1,
+      id_avaliador: user?.id,
     });
 
     toast({

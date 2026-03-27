@@ -4,8 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { enviarVisita, verificarVisitaMensal } from "@/features/visitas/api/visitas.service";
 import { buscarPdvPorCodigo } from "@/features/pdvs/api/pdvs.service";
-import { RgbSubmitData } from "@/components/StepProdutosExecucao";
-import { CoachingSubmitData } from "@/components/StepCoaching";
+import { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
+import { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
 
 export function useVisitaForm() {
   const navigate = useNavigate();
@@ -165,6 +165,7 @@ export function useVisitaForm() {
       execucao_nao_selecionada: payload.execucaoNaoSelecionada ? payload.execucaoNaoSelecionada.join("; ") : "",
       empresa_id: user?.empresa_id || 1,
       respostas_json_dynamic: payload.respostasDinamicas || {},
+      id_avaliador: user?.id,
     });
 
     toast({

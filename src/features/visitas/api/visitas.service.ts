@@ -92,7 +92,8 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       execucao_nao_selecionada: visita.execucao_nao_selecionada,
       status_aprovacao: visita.status_aprovacao || 'Aprovado',
       empresa_id: visita.empresa_id || 1,
-      respostas_json_dynamic: visita.respostas_json_dynamic
+      respostas_json_dynamic: visita.respostas_json_dynamic,
+      id_avaliador: visita.id_avaliador
     }]);
 
     if (error) {
@@ -263,9 +264,14 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
       .from("visitas")
       .select("id")
       .in("codigo_pdv", [codigoComPrefixo, codigoSemPrefixo])
-      .eq("avaliador", avaliador)
       .gte("data_visita", prevDate)
       .lt("data_visita", nextDate);
+
+    if (user?.id) {
+      query = query.eq("id_avaliador", user.id);
+    } else {
+      query = query.eq("avaliador", avaliador);
+    }
 
     if (user?.empresa_id) {
       query = query.eq('empresa_id', user.empresa_id);

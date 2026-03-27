@@ -98,7 +98,7 @@ const VisitaRetroativa = () => {
       const currentUserName = user?.name?.toUpperCase() || "";
 
       // Verifica se o PDV já foi visitado pelo usuário logado no mês selecionado
-      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita);
+      const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita, user);
 
       if (jaVisitado) {
         toast({
@@ -209,6 +209,7 @@ const VisitaRetroativa = () => {
       produtos_nao_selecionados: payload.produtosNaoSelecionados ? payload.produtosNaoSelecionados.join("; ") : "",
       status_aprovacao: "Pendente",
       empresa_id: user?.empresa_id || 1,
+      id_avaliador: user?.id,
     });
 
     toast({

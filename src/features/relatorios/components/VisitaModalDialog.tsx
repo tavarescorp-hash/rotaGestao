@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Calendar, MapPin, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { getQuestionsForIndicator } from "@/lib/formulariosConfig";
 import { Visita } from "@/features/visitas/api/visitas.service";
+import { REQUER_PRODUTOS_EXECUCAO, REQUER_COACHING } from "@/lib/roles";
 
 interface VisitaModalDialogProps {
   selectedVisita: Visita | null;
@@ -111,205 +112,129 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
 
             {/* Dinâmico por Tipo de Visita */}
             <div className="space-y-6 pt-4 border-t border-border/50">
-              {/* Motor Dinâmico de Exibição ou Retrocompatibilidade */}
-              {selectedVisita.respostas_json_dynamic && Object.keys(selectedVisita.respostas_json_dynamic).length > 0 ? (
-                <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
-                  <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
-                    📋 Questionário: {selectedVisita.indicador_avaliado}
-                  </h4>
-                  {(() => {
-                    const qs = getQuestionsForIndicator(selectedVisita.indicador_avaliado || "");
-                    return qs.map(q => {
-                      const answer = selectedVisita.respostas_json_dynamic?.[q.id];
-                      if (!answer) return null;
-                      return (
-                        <div key={q.id}>
-                          <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
-                          <span className="text-sm font-semibold">{answer}</span>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {selectedVisita.indicador_avaliado?.includes("RGB") && (
-                    <div className="bg-purple-500/5 border border-purple-500/20 p-4 rounded-xl space-y-3 mb-6">
-                      <h4 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                        📋 Questionário RGB
-                      </h4>
-                      {selectedVisita.rgb_foco_visita && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Foco da visita</span>
-                          <span className="text-sm font-semibold">{selectedVisita.rgb_foco_visita}</span>
-                        </div>
-                      )}
-                      {selectedVisita.rgb_comprando_outras && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Comprando de outra fonte?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.rgb_comprando_outras}</span>
-                        </div>
-                      )}
-                      {selectedVisita.rgb_ttc_adequado && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">TTC adequado?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.rgb_ttc_adequado}</span>
-                        </div>
-                      )}
-                      {selectedVisita.rgb_acao_concorrencia && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.rgb_acao_concorrencia}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {(() => {
+                const indicadorUpper = (selectedVisita.indicador_avaliado || "").toUpperCase().trim();
+                const isCoaching = REQUER_COACHING.some(rc => indicadorUpper.includes(rc.toUpperCase().trim()));
+                const isProdExec = REQUER_PRODUTOS_EXECUCAO.some(rp => indicadorUpper.includes(rp.toUpperCase().trim()));
 
-                  {(selectedVisita.indicador_avaliado === "FDS" || (selectedVisita.indicador_avaliado || "").toUpperCase().includes("RGB")) && (
-                    <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
-                      <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                        📋 Questionário de Execução
-                      </h4>
-                      {selectedVisita.rgb_acao_concorrencia && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Ação da concorrência?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.rgb_acao_concorrencia}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_qtd_skus && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Quantos SKUs há no PDV?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_qtd_skus}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_refrigerador && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_refrigerador}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_posicionamento && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Posicionamento Geladeira Cia</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_posicionamento}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_refrigerados && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Devidamente refrigerados?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_refrigerados}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_precificados && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">SKUs obrigatórios precificados?</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_precificados}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_melhoria_precificacao && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Plano p/ melhorar precificação</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_melhoria_precificacao}</span>
-                        </div>
-                      )}
-                      {selectedVisita.fds_observacoes && (
-                        <div>
-                          <span className="text-xs font-bold text-muted-foreground block">Observações / Plano de Ação</span>
-                          <span className="text-sm font-semibold">{selectedVisita.fds_observacoes}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      Mix Padrão Localizado
-                    </h4>
-                    <Badge variant="outline" className="font-bold border-primary shadow-sm">
-                      Score: {selectedVisita.pontuacao_total} pts
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-card border border-border/40">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos ({selectedVisita.produtos_selecionados ? selectedVisita.produtos_selecionados.split(";").length : 0})</span>
-                      {selectedVisita.produtos_selecionados ? (
-                        <ul className="space-y-1.5 text-sm">
-                          {selectedVisita.produtos_selecionados.split("; ").map((p, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium">
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                              {p}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>
-                      )}
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-card border border-border/40">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução ({selectedVisita.execucao_selecionada ? selectedVisita.execucao_selecionada.split(";").length : 0})</span>
-                      {selectedVisita.execucao_selecionada ? (
-                        <ul className="space-y-1.5 text-sm">
-                          {selectedVisita.execucao_selecionada.split("; ").map((e, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium">
-                              <div className="w-1.5 h-1.5 rounded-full bg-secondary-foreground/30 mt-1.5 shrink-0" />
-                              {e}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* COACHING */}
-              {selectedVisita.indicador_avaliado === "COACHING ROTA BASICA COM VENDEDOR" && (
-                <div className="space-y-6 pt-2">
-                  <div>
-                    <h4 className="text-sm font-extrabold text-blue-500 mb-3 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> Passos da Rotina Básica Realizados
-                    </h4>
-                    <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                      {selectedVisita.passos_coaching ? (
-                        <ul className="space-y-2 text-sm">
-                          {selectedVisita.passos_coaching.split("; ").map((p, idx) => (
-                            <li key={idx} className="flex items-start gap-2 font-semibold text-foreground/80">
-                              {p.includes("Não realizou") ? <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" /> : <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />}
-                              {p}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-sm text-muted-foreground italic">Nada computado</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold uppercase tracking-widest text-green-500">Pontos Fortes</span>
-                      <div className="p-4 text-sm font-medium bg-green-500/5 rounded-xl border border-green-500/20 min-h-[100px] whitespace-pre-wrap">
-                        {selectedVisita.pontos_fortes || "-"}
+                return (
+                  <>
+                    {/* 1. Questionário Dinâmico (Se houver) */}
+                    {selectedVisita.respostas_json_dynamic && Object.keys(selectedVisita.respostas_json_dynamic).length > 0 && (
+                      <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
+                        <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
+                          📋 Questionário: {selectedVisita.indicador_avaliado}
+                        </h4>
+                        {(() => {
+                          const qs = getQuestionsForIndicator(selectedVisita.indicador_avaliado || "");
+                          return qs.map(q => {
+                            const answer = selectedVisita.respostas_json_dynamic?.[q.id];
+                            if (!answer) return null;
+                            return (
+                              <div key={q.id}>
+                                <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
+                                <span className="text-sm font-semibold">{answer}</span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold uppercase tracking-widest text-destructive">Pontos a Desenvolver</span>
-                      <div className="p-4 text-sm font-medium bg-destructive/5 rounded-xl border border-destructive/20 min-h-[100px] whitespace-pre-wrap">
-                        {selectedVisita.pontos_desenvolver || "-"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    )}
 
+                    {/* 2. Seção FDS / RGB (Mix e Execução) */}
+                    {isProdExec && (
+                      <div className="space-y-6">
+                        {/* Questionário Tradicional (Retrocompatibilidade) */}
+                        {!selectedVisita.respostas_json_dynamic && (
+                          <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
+                            <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest">
+                              📋 Questionário de Execução
+                            </h4>
+                            {selectedVisita.fds_qtd_skus && <div><span className="text-xs font-bold text-muted-foreground block">SKUs no PDV</span><span className="text-sm font-semibold">{selectedVisita.fds_qtd_skus}</span></div>}
+                            {selectedVisita.fds_refrigerador && <div><span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span><span className="text-sm font-semibold">{selectedVisita.fds_refrigerador}</span></div>}
+                            {selectedVisita.fds_posicionamento && <div><span className="text-xs font-bold text-muted-foreground block">Posicionamento Cia</span><span className="text-sm font-semibold">{selectedVisita.fds_posicionamento}</span></div>}
+                            {selectedVisita.fds_precificados && <div><span className="text-xs font-bold text-muted-foreground block">Precificados?</span><span className="text-sm font-semibold">{selectedVisita.fds_precificados}</span></div>}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            Mix Padrão Localizado
+                          </h4>
+                          <Badge variant="outline" className="font-bold border-primary shadow-sm">
+                            Score: {selectedVisita.pontuacao_total} pts
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-xl bg-card border border-border/40">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos ({selectedVisita.produtos_selecionados ? selectedVisita.produtos_selecionados.split(";").length : 0})</span>
+                            {selectedVisita.produtos_selecionados ? (
+                              <ul className="space-y-1.5 text-sm">
+                                {selectedVisita.produtos_selecionados.split("; ").map((p, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />{p}</li>
+                                ))}
+                              </ul>
+                            ) : (<span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>)}
+                          </div>
+                          <div className="p-4 rounded-xl bg-card border border-border/40">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução ({selectedVisita.execucao_selecionada ? selectedVisita.execucao_selecionada.split(";").length : 0})</span>
+                            {selectedVisita.execucao_selecionada ? (
+                              <ul className="space-y-1.5 text-sm">
+                                {selectedVisita.execucao_selecionada.split("; ").map((e, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-secondary-foreground/30 mt-1.5 shrink-0" />{e}</li>
+                                ))}
+                              </ul>
+                            ) : (<span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Seção específica de COACHING */}
+                    {isCoaching && (
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="text-sm font-extrabold text-blue-500 mb-3 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" /> Passos da Rotina Básica Realizados
+                          </h4>
+                          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                            {selectedVisita.passos_coaching ? (
+                              <ul className="space-y-2 text-sm">
+                                {selectedVisita.passos_coaching.split("; ").map((p, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 font-semibold text-foreground/80">
+                                    {p.includes("Não realizou") ? <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" /> : <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />}
+                                    {p}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (<span className="text-sm text-muted-foreground italic">Nada computado</span>)}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <span className="text-xs font-bold uppercase tracking-widest text-green-500">Pontos Fortes</span>
+                            <div className="p-4 text-sm font-medium bg-green-500/5 rounded-xl border border-green-500/20 min-h-[100px] whitespace-pre-wrap">
+                              {selectedVisita.pontos_fortes || "-"}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <span className="text-xs font-bold uppercase tracking-widest text-destructive">Pontos a Desenvolver</span>
+                            <div className="p-4 text-sm font-medium bg-destructive/5 rounded-xl border border-destructive/20 min-h-[100px] whitespace-pre-wrap">
+                              {selectedVisita.pontos_desenvolver || "-"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
-            {/* Observações Gerais */}
+            {/* Observações Gerais (Sempre visível se houver) */}
             {selectedVisita.observacoes && (
               <div className="pt-6 border-t border-border/50">
                 <h4 className="text-sm font-extrabold text-foreground mb-3 flex items-center gap-2">

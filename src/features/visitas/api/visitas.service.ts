@@ -53,7 +53,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       return { success: true, message: "Sem internet! Visita salva na Fila Offline com sucesso. Ela será enviada automaticamente quando a rede voltar.", offline: true };
     }
 
-    const { error } = await supabase.from("visitas").insert([{
+    const payload: any = {
       data_visita: visita.data_visita,
       unidade: visita.unidade,
       avaliador: visita.avaliador,
@@ -94,17 +94,33 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
       empresa_id: visita.empresa_id || 1,
       respostas_json_dynamic: visita.respostas_json_dynamic,
       id_avaliador: visita.id_avaliador
-    }]);
+    };
+
+    const { error } = await supabase.from("visitas").insert([payload]);
 
     if (error) {
+      // Se o erro for coluna inexistente (PGRST204 ou similar), tentamos sem os campos novos
+      if (error.code === 'PGRST204' || error.message?.includes('column "id_avaliador" does not exist')) {
+        console.warn("⚠️ Banco de dados desatualizado. Tentando salvamento sem id_avaliador...");
+        const { id_avaliador, ...fallbackPayload } = payload;
+        const { error: retryError } = await supabase.from("visitas").insert([fallbackPayload]);
+        
+        if (retryError) {
+          console.error("Erro fatal no retry de salvamento:", retryError);
+          throw retryError;
+        }
+        return { success: true, message: "Visita registrada com sucesso (Modo de Compatibilidade)!" };
+      }
+      
       console.error("Erro ao inserir visita no Supabase:", error);
       throw error;
     }
 
     return { success: true, message: "Visita registrada com sucesso no Supabase!" };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao salvar visita:", error);
-    return { success: false, message: "Erro ao salvar visita. Verifique a conexão." };
+    const detail = error.message || "Erro desconhecido";
+    return { success: false, message: `Erro ao salvar visita. Detalhe: ${detail}` };
   }
 }
 

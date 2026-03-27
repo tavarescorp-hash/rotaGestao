@@ -34,13 +34,27 @@ interface VendedorPerformanceModalProps {
 }
 
 export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: VendedorPerformanceModalProps) {
+  const [filtroAtivo, setFiltroAtivo] = React.useState<string | null>(null);
+
   if (!vendedor) return null;
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
     const [a, m, d] = dateStr.split("-");
-    return a && m && d ? `${d}/${m}/${a}` : dateStr;
+    const safeA = a || "";
+    const safeM = m || "";
+    const safeD = d || "";
+    return safeA && safeM && safeD ? `${safeD}/${safeM}/${safeA}` : dateStr;
   };
+
+  // Lógica de filtragem
+  const visitasFiltradas = vendedor.visitas_recebidas.filter(vis => {
+    if (!filtroAtivo) return true;
+    if (filtroAtivo === 'FDS') return vis.indicador_avaliado === 'FDS';
+    if (filtroAtivo === 'RGB') return vis.indicador_avaliado?.includes('RGB');
+    if (filtroAtivo === 'COACHING') return vis.indicador_avaliado === 'Coaching' || (!vis.indicador_avaliado?.includes('FDS') && !vis.indicador_avaliado?.includes('RGB'));
+    return true;
+  });
 
   return (
     <Dialog open={!!vendedor} onOpenChange={(open) => !open && onClose()}>
@@ -68,27 +82,39 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
             <div className="space-y-6">
               {/* Resumo de Performance */}
               <div className="grid grid-cols-3 gap-3">
-                <Card className="glass-card shadow-sm border-primary/10">
+                <Card 
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'FDS' ? 'border-primary ring-2 ring-primary/20 bg-primary/5 scale-[1.02]' : 'border-primary/10 hover:border-primary/30 hover:scale-[1.02]'}`}
+                  onClick={() => setFiltroAtivo(filtroAtivo === 'FDS' ? null : 'FDS')}
+                >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <Target className="w-4 h-4 text-primary mb-1" />
+                    <Target className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'FDS' ? 'text-primary' : 'text-primary/70'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">FDS</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.fds}</span>
+                    {filtroAtivo === 'FDS' && <div className="w-1 h-1 rounded-full bg-primary mt-1" />}
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card shadow-sm border-blue-500/10">
+                <Card 
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'RGB' ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-500/5 scale-[1.02]' : 'border-blue-500/10 hover:border-blue-500/30 hover:scale-[1.02]'}`}
+                  onClick={() => setFiltroAtivo(filtroAtivo === 'RGB' ? null : 'RGB')}
+                >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <TrendingUp className="w-4 h-4 text-blue-500 mb-1" />
+                    <TrendingUp className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'RGB' ? 'text-blue-500' : 'text-blue-500/70'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">RGB</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.rgb}</span>
+                    {filtroAtivo === 'RGB' && <div className="w-1 h-1 rounded-full bg-blue-500 mt-1" />}
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card shadow-sm border-amber-500/10">
+                <Card 
+                  className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'COACHING' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 scale-[1.02]' : 'border-amber-500/10 hover:border-amber-500/30 hover:scale-[1.02]'}`}
+                  onClick={() => setFiltroAtivo(filtroAtivo === 'COACHING' ? null : 'COACHING')}
+                >
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                    <Award className="w-4 h-4 text-amber-500 mb-1" />
+                    <Award className={`w-4 h-4 mb-1 transition-colors ${filtroAtivo === 'COACHING' ? 'text-amber-500' : 'text-amber-500/70'}`} />
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">Coaching</span>
                     <span className="text-xl font-black text-foreground">{vendedor.metricas.coaching}</span>
+                    {filtroAtivo === 'COACHING' && <div className="w-1 h-1 rounded-full bg-amber-500 mt-1" />}
                   </CardContent>
                 </Card>
               </div>
@@ -110,13 +136,21 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
-                    Histórico de Visitas ({vendedor.visitas_recebidas.length})
+                    Histórico {filtroAtivo ? `de ${filtroAtivo}` : ""} ({visitasFiltradas.length})
                   </h4>
+                  {filtroAtivo && (
+                    <button 
+                      onClick={() => setFiltroAtivo(null)}
+                      className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
+                    >
+                      Limpar Filtro
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-3">
-                  {vendedor.visitas_recebidas.length > 0 ? (
-                    vendedor.visitas_recebidas.map((vis, idx) => (
+                  {visitasFiltradas.length > 0 ? (
+                    visitasFiltradas.map((vis, idx) => (
                       <div 
                         key={idx} 
                         className="group p-4 bg-card border border-border/60 rounded-xl flex items-center justify-between hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer shadow-sm"
@@ -127,7 +161,11 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                              <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
                                {vis.nome_fantasia_pdv || "PDV Sem Nome"}
                              </span>
-                             <Badge variant="outline" className="text-[9px] font-black py-0 px-1.5 uppercase bg-background">
+                             <Badge variant="outline" className={`text-[9px] font-black py-0 px-1.5 uppercase bg-background ${
+                               vis.indicador_avaliado === 'FDS' ? 'text-primary border-primary/20' : 
+                               vis.indicador_avaliado?.includes('RGB') ? 'text-blue-500 border-blue-500/20' : 
+                               'text-amber-500 border-amber-500/20'
+                             }`}>
                                {vis.indicador_avaliado === 'FDS' ? 'FDS' : vis.indicador_avaliado?.includes('RGB') ? 'RGB' : 'Coaching'}
                              </Badge>
                           </div>
@@ -142,7 +180,7 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                     ))
                   ) : (
                     <div className="p-10 text-center border-2 border-dashed border-border/40 rounded-2xl">
-                      <p className="text-xs font-bold text-muted-foreground italic">Nenhuma visita registrada para este vendedor no período.</p>
+                      <p className="text-xs font-bold text-muted-foreground italic">Nenhuma visita de {filtroAtivo || "indicador"} encontrada.</p>
                     </div>
                   )}
                 </div>

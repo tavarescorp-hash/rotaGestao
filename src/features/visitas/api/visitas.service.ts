@@ -47,80 +47,91 @@ export interface Visita {
 }
 
 export async function enviarVisita(visita: Visita): Promise<{ success: boolean; message: string; offline?: boolean }> {
+  const payload: any = {
+    data_visita: visita.data_visita,
+    unidade: visita.unidade,
+    avaliador: visita.avaliador,
+    cargo: visita.cargo,
+    indicador_avaliado: visita.indicador_avaliado,
+    observacoes: visita.observacoes,
+    codigo_pdv: visita.codigo_pdv,
+    nome_fantasia_pdv: visita.nome_fantasia_pdv,
+    potencial_cliente: visita.potencial_cliente,
+    canal_identificado: visita.canal_identificado,
+    canal_cadastrado: visita.canal_cadastrado,
+    filial: visita.filial,
+    municipio: visita.municipio,
+    codigo_vendedor: visita.codigo_vendedor,
+    nome_vendedor: visita.nome_vendedor,
+    coorden_x: visita.coorden_x,
+    coorden_y: visita.coorden_y,
+    produtos_selecionados: visita.produtos_selecionados,
+    execucao_selecionada: visita.execucao_selecionada,
+    pontuacao_total: visita.pontuacao_total,
+    pontos_fortes: visita.pontos_fortes,
+    pontos_desenvolver: visita.pontos_desenvolver,
+    passos_coaching: visita.passos_coaching,
+    rgb_foco_visita: visita.rgb_foco_visita,
+    rgb_comprando_outras: visita.rgb_comprando_outras,
+    rgb_ttc_adequado: visita.rgb_ttc_adequado,
+    rgb_acao_concorrencia: visita.rgb_acao_concorrencia,
+    fds_qtd_skus: visita.fds_qtd_skus,
+    fds_refrigerador: visita.fds_refrigerador,
+    fds_posicionamento: visita.fds_posicionamento,
+    fds_refrigerados: visita.fds_refrigerados,
+    fds_precificados: visita.fds_precificados,
+    fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
+    fds_observacoes: visita.fds_observacoes,
+    produtos_nao_selecionados: visita.produtos_nao_selecionados,
+    execucao_nao_selecionada: visita.execucao_nao_selecionada,
+    status_aprovacao: visita.status_aprovacao || 'Aprovado',
+    empresa_id: visita.empresa_id || 1,
+    respostas_json_dynamic: visita.respostas_json_dynamic,
+    id_avaliador: visita.id_avaliador
+  };
+
+  const tryInsert = async (currentPayload: any, attempt: number = 1): Promise<{ success: boolean; message: string; offline?: boolean }> => {
+    if (attempt > 5) throw new Error("Muitas tentativas de salvamento sem sucesso.");
+
+    const { error } = await supabase.from("visitas").insert([currentPayload]);
+
+    if (error) {
+      // Detectar erro de coluna inexistente
+      const isMissingColumn = error.code === 'PGRST204' || 
+                              error.message?.includes('column') || 
+                              error.message?.includes('schema cache');
+
+      if (isMissingColumn) {
+        // Tentar extrair o nome da coluna do erro (ex: Could not find the 'column_name' column)
+        const match = error.message?.match(/column ['"](.+?)['"]/);
+        const missingColumn = match ? match[1] : null;
+
+        if (missingColumn && currentPayload[missingColumn] !== undefined) {
+          console.warn(`⚠️ Coluna [${missingColumn}] não encontrada. Removendo e tentando novamente...`);
+          const { [missingColumn]: _, ...nextPayload } = currentPayload;
+          return tryInsert(nextPayload, attempt + 1);
+        } else {
+          // Fallback cego: remover id_avaliador ou respostas_json_dynamic se existirem
+          console.warn("⚠️ Erro de coluna desconhecido. Removendo campos opcionais conhecidos...");
+          const { id_avaliador, respostas_json_dynamic, execucao_nao_selecionada, ...safePayload } = currentPayload;
+          return tryInsert(safePayload, attempt + 1);
+        }
+      }
+      throw error;
+    }
+    return { success: true, message: attempt > 1 ? "Visita salva (Modo de Compatibilidade)!" : "Visita salva com sucesso!" };
+  };
+
   try {
     if (!navigator.onLine) {
       await addPendingActionToQueue(visita);
-      return { success: true, message: "Sem internet! Visita salva na Fila Offline com sucesso. Ela será enviada automaticamente quando a rede voltar.", offline: true };
+      return { success: true, message: "Modo Offline: Visita gravada localmente.", offline: true };
     }
 
-    const payload: any = {
-      data_visita: visita.data_visita,
-      unidade: visita.unidade,
-      avaliador: visita.avaliador,
-      cargo: visita.cargo,
-      indicador_avaliado: visita.indicador_avaliado,
-      observacoes: visita.observacoes,
-      codigo_pdv: visita.codigo_pdv,
-      nome_fantasia_pdv: visita.nome_fantasia_pdv,
-      potencial_cliente: visita.potencial_cliente,
-      canal_identificado: visita.canal_identificado,
-      canal_cadastrado: visita.canal_cadastrado,
-      filial: visita.filial,
-      municipio: visita.municipio,
-      codigo_vendedor: visita.codigo_vendedor,
-      nome_vendedor: visita.nome_vendedor,
-      coorden_x: visita.coorden_x,
-      coorden_y: visita.coorden_y,
-      produtos_selecionados: visita.produtos_selecionados,
-      execucao_selecionada: visita.execucao_selecionada,
-      pontuacao_total: visita.pontuacao_total,
-      pontos_fortes: visita.pontos_fortes,
-      pontos_desenvolver: visita.pontos_desenvolver,
-      passos_coaching: visita.passos_coaching,
-      rgb_foco_visita: visita.rgb_foco_visita,
-      rgb_comprando_outras: visita.rgb_comprando_outras,
-      rgb_ttc_adequado: visita.rgb_ttc_adequado,
-      rgb_acao_concorrencia: visita.rgb_acao_concorrencia,
-      fds_qtd_skus: visita.fds_qtd_skus,
-      fds_refrigerador: visita.fds_refrigerador,
-      fds_posicionamento: visita.fds_posicionamento,
-      fds_refrigerados: visita.fds_refrigerados,
-      fds_precificados: visita.fds_precificados,
-      fds_melhoria_precificacao: visita.fds_melhoria_precificacao,
-      fds_observacoes: visita.fds_observacoes,
-      produtos_nao_selecionados: visita.produtos_nao_selecionados,
-      execucao_nao_selecionada: visita.execucao_nao_selecionada,
-      status_aprovacao: visita.status_aprovacao || 'Aprovado',
-      empresa_id: visita.empresa_id || 1,
-      respostas_json_dynamic: visita.respostas_json_dynamic,
-      id_avaliador: visita.id_avaliador
-    };
-
-    const { error } = await supabase.from("visitas").insert([payload]);
-
-    if (error) {
-      // Se o erro for coluna inexistente (PGRST204 ou similar), tentamos sem os campos novos
-      if (error.code === 'PGRST204' || error.message?.includes('column "id_avaliador" does not exist')) {
-        console.warn("⚠️ Banco de dados desatualizado. Tentando salvamento sem id_avaliador...");
-        const { id_avaliador, ...fallbackPayload } = payload;
-        const { error: retryError } = await supabase.from("visitas").insert([fallbackPayload]);
-        
-        if (retryError) {
-          console.error("Erro fatal no retry de salvamento:", retryError);
-          throw retryError;
-        }
-        return { success: true, message: "Visita registrada com sucesso (Modo de Compatibilidade)!" };
-      }
-      
-      console.error("Erro ao inserir visita no Supabase:", error);
-      throw error;
-    }
-
-    return { success: true, message: "Visita registrada com sucesso no Supabase!" };
+    return await tryInsert(payload);
   } catch (error: any) {
-    console.error("Erro ao salvar visita:", error);
-    const detail = error.message || "Erro desconhecido";
-    return { success: false, message: `Erro ao salvar visita. Detalhe: ${detail}` };
+    console.error("Erro fatal ao salvar visita:", error);
+    return { success: false, message: `Erro ao salvar visita. Detalhe: ${error.message || 'Erro de conexão'}` };
   }
 }
 

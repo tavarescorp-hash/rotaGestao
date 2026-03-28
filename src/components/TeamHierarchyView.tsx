@@ -55,7 +55,17 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       return true; 
     });
 
-    const hierarquia: Record<string, Record<string, Record<string, any[]>>> = {};
+    // 2. Peso Hierárquico para Visibilidade
+    const getPeso = (nivelOUCargo?: string) => {
+      const s = (nivelOUCargo || "").toUpperCase();
+      if (s.includes('NIV1') || s.includes('DIRET') || s.includes('ANALIST')) return 1;
+      if (s.includes('NIV2') || s.includes('COMERCIAL')) return 2;
+      if (s.includes('NIV3') || s.includes('GERENTE')) return 3;
+      if (s.includes('NIV4') || s.includes('SUPERVISOR') || s.includes('SUP')) return 4;
+      return 5; // Vendedores ou outros
+    };
+
+    const myPeso = getPeso(userLevel);
 
     vendsValidos.forEach(v => {
       let f = v.gerente_comercial || 'Equipe de Gestão';
@@ -71,7 +81,18 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       if (!hierarquia[f][g]) hierarquia[f][g] = {};
       if (!hierarquia[f][g][s]) hierarquia[f][g][s] = [];
 
-      const myVisits = visitas.filter(vis => vis.nome_vendedor?.trim().toUpperCase() === v.nome_vendedor?.trim().toUpperCase());
+      // Filtrar visitas pela visibilidade (não ver quem está acima de mim)
+      const myVisits = visitas.filter(vis => {
+        const isMyVendedor = vis.nome_vendedor?.trim().toUpperCase() === v.nome_vendedor?.trim().toUpperCase();
+        if (!isMyVendedor) return false;
+
+        const visPeso = getPeso(vis.cargo);
+        // Regra: Peso 4 (Sup) não vê Peso 3 (Gerente). Peso 4 >= 3? Sim, mas queremos Peso do User <= Peso da Visita?
+        // Se eu sou Peso 4 (SUP), quero ver apenas >= 4 (SUP, VND).
+        // Se eu sou Peso 1 (Diretor), quero ver >= 1 (TUDO).
+        return visPeso >= myPeso;
+      });
+
       const fds = myVisits.filter(vis => vis.indicador_avaliado === 'FDS').length;
       const rgb = myVisits.filter(vis => vis.indicador_avaliado && INDICADORES_TIPO_RGB.includes(vis.indicador_avaliado)).length;
       const coaching = myVisits.filter(vis => vis.indicador_avaliado && REQUER_COACHING.includes(vis.indicador_avaliado)).length;

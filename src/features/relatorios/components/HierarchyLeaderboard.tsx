@@ -81,13 +81,16 @@ export function HierarchyLeaderboard({ visitas, vendedores, onSelectLevel }: Hie
       const nVends = g.vendedores.size;
       const metaFds = Math.max(1, nSups) * 10;
       const metaCoaching = Math.max(1, nVends) * 5;
+      const metaRgb = Math.max(1, nSups) * 20;
 
       return {
         ...g,
         metaFds,
         metaCoaching,
+        metaRgb,
         pctFds: Math.min(100, Math.round((g.fds / metaFds) * 100)) || 0,
-        pctCoaching: Math.min(100, Math.round((g.coaching / metaCoaching) * 100)) || 0
+        pctCoaching: Math.min(100, Math.round((g.coaching / metaCoaching) * 100)) || 0,
+        pctRgb: Math.min(100, Math.round((g.rgb / metaRgb) * 100)) || 0
       };
     }).sort((a, b) => (b.pctFds + b.pctCoaching) - (a.pctFds + a.pctCoaching));
   }, [visitas, vendedores, activeLevel]);
@@ -144,8 +147,17 @@ export function HierarchyLeaderboard({ visitas, vendedores, onSelectLevel }: Hie
                     <Progress value={item.pctFds} className="h-1.5" indicatorColor={item.pctFds >= 100 ? "bg-green-500" : "bg-emerald-500"} />
                   </div>
 
+                  {/* RGB */}
+                  <div className="w-full md:w-24 space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span className="text-muted-foreground uppercase">RGB</span>
+                      <span>{item.rgb} / {item.metaRgb}</span>
+                    </div>
+                    <Progress value={item.pctRgb} className="h-1.5" indicatorColor={item.pctRgb >= 100 ? "bg-green-500" : "bg-blue-500"} />
+                  </div>
+
                   {/* Coaching */}
-                  <div className="w-full md:w-28 space-y-1">
+                  <div className="w-full md:w-24 space-y-1">
                     <div className="flex justify-between text-[10px] font-bold">
                       <span className="text-muted-foreground uppercase">Coaching</span>
                       <span>{item.coaching} / {item.metaCoaching}</span>

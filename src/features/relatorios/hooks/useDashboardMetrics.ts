@@ -116,18 +116,39 @@ export function useDashboardMetrics(
   }, [visitas, dateRange]);
 
   const estatisticasMes = useMemo(() => {
-    const qtdeFDS = filtradas.filter(v => v.indicador_avaliado === 'FDS').length;
-    const qtdeCompass = filtradas.filter(v => v.indicador_avaliado && INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado)).length;
-    const qtdeQuedas = filtradas.filter(v => v.indicador_avaliado && INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado)).length;
+    const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+
+    const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
     
-    const qtdeRGB = filtradas.filter(v => {
-      if (!v.indicador_avaliado) return false;
-      return INDICADORES_TIPO_RGB.includes(v.indicador_avaliado) && 
-             !INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado) && 
-             !INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado);
+    // Normalizações de Referência de roles.ts
+    const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
+    const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
+    const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
+    const N_COACHING = listNormalized(REQUER_COACHING);
+
+    const qtdeFDS = filtradas.filter(v => normalizeInd(v.indicador_avaliado) === 'FDS').length;
+    
+    const qtdeCompass = filtradas.filter(v => {
+      const vInd = normalizeInd(v.indicador_avaliado);
+      return vInd && N_COMPASS.includes(vInd);
     }).length;
 
-    const coachingVisitas = filtradas.filter(v => v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado));
+    const qtdeQuedas = filtradas.filter(v => {
+      const vInd = normalizeInd(v.indicador_avaliado);
+      return vInd && N_QUEDAS.includes(vInd);
+    }).length;
+    
+    // RGB Total (Incluindo subcategorias se fizerem parte da coleção de RGB)
+    const qtdeRGB = filtradas.filter(v => {
+      const vInd = normalizeInd(v.indicador_avaliado);
+      if (!vInd) return false;
+      return N_TIPO_RGB.includes(vInd);
+    }).length;
+
+    const coachingVisitas = filtradas.filter(v => {
+      const vInd = normalizeInd(v.indicador_avaliado);
+      return vInd && N_COACHING.includes(vInd);
+    });
     const qtdeCoaching = coachingVisitas.length;
 
     const mapaVendedores = new Map<string, number>();

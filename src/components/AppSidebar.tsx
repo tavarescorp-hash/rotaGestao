@@ -86,8 +86,11 @@ export function AppSidebar() {
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)
 
-                  // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
+                   // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
                   if (item.title === "SaaS Admin") return null;
+
+                  // Ocultar aba Equipe para Supervisor (Niv4) para evitar redundância
+                  if (user?.nivel === 'Niv4' && item.title === "Equipe") return null;
                 }
 
                 return (

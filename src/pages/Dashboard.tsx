@@ -12,16 +12,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, DownloadCloud, User, Users, Settings2 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, User, Users, Settings2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 import { useDashboardMetrics } from "@/features/relatorios/hooks/useDashboardMetrics";
 import { VisitaModalDialog } from "@/features/relatorios/components/VisitaModalDialog";
-import { HierarchyLeaderboard } from "@/features/relatorios/components/HierarchyLeaderboard";
 
 const Dashboard = () => {
   const { isAdmin, user } = useAuth();
@@ -48,29 +44,6 @@ const Dashboard = () => {
     estatisticasMes, dadosGraficoAnalista, cargosUnicos, unidadesUnicas
   } = useDashboardMetrics(visitas, vendedoresBaseReal, user);
 
-  const handleSelectHierarchy = (level: string, name: string) => {
-    // Limpar filtros anteriores
-    setUnidade("todas");
-    setAvaliadorFiltro("todos");
-    setUsuarioFiltro("todos");
-    setIndicadorFiltro("todos");
-    setCargoFiltro("todos");
-
-    if (level === "filial") {
-      const u = name.toUpperCase().includes("MACA") ? "MACAÉ" : name.toUpperCase().includes("CAMPO") ? "CAMPOS" : "todas";
-      setUnidade(u);
-    } else if (level === "comercial" || level === "gerente") {
-      setUsuarioFiltro(name);
-    } else if (level === "supervisor") {
-      setAvaliadorFiltro(name);
-    }
-
-    setShowAdvancedFilters(true);
-    toast({
-      title: `Filtrando por ${level}: ${name}`,
-      description: "As métricas acima agora refletem apenas este grupo.",
-    });
-  };
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -103,98 +76,7 @@ const Dashboard = () => {
     if (result.success) carregarVisitas();
   };
 
-  const exportarParaExcel = () => {
-    if (filtradas.length === 0) {
-      toast({
-        title: "Atenção",
-        description: "Não há dados para exportar com os filtros atuais.",
-        variant: "default",
-      });
-      return;
-    }
 
-    // Prepare data for Excel
-    const dadosExportacao = filtradas.map(v => ({
-      "DATA VISITA": format(new Date(v.data_visita + "T00:00:00"), "dd/MM/yyyy"),
-      "UNIDADE": v.unidade || "-",
-      "AVALIADOR": v.avaliador || "-",
-      "CARGO": v.cargo || "-",
-      "NOME DO VENDEDOR": v.nome_vendedor || "-",
-      "CODIGO": v.codigo_pdv || "-",
-      "NOME FANTASIA": v.nome_fantasia_pdv || "-",
-      "POTENCIA DO CLIENTE": v.potencial_cliente || "-",
-      "CANAL CADASTRADO": v.canal_cadastrado || "-",
-      "CANAL IDENTIFICADO": v.canal_identificado || "-",
-      "INDICADOR AVALIADO": v.indicador_avaliado || "-",
-      "OBSERVAÇAO": v.observacoes || "-",
-      "FILIA": v.filial || "-",
-      "PRODUTOS SELECIONADOS": v.produtos_selecionados || "-",
-      "PRODUTOS NAO SELECIONADOS": v.produtos_nao_selecionados || "-",
-      "PONTUAÇÃO TOTAL": v.pontuacao_total ?? "-",
-      "PONTOS FORTES": v.pontos_fortes || "-",
-      "PONTOS DESENVOLVER": v.pontos_desenvolver || "-",
-      "PASSOS COACHING": v.passos_coaching || "-",
-      "RGB FOCO VISITA": v.rgb_foco_visita || "-",
-      "RGB COMPRANDO OUTRA": v.rgb_comprando_outras || "-",
-      "RGB TTC ADEQUADO": v.rgb_ttc_adequado || "-",
-      "RGB ACAO CONCORRENCIA": v.rgb_acao_concorrencia || "-",
-      "CODIGO DO VENDEDOR": v.codigo_vendedor || "-",
-      "FDS QTS SKUS": v.fds_qtd_skus || "-",
-      "FDS REFRIGERADOR": v.fds_refrigerador || "-",
-      "FDS POSICIONAMENTO": v.fds_posicionamento || "-",
-      "FDS REFRIGERADOR ": v.fds_refrigerados || "-", // Extra space to prevent object key duplication
-      "FDS PRECIFICAÇÃO": v.fds_precificados || "-",
-      "FDS OBSERVAÇOES": v.fds_observacoes || "-"
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Visitas");
-
-    // Adjust column widths automatically
-    const max_width = dadosExportacao.reduce((w, r) => Math.max(w, r["NOME FANTASIA"]?.length || 0), 10);
-    worksheet["!cols"] = [
-      { wch: 15 }, // DATA VISITA
-      { wch: 15 }, // UNIDADE
-      { wch: 25 }, // AVALIADOR
-      { wch: 20 }, // CARGO
-      { wch: 25 }, // NOME DO VENDEDOR
-      { wch: 12 }, // CODIGO
-      { wch: max_width }, // NOME FANTASIA
-      { wch: 20 }, // POTENCIA DO CLIENTE
-      { wch: 20 }, // CANAL CADASTRADO
-      { wch: 20 }, // CANAL IDENTIFICADO
-      { wch: 25 }, // INDICADOR AVALIADO
-      { wch: 50 }, // OBSERVAÇAO
-      { wch: 15 }, // FILIA
-      { wch: 50 }, // PRODUTOS SELECIONADOS
-      { wch: 50 }, // PRODUTOS NAO SELECIONADOS
-      { wch: 15 }, // PONTUAÇÃO TOTAL
-      { wch: 40 }, // PONTOS FORTES
-      { wch: 40 }, // PONTOS DESENVOLVER
-      { wch: 40 }, // PASSOS COACHING
-      { wch: 20 }, // RGB FOCO VISITA
-      { wch: 25 }, // RGB COMPRANDO OUTRA
-      { wch: 20 }, // RGB TTC ADEQUADO
-      { wch: 25 }, // RGB ACAO CONCORRENCIA
-      { wch: 15 }, // CODIGO DO VENDEDOR
-      { wch: 15 }, // FDS QTS SKUS
-      { wch: 20 }, // FDS REFRIGERADOR
-      { wch: 25 }, // FDS POSICIONAMENTO
-      { wch: 20 }, // FDS REFRIGERADOR (2)
-      { wch: 25 }, // FDS PRECIFICAÇÃO
-      { wch: 50 }, // FDS OBSERVAÇOES
-      { wch: 50 }  // PRODUTOS NAO SELECIONADOS
-    ];
-
-    XLSX.writeFile(workbook, `Relatorio_Visitas_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);
-
-    toast({
-      title: "Exportação Concluída",
-      description: "O arquivo Excel foi gerado e baixado com sucesso.",
-      variant: "default",
-    });
-  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -205,16 +87,6 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground font-semibold">Acompanhe e gerencie as visitas da Rota Unibeer.</p>
         </div>
         <div className="flex items-center gap-3">
-          {isAnalista && (
-            <Button
-              variant="default"
-              onClick={exportarParaExcel}
-              className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-green-900/20 transition-all duration-300 active:scale-95 border-none"
-            >
-              <DownloadCloud className="w-4 h-4 mr-2" />
-              Exportar Excel
-            </Button>
-          )}
           <Button
             variant="outline"
             onClick={carregarVisitas}
@@ -237,7 +109,7 @@ const Dashboard = () => {
       </div>
 
       {/* User Info Highlight Card */}
-      {user && !isAnalista && (
+      {user && (!isAnalista || user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
         <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20 shadow-lg shadow-primary/5 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
           <CardContent className="p-6 relative z-10">
@@ -281,7 +153,7 @@ const Dashboard = () => {
       )}
 
       {/* Metas e Progresso Mensal */}
-      {user && !isAnalista && (
+      {user && (!isAnalista || user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
         <>
           <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
             <div className="flex items-center gap-2 mb-2">
@@ -296,12 +168,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className={`grid grid-cols-1 gap-4 items-start ${user?.nivel === 'Niv1' ? 'md:grid-cols-2' : 'lg:grid-cols-[1fr_2fr]'}`}>
+            <div className={`grid grid-cols-1 gap-4 items-start ${(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? 'lg:grid-cols-1' : 'lg:grid-cols-[1fr_2fr]'}`}>
 
-            {/* Coluna 1 da Direita/Esquerda - FDS e RGB Empilhados (ou Grid Completa Niv1) */}
-            <div className={`flex gap-4 ${user?.nivel === 'Niv1' ? 'flex-row col-span-1 md:col-span-2' : 'flex-col'}`}>
-              {/* Meta FDS (Oculta para Diretor) */}
-              {user?.nivel !== 'Niv1' && (
+            {/* Coluna 1 da Direita/Esquerda - FDS, RGB, Compass, Quedas (Empilhados ou Grid) */}
+            <div className={`grid gap-4 ${(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'flex flex-col'}`}>
+              {/* Meta FDS */}
+              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
                 <Card 
                   onClick={() => setFiltroIndicadorModal('FDS')}
                   className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm h-full w-full transition-all"
@@ -333,7 +205,7 @@ const Dashboard = () => {
               )}
 
               {/* Meta RGB Padrão */}
-              {user?.nivel !== 'Niv1' && user?.nivel !== 'Niv2' && (
+              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
                 <Card 
                   onClick={() => setFiltroIndicadorModal('RGB')}
                   className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
@@ -374,7 +246,7 @@ const Dashboard = () => {
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
                         <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores Potenciais <br/> Compass RGB Bar</h3>
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores potenciais base <br/> compass em RGB BAR</h3>
                           <p className="text-xl font-black text-foreground mt-1">
                             {estatisticasMes.qtdeCompass} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_COMPASS}</span>
                           </p>
@@ -406,7 +278,7 @@ const Dashboard = () => {
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-end mb-1">
                         <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores Quedas <br/> RGB Mês Anterior</h3>
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores quedas <br/> RGB mês anterior</h3>
                           <p className="text-xl font-black text-foreground mt-1">
                             {estatisticasMes.qtdeQuedas} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_QUEDAS}</span>
                           </p>
@@ -430,7 +302,7 @@ const Dashboard = () => {
             </div>
 
             {/* Meta COACHING (Coluna Larga Esticada) */}
-            {user?.nivel !== 'Niv1' && (
+            {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
               <Card 
                 onClick={() => setFiltroIndicadorModal('COACHING')}
                 className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm flex flex-col h-full min-h-[220px] transition-all"
@@ -499,16 +371,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Seção de Hierarquia (Fase 7: Visão 360º Diretor/Gerente Comercial) */}
-          {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
-            <div className="pt-2 animate-in fade-in slide-in-from-bottom-3 duration-700">
-              <HierarchyLeaderboard 
-                visitas={visitasHierarchy} 
-                vendedores={vendedoresBaseReal}
-                onSelectLevel={handleSelectHierarchy}
-              />
-            </div>
-          )}
 
           <Dialog open={!!filtroIndicadorModal} onOpenChange={(open) => !open && setFiltroIndicadorModal(null)}>
             <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-background/95 backdrop-blur-md border-primary/20">
@@ -611,52 +473,7 @@ const Dashboard = () => {
         </>
       )}
 
-      {/* Painel Visão Global do Analista */}
-      {isAnalista && (
-        <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden shadow-lg mt-6">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b border-border/50">
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-primary" />
-              Desempenho da Equipe (Avaliações por Usuário)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-6">
-            <div className="h-[400px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={dadosGraficoAnalista}
-                  margin={{ top: 20, right: 30, left: 10, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: 'currentColor', fontSize: 11 }}
-                    angle={-35}
-                    textAnchor="end"
-                    interval={0}
-                    height={80}
-                  />
-                  <YAxis tick={{ fill: 'currentColor' }} />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ backgroundColor: 'rgb(20,20,20)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                    itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  <Bar dataKey="FDS" name="Visitas FDS" stackId="a" fill="#22c55e" radius={[0, 0, 4, 4]} />
-                  <Bar dataKey="RGB" name="Visitas RGB" stackId="a" fill="#a855f7" />
-                  <Bar dataKey="Coaching" name="Coaching" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            {dadosGraficoAnalista.length === 0 && (
-              <div className="text-center text-muted-foreground italic mt-4 py-10 border border-dashed border-border/50 rounded-xl">
-                Nenhuma avaliação foi detectada nesses filtros de período para carregar os gráficos.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
 
 
 

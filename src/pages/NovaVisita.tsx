@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Loader2, Search, MapPin } from "lucide-react";
 import StepProdutosExecucao, { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import StepCoaching, { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
 
@@ -75,10 +75,60 @@ const NovaVisita = () => {
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-bold text-foreground flex items-center">Código do Cliente <span className="text-destructive ml-1">*</span></Label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-foreground pointer-events-none">
+                <Label className="text-sm font-bold text-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Código do Cliente <span className="text-destructive ml-1">*</span>
+                  </span>
+                  {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
+                    <div className="bg-muted/50 p-1 rounded-xl border border-border/50 flex items-center shadow-inner">
+                      <RadioGroup 
+                        value={form.filial} 
+                        onValueChange={(v) => {
+                          handleChange("filial", v);
+                          setPdvBuscado(false);
+                        }} 
+                        className="flex gap-1"
+                      >
+                        <div className="flex items-center">
+                          <RadioGroupItem value="C" id="unit-c" className="sr-only" />
+                          <Label 
+                            htmlFor="unit-c" 
+                            className={`
+                              px-4 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all duration-300 flex items-center gap-1.5
+                              ${form.filial === 'C' 
+                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105' 
+                                : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                              }
+                            `}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${form.filial === 'C' ? 'bg-white animate-pulse' : 'bg-muted-foreground/40'}`}></span>
+                            CAMPOS (C)
+                          </Label>
+                        </div>
+                        <div className="flex items-center">
+                          <RadioGroupItem value="M" id="unit-m" className="sr-only" />
+                          <Label 
+                            htmlFor="unit-m" 
+                            className={`
+                              px-4 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all duration-300 flex items-center gap-1.5
+                              ${form.filial === 'M' 
+                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105' 
+                                : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                              }
+                            `}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${form.filial === 'M' ? 'bg-white animate-pulse' : 'bg-muted-foreground/40'}`}></span>
+                            MACAÉ (M)
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  )}
+                </Label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1 group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-primary pointer-events-none text-lg transition-transform group-focus-within:scale-110">
                       {form.filial?.toUpperCase()}
                     </span>
                     <Input
@@ -88,8 +138,8 @@ const NovaVisita = () => {
                         handleChange("codigo_pdv", val);
                         setPdvBuscado(false);
                       }}
-                      placeholder="     Pesquisar código..."
-                      className="h-12 bg-background/50 dark:bg-muted/10 text-foreground shadow-sm font-semibold pl-8 border-border/50 focus-visible:border-primary/50"
+                      placeholder="Pesquisar código..."
+                      className="h-14 bg-background/50 dark:bg-muted/10 text-foreground shadow-sm font-bold pl-12 border-border/50 focus-visible:border-primary/50 text-xl tracking-wider rounded-xl transition-all focus-within:shadow-md focus-within:shadow-primary/5"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -102,14 +152,14 @@ const NovaVisita = () => {
                     type="button"
                     onClick={handlePesquisarPdv}
                     disabled={isSearchingPdv || !form.codigo_pdv}
-                    className="h-12 px-6 shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
+                    className="h-14 px-8 shadow-lg hover:shadow-primary/20 transition-all duration-300 active:scale-95 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-xs"
                   >
                     {isSearchingPdv ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <Search className="w-5 h-5" />
                     )}
-                    <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
+                    <span className="ml-2 hidden sm:inline">Pesquisar</span>
                   </Button>
                 </div>
               </div>

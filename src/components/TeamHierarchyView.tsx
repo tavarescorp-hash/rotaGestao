@@ -1,28 +1,31 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
-  ChevronRight, 
-  ChevronDown, 
   User, 
   Users, 
-  TrendingUp, 
   Target, 
-  Award,
-  Briefcase,
-  Search,
-  Filter,
-  CheckCircle2,
-  Calendar,
-  ClipboardList
+  CheckCircle2, 
+  Calendar, 
+  ClipboardList, 
+  UserCircle,
+  TrendingUp,
+  Star
 } from "lucide-react";
+import { Button } from '@/components/ui/button';
 import { INDICADORES_TIPO_RGB, REQUER_COACHING } from '@/lib/roles';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+import { ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 
 import { VendedorAtivo } from '@/lib/api';
-import { VendedorPerformanceModal } from "@/features/relatorios/components/VendedorPerformanceModal";
 
 interface HierarchyProps {
   visitas: any[];
@@ -34,339 +37,296 @@ interface HierarchyProps {
 }
 
 export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, userUnidade, onSelectVisita }: HierarchyProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedVendedorData, setSelectedVendedorData] = useState<any | null>(null);
+  const [filtroLider, setFiltroLider] = useState<{ name: string, type: 'GV' | 'SUP' } | null>(null);
+  const [drilldown, setDrilldown] = useState<{ name: string, indicator: string } | null>(null);
+  const [selectedOneVisita, setSelectedOneVisita] = useState<any | null>(null);
 
-  // 1. Construir a árvore e consolidar os números
-  const tree = useMemo(() => {
-    const checkNameMatch = (target?: string, search?: string) => {
-      if (!target || !search) return false;
-      const t = target.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      const parts = search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/);
-      return parts.every(part => t.includes(part));
-    };
+  // Auto-seleção para Gerente de Vendas (Niv3) e Supervisor (Niv4)
+  useEffect(() => {
+    if ((userLevel === 'Niv3' || userLevel === 'Niv4') && userName) {
+      setFiltroLider({ name: userName, type: userLevel === 'Niv3' ? 'GV' : 'SUP' });
+    }
+  }, [userLevel, userName]);
 
-    // Filtrar base de vendedores pela visão do usuário logado
-    const vendsValidos = vendedores.filter(v => {
-      if (userLevel === 'Niv1' || (userLevel === 'Niv2' && (userUnidade?.toUpperCase() === 'TODAS' || !userUnidade))) return true;
-      if (userLevel === 'Niv2') return v.filial === userUnidade; 
-      if (userLevel === 'Niv3') return checkNameMatch(v.gerente, userName) || v.filial === userUnidade;
-      if (userLevel === 'Niv4') return true; 
-      return true; 
+  // 1. Agregação de métricas por AVALIADOR (Performance Individual do Líder)
+  const metricsByEvaluator = useMemo(() => {
+    const stats: Record<string, { fds: number, rgb: number, coaching: number }> = {};
+    const currentVisitas = Array.isArray(visitas) ? visitas : [];
+
+    currentVisitas.forEach(v => {
+      const name = v.avaliador?.trim().toUpperCase();
+      if (!name) return;
+      
+      if (!stats[name]) stats[name] = { fds: 0, rgb: 0, coaching: 0 };
+      
+      if (v.indicador_avaliado === 'FDS') stats[name].fds++;
+      else if (v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado)) stats[name].rgb++;
+      else if (v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado)) stats[name].coaching++;
     });
-
-    // 2. Peso Hierárquico para Visibilidade
-    const getPeso = (nivelOUCargo?: string) => {
-      const s = (nivelOUCargo || "").toUpperCase();
-      if (s.includes('NIV1') || s.includes('DIRET') || s.includes('ANALIST')) return 1;
-      if (s.includes('NIV2') || s.includes('COMERCIAL')) return 2;
-      if (s.includes('NIV3') || s.includes('GERENTE')) return 3;
-      if (s.includes('NIV4') || s.includes('SUPERVISOR') || s.includes('SUP')) return 4;
-      return 5; // Vendedores ou outros
-    };
-
-    const myPeso = getPeso(userLevel);
-
-    vendsValidos.forEach(v => {
-      let f = v.gerente_comercial || 'Equipe de Gestão';
-      if (f === 'Equipe de Gestão' || !v.gerente_comercial) {
-        if (v.filial?.toUpperCase().includes('MACA') || v.filial === 'M') f = 'Comercial Macaé';
-        else if (v.filial?.toUpperCase().includes('CAMPO') || v.filial === 'C') f = 'Comercial Campos';
-      }
-
-      const g = v.gerente || 'Sem Gerente de Vendas';
-      const s = v.nome_supervisor || 'Sem Supervisor';
-
-      if (!hierarquia[f]) hierarquia[f] = {};
-      if (!hierarquia[f][g]) hierarquia[f][g] = {};
-      if (!hierarquia[f][g][s]) hierarquia[f][g][s] = [];
-
-      // Filtrar visitas pela visibilidade (não ver quem está acima de mim)
-      const myVisits = visitas.filter(vis => {
-        const isMyVendedor = vis.nome_vendedor?.trim().toUpperCase() === v.nome_vendedor?.trim().toUpperCase();
-        if (!isMyVendedor) return false;
-
-        const visPeso = getPeso(vis.cargo);
-        // Regra: Peso 4 (Sup) não vê Peso 3 (Gerente). Peso 4 >= 3? Sim, mas queremos Peso do User <= Peso da Visita?
-        // Se eu sou Peso 4 (SUP), quero ver apenas >= 4 (SUP, VND).
-        // Se eu sou Peso 1 (Diretor), quero ver >= 1 (TUDO).
-        return visPeso >= myPeso;
-      });
-
-      const fds = myVisits.filter(vis => vis.indicador_avaliado === 'FDS').length;
-      const rgb = myVisits.filter(vis => vis.indicador_avaliado && INDICADORES_TIPO_RGB.includes(vis.indicador_avaliado)).length;
-      const coaching = myVisits.filter(vis => vis.indicador_avaliado && REQUER_COACHING.includes(vis.indicador_avaliado)).length;
-
-      hierarquia[f][g][s].push({
-        ...v,
-        visitas_recebidas: myVisits,
-        metricas: { fds, rgb, coaching, total: fds + rgb + coaching }
-      });
-    });
-
-    return hierarquia;
-  }, [vendedores, visitas, userLevel, userName, userUnidade]);
+    return stats;
+  }, [visitas]);
 
   const isSupervisorOnly = userLevel === 'Niv4';
-  const isGerenteVendas = userLevel === 'Niv3';
 
-  // Componente Interno de Linha de Vendedor
-  const VendedorRow = ({ vendedor }: { vendedor: any }) => {
+  // 2. Listas para os seletores de busca (GVs e Supervisores disponíveis)
+  const listaGerentes = useMemo(() => {
+    const nomes = new Set<string>();
+    vendedores.forEach(v => {
+      const canSee = userLevel === 'Niv1' || userLevel === 'Niv2' || (userLevel === 'Niv3' && v.gerente === userName);
+      if (canSee && v.gerente) nomes.add(v.gerente);
+    });
+    return Array.from(nomes).sort();
+  }, [vendedores, userLevel, userName]);
+
+  const listaSupervisores = useMemo(() => {
+    const nomes = new Set<string>();
+    vendedores.forEach(v => {
+      const canSee = userLevel === 'Niv1' || userLevel === 'Niv2' || (userLevel === 'Niv3' && v.gerente === userName) || (userLevel === 'Niv4' && v.nome_supervisor === userName);
+      if (canSee && v.nome_supervisor) nomes.add(v.nome_supervisor);
+    });
+    return Array.from(nomes).sort();
+  }, [vendedores, userLevel, userName]);
+
+  // Componente de Card de Dashboard Individual
+  const LeaderDashboardCard = ({ name, type }: { name: string, type: 'GV' | 'SUP' }) => {
+    const stats = metricsByEvaluator[name.toUpperCase()] || { fds: 0, rgb: 0, coaching: 0 };
+    const total = stats.fds + stats.rgb + stats.coaching;
+    // Meta arbitrária de 30 visitas/mês para o progresso (exemplo)
+    const progress = Math.min((total / 30) * 100, 100);
+
     return (
-      <Collapsible className="group/vend border-t border-border/40 transition-colors bg-background">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-4 hover:bg-muted/30 w-full transition-colors group">
-          <div 
-            className="flex items-center gap-3 cursor-pointer min-w-0 flex-1 group"
-            onClick={() => setSelectedVendedorData(vendedor)}
-          >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20 shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
-              {vendedor.nome_vendedor?.substring(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                {vendedor.nome_vendedor}
-              </p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge variant="outline" className="text-[9px] font-black h-4 px-1.5 flex items-center bg-background shrink-0 uppercase tracking-tighter">
-                  COD: {vendedor.cod_vendedor || vendedor.codigo_vendedor}
-                </Badge>
-                {vendedor.metricas.total > 0 && (
-                   <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-                     <CheckCircle2 className="w-3 h-3 text-green-500" /> {vendedor.metricas.total} visitas
-                   </span>
-                )}
+      <Card className="border border-border/60 bg-card rounded-2xl shadow-lg overflow-hidden mb-6 animate-in fade-in zoom-in duration-300">
+        <div className="p-6 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex justify-between items-start mb-8 pb-4 border-b border-border/40">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
+                {type === 'GV' ? <Users className="w-8 h-8" /> : <UserCircle className="w-8 h-8" />}
+              </div>
+              <div>
+                <h3 className="font-black text-xl text-foreground tracking-tight">{name}</h3>
+                <p className="text-[10px] text-primary/70 font-black uppercase tracking-[0.2em]">
+                  {type === 'GV' ? 'Gerente de Vendas' : 'Supervisor de Vendas'}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mt-2 sm:mt-0 justify-between sm:justify-end w-full sm:w-auto">
-            <div className="flex items-center gap-4">
-               <div className="flex flex-col items-end">
-                  <div className="flex gap-1.5">
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-0.5">FDS</p>
-                      <Badge variant="secondary" className="h-4 p-0 px-1 font-mono text-[9px]">{vendedor.metricas.fds}</Badge>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-0.5">RGB</p>
-                      <Badge variant="secondary" className="h-4 p-0 px-1 font-mono text-[9px]">{vendedor.metricas.rgb}</Badge>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-0.5">Coach</p>
-                      <Badge variant="secondary" className="h-4 p-0 px-1 font-mono text-[9px] text-blue-500">{vendedor.metricas.coaching}</Badge>
-                    </div>
-                  </div>
-               </div>
-            </div>
+          <div className="space-y-6">
+            <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+              <ClipboardList className="w-3.5 h-3.5" /> AVALIAÇÕES REALIZADAS PELO LÍDER
+            </h5>
             
-            <CollapsibleTrigger asChild>
-              <button className="p-1 hover:bg-muted rounded-md transition-colors shrink-0">
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-data-[state=open]/vend:rotate-180 transition-transform duration-200" />
-              </button>
-            </CollapsibleTrigger>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div 
+                onClick={() => setDrilldown({ name, indicator: 'FDS' })}
+                className="bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <p className="text-[10px] font-black text-emerald-600/70 uppercase mb-1">FDS</p>
+                <p className="text-3xl font-black text-emerald-700">{stats.fds}</p>
+              </div>
+
+              <div 
+                onClick={() => setDrilldown({ name, indicator: 'RGB' })}
+                className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-blue-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
+                  <Target className="w-4 h-4 text-blue-600" />
+                </div>
+                <p className="text-[10px] font-black text-blue-600/70 uppercase mb-1">RGB</p>
+                <p className="text-3xl font-black text-blue-700">{stats.rgb}</p>
+              </div>
+
+              <div 
+                onClick={() => setDrilldown({ name, indicator: 'COACHING' })}
+                className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-amber-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center mb-2">
+                  <Star className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="text-[10px] font-black text-amber-600/70 uppercase mb-1">COACHING</p>
+                <p className="text-3xl font-black text-amber-700">{stats.coaching}</p>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nível de Atividade Mensal</span>
+                <span className="text-[10px] font-black text-primary">{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-2.5 bg-muted/40" />
+            </div>
           </div>
         </div>
-
-        <CollapsibleContent>
-          <div className="bg-muted/5 border-t border-border/20 px-4 py-3 space-y-2">
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-2">
-              <ClipboardList className="w-3.5 h-3.5" />
-              Histórico do Período ({vendedor.visitas_recebidas.length})
-            </div>
-            {vendedor.visitas_recebidas.map((vis: any, i: number) => (
-              <div 
-                key={i} 
-                onClick={() => onSelectVisita && onSelectVisita(vis)}
-                className="flex flex-col sm:flex-row justify-between sm:items-center bg-card border border-border/50 p-2.5 rounded-lg text-xs hover:bg-muted hover:border-primary/40 transition cursor-pointer shadow-sm group/card"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 group-hover/card:bg-primary group-hover/card:text-white transition-colors">
-                    {vis.indicador_avaliado?.substring(0, 1) || "A"}
-                  </div>
-                  <div className="min-w-0 truncate">
-                    <p className="font-bold text-foreground truncate">
-                       {vis.nome_fantasia_pdv || "PDV Sem Nome"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <User className="w-3 h-3" /> {vis.avaliador} • <Calendar className="w-3 h-3 ml-1" /> {format(new Date(vis.data_visita || new Date()), "dd/MM/yyyy")}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-[9px] font-bold h-5 uppercase bg-background border-primary/20 text-primary shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0">
-                  {vis.indicador_avaliado}
-                </Badge>
-              </div>
-            ))}
-            {vendedor.visitas_recebidas.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic p-2 text-center">Nenhuma visita detectada.</p>
-            )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+      </Card>
     );
   };
 
-  if (isSupervisorOnly) {
-    const meusVendedores = Object.values(tree).flatMap(filiais => 
-      Object.values(filiais).flatMap(gerentes => 
-        Object.values(gerentes).flatMap(supervisores => supervisores)
-      )
-    );
-    if (meusVendedores.length === 0) return <p className="text-muted-foreground text-sm p-4 text-center">Nenhum vendedor encontrado na sua carteira.</p>;
+  const LiderBuscaBar = () => {
+    if (userLevel === 'Niv3' || userLevel === 'Niv4') return null;
 
     return (
-      <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
-        <div className="p-4 bg-muted/20 border-b border-border">
-          <h3 className="font-bold flex items-center gap-2"><Briefcase className="w-4 h-4 text-primary" /> Minha Equipe ({meusVendedores.length})</h3>
+      <div className="flex flex-col gap-2 mb-6">
+        <div className="flex flex-wrap gap-2">
+          {userLevel !== 'Niv3' && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`flex-1 h-10 font-black text-[10px] uppercase gap-2 tracking-widest transition-all ${filtroLider?.type === 'GV' ? 'bg-primary/10 border-primary shadow-sm text-primary scale-[1.02]' : ''}`}
+              onClick={() => {
+                if (filtroLider?.type === 'GV' && !filtroLider.name) setFiltroLider(null);
+                else setFiltroLider({ name: '', type: 'GV' });
+              }}
+            >
+              <Users className="w-3.5 h-3.5" /> Gerente de Vendas
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`flex-1 h-10 font-black text-[10px] uppercase gap-2 tracking-widest transition-all ${filtroLider?.type === 'SUP' ? 'bg-primary/10 border-primary shadow-sm text-primary scale-[1.02]' : ''}`}
+            onClick={() => {
+              if (filtroLider?.type === 'SUP' && !filtroLider.name) setFiltroLider(null);
+              else setFiltroLider({ name: '', type: 'SUP' });
+            }}
+          >
+            <UserCircle className="w-3.5 h-3.5" /> Supervisor
+          </Button>
+          {filtroLider && (
+            <Button variant="ghost" size="sm" className="h-10 px-4 text-muted-foreground hover:text-destructive font-bold text-xs" onClick={() => setFiltroLider(null)}>
+              Resetar
+            </Button>
+          )}
         </div>
-        {meusVendedores.map((v, i) => <VendedorRow key={i} vendedor={v} />)}
-        <VendedorPerformanceModal
-          vendedor={selectedVendedorData}
-          onClose={() => setSelectedVendedorData(null)}
-          onSelectVisita={(vis) => {
-            setSelectedVendedorData(null);
-            onSelectVisita && onSelectVisita(vis);
-          }}
-        />
+
+        {filtroLider && (
+          <div className="bg-card/50 p-3 rounded-2xl border border-border/50 animate-in slide-in-from-top-2 duration-200">
+             <div className="flex flex-wrap gap-2 p-1 max-h-48 overflow-y-auto custom-scrollbar">
+               {(filtroLider.type === 'GV' ? listaGerentes : listaSupervisores).map(nome => (
+                 <Badge 
+                   key={nome}
+                   className={`cursor-pointer px-4 py-2 text-[10px] uppercase tracking-wider transition-all rounded-full border-none shadow-sm ${filtroLider.name === nome ? 'bg-primary text-white scale-110' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                   onClick={() => {
+                     if (filtroLider.name === nome) setFiltroLider({ ...filtroLider, name: '' });
+                     else setFiltroLider({ ...filtroLider, name: nome });
+                   }}
+                 >
+                   {nome}
+                 </Badge>
+               ))}
+               {(filtroLider.type === 'GV' ? listaGerentes : listaSupervisores).length === 0 && (
+                 <p className="text-[10px] text-muted-foreground italic w-full text-center py-2">Nenhum líder encontrado para esta função.</p>
+               )}
+             </div>
+          </div>
+        )}
       </div>
     );
-  }
+  };
 
-  const isDiretor = userLevel === 'Niv1';
+  const renderResults = () => {
+    if (!filtroLider) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50 text-center animate-in fade-in duration-500">
+           <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4">
+              <TrendingUp className="w-8 h-8 text-primary/30" />
+           </div>
+           <h3 className="text-lg font-black text-foreground uppercase tracking-widest">Dashboard de Performance</h3>
+           <p className="text-xs text-muted-foreground font-semibold mt-2 max-w-xs">
+             Selecione uma função acima para analisar a produtividade individual dos líderes em campo.
+           </p>
+        </div>
+      );
+    }
+
+    if (filtroLider.name) {
+      return <LeaderDashboardCard name={filtroLider.name} type={filtroLider.type} />;
+    }
+
+    // Se nenhum nome selecionado, mostrar todos os líderes daquela função
+    const leaders = filtroLider.type === 'GV' ? listaGerentes : listaSupervisores;
+    
+    return (
+      <div className="space-y-4">
+        {leaders.map(nome => (
+          <LeaderDashboardCard key={nome} name={nome} type={filtroLider.type} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {Object.entries(tree).map(([comercial, gerentes]) => {
-        const shouldHideComercial = !isDiretor;
-        const cFDS = Object.values(gerentes).flatMap(g => Object.values(g).flat()).reduce((acc, v) => acc + v.metricas.fds, 0);
-        const cCoaching = Object.values(gerentes).flatMap(g => Object.values(g).flat()).reduce((acc, v) => acc + v.metricas.coaching, 0);
+      <LiderBuscaBar />
+      {renderResults()}
 
-        return (
-          <Collapsible key={comercial} className={`bg-card rounded-xl ${!shouldHideComercial ? 'border border-border/80 shadow-md overflow-hidden mb-6' : ''}`} defaultOpen={shouldHideComercial}>
-            {!shouldHideComercial && (
-              <CollapsibleTrigger className="w-full flex justify-between items-center p-5 bg-primary/5 hover:bg-primary/10 transition focus:outline-none group gap-2 border-b border-border/40">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-inner">
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                  <div className="text-left min-w-0 overflow-hidden w-full">
-                    <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors truncate">{comercial}</h3>
-                    <p className="text-xs text-muted-foreground font-semibold truncate uppercase tracking-widest mt-1">
-                      {Object.keys(gerentes).length} Gerentes • {Object.values(gerentes).flatMap(g => Object.values(g).flat()).length} Vendedores
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="hidden sm:flex items-center gap-6 mr-6 text-right">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Totais FDS</p>
-                      <p className="font-mono font-black text-lg text-foreground">{cFDS}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Coachings</p>
-                      <p className="font-mono font-black text-lg text-primary">{cCoaching}</p>
-                    </div>
-                  </div>
-                  <ChevronDown className="w-6 h-6 text-primary/70 group-data-[state=open]:rotate-180 transition-transform duration-300" />
-                </div>
-              </CollapsibleTrigger>
-            )}
+      {/* Modal de Drilldown (Lista de Visitas) */}
+      <Dialog open={!!drilldown} onOpenChange={(open) => !open && setDrilldown(null)}>
+        <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[85vh] overflow-y-auto p-6 bg-background/95 backdrop-blur-md border-primary/20 custom-scrollbar">
+          <DialogHeader className="mb-6">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => setDrilldown(null)} className="h-8 w-8 hover:bg-accent shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <DialogTitle className="text-xl font-black uppercase tracking-widest text-primary leading-tight">
+                  Visitas: {drilldown?.indicator}
+                </DialogTitle>
+                <DialogDescription className="text-xs font-bold text-muted-foreground uppercase opacity-70">
+                   Realizadas por {drilldown?.name}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
 
-            <CollapsibleContent className={!shouldHideComercial ? "p-4 space-y-4 bg-muted/5" : "space-y-4"}>
-              {Object.entries(gerentes).map(([gerente, supervisores]) => {
-                const shouldHideGerenteHeader = isGerenteVendas;
-                if (isGerenteVendas && gerente !== userName && gerente !== "Sem Gerente") return null;
+          <div className="space-y-3">
+            {(() => {
+              if (!drilldown) return null;
+              const filtered = visitas.filter(v => {
+                const evalMatch = v.avaliador?.trim().toUpperCase() === drilldown.name.toUpperCase();
+                if (!evalMatch) return false;
 
-                const qtdeSup = Object.keys(supervisores).length;
-                const totalVends = Object.values(supervisores).flat().length;
-                const tFDS = Object.values(supervisores).flat().reduce((acc, v) => acc + v.metricas.fds, 0);
-                const tCoaching = Object.values(supervisores).flat().reduce((acc, v) => acc + v.metricas.coaching, 0);
+                const ind = v.indicador_avaliado?.trim().toUpperCase();
+                if (drilldown.indicator === 'FDS') return ind === 'FDS';
+                if (drilldown.indicator === 'RGB') return ind && INDICADORES_TIPO_RGB.includes(ind);
+                if (drilldown.indicator === 'COACHING') return ind && REQUER_COACHING.includes(ind);
+                return false;
+              });
 
-                return (
-                  <Collapsible key={gerente} className={`border border-border/60 bg-card rounded-xl shadow-sm overflow-hidden ${!shouldHideComercial ? 'ml-2 border-l-4 border-l-blue-500/30' : ''}`} defaultOpen={shouldHideGerenteHeader}>
-                    {!shouldHideGerenteHeader && (
-                      <CollapsibleTrigger className="w-full flex justify-between items-center p-4 hover:bg-muted/30 transition focus:outline-none group gap-2">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5" />
-                          </div>
-                          <div className="text-left min-w-0 overflow-hidden w-full">
-                            <h3 className="font-bold text-base text-foreground group-hover:text-blue-500 transition-colors truncate">Gerente: {gerente}</h3>
-                            <p className="text-xs text-muted-foreground font-medium truncate">{qtdeSup} Supervisores • {totalVends} Vendedores</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 shrink-0">
-                          <div className="hidden sm:flex items-center gap-4 mr-4 text-right">
-                            <div>
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total FDS</p>
-                              <p className="font-mono font-bold text-sm">{tFDS}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total Coaching</p>
-                              <p className="font-mono font-bold text-sm text-blue-500">{tCoaching}</p>
-                            </div>
-                          </div>
-                          <ChevronDown className="w-5 h-5 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform duration-300" />
-                        </div>
-                      </CollapsibleTrigger>
-                    )}
+              if (filtered.length === 0) {
+                return <p className="text-center py-10 text-muted-foreground italic text-sm">Nenhuma visita encontrada.</p>;
+              }
 
-                    <CollapsibleContent className="bg-muted/10">
-                      <div className={!shouldHideGerenteHeader ? "p-3 pt-0" : "p-0"}>
-                        <div className={`flex flex-col gap-2 rounded-lg ${!shouldHideGerenteHeader ? "border-l-2 border-blue-500/20 ml-2 pl-2 mt-2" : ""}`}>
-                          {Object.entries(supervisores).map(([supervisor, vends]) => {
-                            const supFDS = vends.reduce((a, v) => a + v.metricas.fds, 0);
-                            const supRGB = vends.reduce((a, v) => a + v.metricas.rgb, 0);
-                            const supCoaching = vends.reduce((a, v) => a + v.metricas.coaching, 0);
-
-                            return (
-                              <Collapsible key={supervisor} className="border border-border/50 bg-background rounded-lg shadow-sm border-l-4 border-l-primary/30 ml-2">
-                                <CollapsibleTrigger className="w-full flex justify-between items-center p-3 hover:bg-muted/50 transition focus:outline-none group gap-2">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <div className="w-8 h-8 rounded-md bg-secondary/50 flex items-center justify-center shrink-0 text-muted-foreground group-hover:bg-primary group-hover:text-white transition-all">
-                                      <Users className="w-4 h-4" />
-                                    </div>
-                                    <div className="text-left min-w-0 overflow-hidden w-full flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-                                      <div>
-                                        <h4 className="font-bold text-sm truncate">{supervisor}</h4>
-                                        <p className="text-[11px] text-muted-foreground truncate">{vends.length} vendedores na carteira</p>
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-1 md:mt-0">
-                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/20 text-primary bg-primary/5 font-black uppercase tracking-widest">{supFDS} FDS</Badge>
-                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-blue-500/20 text-blue-600 bg-blue-500/5 font-black uppercase tracking-widest">{supRGB} RGB</Badge>
-                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5 font-black uppercase tracking-widest">{supCoaching} COA</Badge>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform duration-200 shrink-0" />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                  <div className="bg-muted/5 border-t border-border/30 rounded-b-lg overflow-hidden flex flex-col">
-                                    {vends.map((v, i) => <VendedorRow key={i} vendedor={v} />)}
-                                  </div>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            );
-                          })}
-                        </div>
+              return filtered.map((v, i) => (
+                <Card 
+                  key={i} 
+                  className="group hover:border-primary/40 transition-all cursor-pointer bg-card/50"
+                  onClick={() => {
+                    setDrilldown(null);
+                    onSelectVisita && onSelectVisita(v);
+                  }}
+                >
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-black text-sm text-foreground uppercase truncate">
+                        {v.nome_fantasia_pdv || "PDV DESCONHECIDO"}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {v.data_visita ? format(parseISO(v.data_visita), "dd/MM/yy") : "--/--/--"}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {v.filial}</span>
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                );
-              })}
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      })}
-
-      <VendedorPerformanceModal
-        vendedor={selectedVendedorData}
-        onClose={() => setSelectedVendedorData(null)}
-        onSelectVisita={(vis) => {
-          setSelectedVendedorData(null);
-          onSelectVisita && onSelectVisita(vis);
-        }}
-      />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:text-primary transition-all" />
+                  </CardContent>
+                </Card>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

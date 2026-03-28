@@ -25,7 +25,7 @@ export function useVisitaForm() {
     potencial_cliente: "",
     canal_identificado: "",
     canal_cadastrado: "",
-    filial: "",
+    filial: user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ') ? "M" : "C",
     municipio: "",
     codigo_vendedor: "",
     nome_vendedor: "",
@@ -51,17 +51,7 @@ export function useVisitaForm() {
 
     setIsSearchingPdv(true);
     try {
-      let prefixo = "";
-      const isMacae = user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ');
-
-      if (isMacae) {
-        prefixo = "M";
-      } else if (user?.unidade?.toUpperCase().includes('CAMPOS')) {
-        prefixo = "C";
-      } else {
-        prefixo = "C";
-      }
-
+      const prefixo = form.filial || "C";
       const codigoBusca = form.codigo_pdv.match(/^\d+$/) ? `${prefixo}${form.codigo_pdv}` : form.codigo_pdv;
 
       const jaVisitado = await verificarVisitaMensal(codigoBusca, user?.name || "", form.data_visita, user);

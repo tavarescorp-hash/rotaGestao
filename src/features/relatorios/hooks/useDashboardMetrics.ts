@@ -216,17 +216,17 @@ export function useDashboardMetrics(
     let META_QUEDAS = 0;
 
     if (user?.nivel === 'Niv1') {
-      // Diretor: Meta é 10 FDS por supervisor e 40 Coaching por supervisor (agregado)
-      META_FDS = nSupervisores * 10;
-      META_RGB = nSupervisores * 20; 
-      META_COACHING = nSupervisores * 40;
-      META_COMPASS = 10; // Meta fixa Direção
+      // Diretor: Meta fixa de 10 para cada indicador
+      META_FDS = 10;
+      META_RGB = 10; 
+      META_COACHING = 10;
+      META_COMPASS = 10;
       META_QUEDAS = 10;
     } else if (user?.nivel === 'Niv2') {
-      // Gerente Comercial: Meta baseada nos seus supervisores da filial
-      META_FDS = nSupervisores * 10;
-      META_RGB = nSupervisores * 20;
-      META_COACHING = nSupervisores * 40;
+      // Gerente Comercial: Metas individuais fixas em 10
+      META_FDS = 10;
+      META_RGB = 10;
+      META_COACHING = 10;
       META_QUEDAS = 10;
     } else if (user?.nivel === 'Niv3') {
       META_FDS = 20; 

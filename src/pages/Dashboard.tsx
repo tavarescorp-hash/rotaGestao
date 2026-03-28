@@ -530,12 +530,40 @@ const Dashboard = () => {
 
               <div className="space-y-3">
                 {(() => {
+                  const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+                  const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
+
+                  const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
+                  const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
+                  const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
+                  const N_COACHING = listNormalized(REQUER_COACHING);
+
                   let filtradasDoModal = [];
-                  if (filtroIndicadorModal === 'FDS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado === 'FDS');
-                  else if (filtroIndicadorModal === 'COMPASS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado));
-                  else if (filtroIndicadorModal === 'QUEDAS') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado));
-                  else if (filtroIndicadorModal === 'COACHING') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado));
-                  else if (filtroIndicadorModal === 'RGB') filtradasDoModal = filtradas.filter(v => v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado) && !INDICADORES_COMPASS_LOCKED.includes(v.indicador_avaliado) && !INDICADORES_QUEDAS_LOCKED.includes(v.indicador_avaliado));
+                  const fVal = filtroIndicadorModal || "";
+                  
+                  if (fVal === 'FDS') {
+                    filtradasDoModal = filtradas.filter(v => normalizeInd(v.indicador_avaliado) === 'FDS');
+                  } else if (fVal === 'COMPASS') {
+                    filtradasDoModal = filtradas.filter(v => {
+                      const vInd = normalizeInd(v.indicador_avaliado);
+                      return vInd && N_COMPASS.includes(vInd);
+                    });
+                  } else if (fVal === 'QUEDAS') {
+                    filtradasDoModal = filtradas.filter(v => {
+                      const vInd = normalizeInd(v.indicador_avaliado);
+                      return vInd && N_QUEDAS.includes(vInd);
+                    });
+                  } else if (fVal === 'COACHING') {
+                    filtradasDoModal = filtradas.filter(v => {
+                      const vInd = normalizeInd(v.indicador_avaliado);
+                      return vInd && N_COACHING.includes(vInd);
+                    });
+                  } else if (fVal === 'RGB') {
+                    filtradasDoModal = filtradas.filter(v => {
+                      const vInd = normalizeInd(v.indicador_avaliado);
+                      return vInd && N_TIPO_RGB.includes(vInd);
+                    });
+                  }
 
                   if (filtradasDoModal.length === 0) {
                     return (

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Loader2, Search, MapPin } from "lucide-react";
@@ -82,22 +83,22 @@ const NovaVisita = () => {
                   </span>
                   {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
                     <div className="bg-muted/50 p-1 rounded-xl border border-border/50 flex items-center shadow-inner">
-                      <RadioGroup 
-                        value={form.filial} 
+                      <RadioGroup
+                        value={form.filial}
                         onValueChange={(v) => {
                           handleChange("filial", v);
                           setPdvBuscado(false);
-                        }} 
+                        }}
                         className="flex gap-1"
                       >
                         <div className="flex items-center">
                           <RadioGroupItem value="C" id="unit-c" className="sr-only" />
-                          <Label 
-                            htmlFor="unit-c" 
+                          <Label
+                            htmlFor="unit-c"
                             className={`
                               px-4 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all duration-300 flex items-center gap-1.5
-                              ${form.filial === 'C' 
-                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105' 
+                              ${form.filial === 'C'
+                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105'
                                 : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
                               }
                             `}
@@ -108,12 +109,12 @@ const NovaVisita = () => {
                         </div>
                         <div className="flex items-center">
                           <RadioGroupItem value="M" id="unit-m" className="sr-only" />
-                          <Label 
-                            htmlFor="unit-m" 
+                          <Label
+                            htmlFor="unit-m"
                             className={`
                               px-4 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all duration-300 flex items-center gap-1.5
-                              ${form.filial === 'M' 
-                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105' 
+                              ${form.filial === 'M'
+                                ? 'bg-primary text-white shadow-[0_2px_10px_rgba(234,179,8,0.3)] scale-105'
                                 : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
                               }
                             `}
@@ -168,16 +169,24 @@ const NovaVisita = () => {
             <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.name || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Responsável</Label>
+                  <p className="text-sm font-black text-foreground truncate uppercase">{user?.name || ""}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.unidade || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Unidade</Label>
+                  <div className="flex">
+                    <Badge variant="outline" className="bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-200/50 font-bold text-[10px] px-2 py-0.5 rounded-md uppercase">
+                      {user?.unidade === 'TODAS' ? "TODAS AS UNIDADES" : (user?.unidade || "Não definida")}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cargo</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.funcao || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Cargo / Função</Label>
+                  <div className="flex">
+                    <Badge className="bg-[#FFB800] text-black font-black text-[10px] px-2 py-0.5 rounded-md border-none uppercase tracking-wider">
+                      {user?.formattedRole}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -3,13 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Users, 
-  Target, 
-  Award, 
-  TrendingUp, 
-  Calendar, 
-  ChevronRight, 
+import {
+  Users,
+  Target,
+  Award,
+  TrendingUp,
+  Calendar,
+  ChevronRight,
   UserCircle,
   Briefcase
 } from "lucide-react";
@@ -82,7 +82,7 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
             <div className="space-y-6">
               {/* Resumo de Performance */}
               <div className="grid grid-cols-3 gap-3">
-                <Card 
+                <Card
                   className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'FDS' ? 'border-emerald-500 ring-4 ring-emerald-500/20 bg-emerald-500/10 scale-[1.02]' : 'border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'FDS' ? null : 'FDS')}
                 >
@@ -94,7 +94,7 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                   </CardContent>
                 </Card>
 
-                <Card 
+                <Card
                   className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'RGB' ? 'border-blue-500 ring-4 ring-blue-500/20 bg-blue-500/10 scale-[1.02]' : 'border-blue-500/20 bg-blue-500/5 hover:border-blue-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'RGB' ? null : 'RGB')}
                 >
@@ -106,7 +106,7 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                   </CardContent>
                 </Card>
 
-                <Card 
+                <Card
                   className={`glass-card shadow-sm transition-all cursor-pointer ${filtroAtivo === 'COACHING' ? 'border-orange-500 ring-4 ring-orange-500/20 bg-orange-500/10 scale-[1.02]' : 'border-orange-500/20 bg-orange-500/5 hover:border-orange-500/40 hover:scale-[1.02]'}`}
                   onClick={() => setFiltroAtivo(filtroAtivo === 'COACHING' ? null : 'COACHING')}
                 >
@@ -139,7 +139,7 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                     Histórico {filtroAtivo ? `de ${filtroAtivo}` : ""} ({visitasFiltradas.length})
                   </h4>
                   {filtroAtivo && (
-                    <button 
+                    <button
                       onClick={() => setFiltroAtivo(null)}
                       className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
                     >
@@ -151,23 +151,22 @@ export function VendedorPerformanceModal({ vendedor, onClose, onSelectVisita }: 
                 <div className="space-y-3">
                   {visitasFiltradas.length > 0 ? (
                     visitasFiltradas.map((vis, idx) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className="group p-4 bg-card border border-border/60 rounded-xl flex items-center justify-between hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer shadow-sm"
                         onClick={() => onSelectVisita(vis)}
                       >
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
-                               {vis.nome_fantasia_pdv || "PDV Sem Nome"}
-                             </span>
-                             <Badge variant="outline" className={`text-[9px] font-black py-0 px-1.5 uppercase bg-background ${
-                               vis.indicador_avaliado === 'FDS' ? 'text-emerald-500 border-emerald-500/20' : 
-                               vis.indicador_avaliado?.includes('RGB') ? 'text-blue-500 border-blue-500/20' : 
-                               'text-orange-500 border-orange-500/20'
-                             }`}>
-                               {vis.indicador_avaliado === 'FDS' ? 'FDS' : vis.indicador_avaliado?.includes('RGB') ? 'RGB' : 'Coaching'}
-                             </Badge>
+                            <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
+                              {vis.nome_fantasia_pdv || "PDV Sem Nome"}
+                            </span>
+                            <Badge variant="outline" className={`text-[9px] font-black py-0 px-1.5 uppercase bg-background ${vis.indicador_avaliado === 'FDS' ? 'text-emerald-500 border-emerald-500/20' :
+                                vis.indicador_avaliado?.includes('RGB') ? 'text-blue-500 border-blue-500/20' :
+                                  'text-orange-500 border-orange-500/20'
+                              }`}>
+                              {vis.indicador_avaliado === 'FDS' ? 'FDS' : vis.indicador_avaliado?.includes('RGB') ? 'RGB' : 'Coaching'}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-bold">
                             <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(vis.data_visita)}</span>

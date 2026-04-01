@@ -158,6 +158,7 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
       query = query.eq('empresa_id', user.empresa_id);
     }
 
+    // Niv1 (Diretor) e Niv2 (GCom - Eduardo Breda) não têm filtros de unidade/nome na SQL (pegam tudo da empresa_id)
     if (user && user.nivel !== 'Niv1' && user.nivel !== 'Niv2' && !user.funcao?.toUpperCase().includes('ANALISTA')) {
       if (user.unidade && user.unidade !== "todas") {
         if (user.unidade.toUpperCase().includes("MACA")) {

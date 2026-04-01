@@ -31,8 +31,21 @@ export const INDICADORES_MAP = {
 };
 
 export const getIndicadoresPorNivel = (nivel?: string | null): string[] => {
-    if (!nivel || !(nivel in INDICADORES_MAP)) return [];
-    return INDICADORES_MAP[nivel as NivelHieriaquico];
+    if (!nivel) return INDICADORES_MAP["Niv5"]; // Default para qualquer usuário logado
+
+    const normalized = nivel.toUpperCase();
+    let levelKey: NivelHieriaquico = "Niv5";
+
+    if (normalized.includes("NIV0") || normalized.includes("MASTER") || normalized.includes("ADMIN")) levelKey = "Niv0";
+    else if (normalized.includes("NIV1") || normalized.includes("DIRETOR") || normalized.includes("DIRETORIA")) levelKey = "Niv1";
+    else if (normalized.includes("NIV2") || normalized.includes("GERENTE COMERCIAL")) levelKey = "Niv2";
+    else if (normalized.includes("NIV3") || normalized.includes("GERENTE")) levelKey = "Niv3";
+    else if (normalized.includes("NIV4") || normalized.includes("SUPERVISOR")) levelKey = "Niv4";
+    else if (normalized.includes("NIV5") || normalized.includes("VENDEDOR") || normalized.includes("USUARIO")) levelKey = "Niv5";
+    // Tenta usar a chave direta se existir no mapa
+    else if (nivel in INDICADORES_MAP) levelKey = nivel as NivelHieriaquico;
+
+    return INDICADORES_MAP[levelKey] || INDICADORES_MAP["Niv5"];
 };
 
 // ==========================================

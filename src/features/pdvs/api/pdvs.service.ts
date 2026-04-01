@@ -31,19 +31,19 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
 
       if (dataOff) {
         const codigoParaVerificar = dataOff.cod_vendedor?.toString() || "";
-        
+
         let forcedData = null;
         try {
           const cacheVendedores = await getAllFromDB(STORES.VENDEDORES_CACHE);
           const vendInfo = cacheVendedores.find(v => v.cod_vendedor === codigoParaVerificar);
           if (vendInfo) {
-             forcedData = {
-                nome: vendInfo.nome_supervisor,
-                gerente: vendInfo.gerente,
-                filial: vendInfo.filial
-             };
+            forcedData = {
+              nome: vendInfo.nome_supervisor,
+              gerente: vendInfo.gerente,
+              filial: vendInfo.filial
+            };
           }
-        } catch(e){}
+        } catch (e) { }
 
         return {
           nome_fantasia: dataOff.sigla || dataOff.razao_social,
@@ -99,7 +99,7 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     if (data && data.length > 0) {
       const pdv = data[0];
       const codigoParaVerificar = pdv.cod_vendedor?.toString() || "";
-      
+
       let forcedData: any = null;
       if (codigoParaVerificar) {
         const { data: vData } = await supabase
@@ -107,9 +107,9 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
           .select('supervisores(nome, filial, gerente)')
           .eq('cod_vendedor', codigoParaVerificar)
           .single();
-          
+
         if (vData?.supervisores) {
-           forcedData = vData.supervisores;
+          forcedData = vData.supervisores;
         }
       }
 
@@ -140,32 +140,34 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
     let supervisorId = null;
     if (user?.nivel === 'Niv4' && user?.name) {
       // Uso de Wildcard % do SQL para superar divergências do tipo "Guilherme DAS Chagas" vs "guilherme.chagas"
-      const cleaned = user.name.toUpperCase().replace(/[^A-Z0-9]/g, '%');
+      const cleaned = user.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, '%');
       supervisorId = `%${cleaned}%`;
-      
+
       if (supervisorId.includes('CARLOS%JUNIOR')) supervisorId = '%CARLOS%TAVARES%';
     }
 
-    let gerenteRef = user?.nivel === 'Niv3' && user?.name ? user.name.toUpperCase().replace(/\./g, ' ') : null;
-    if (gerenteRef === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
-    if (gerenteRef === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
+    let gerenteRef: string | null = null;
+    if ((user?.nivel === 'Niv3' || user?.nivel === 'Niv2') && user?.name) {
+      const cleaned = user.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, '%');
+      gerenteRef = `%${cleaned}%`;
+
+      if (gerenteRef.includes('CARLOS%JUNIOR')) gerenteRef = '%CARLOS%TAVARES%';
+      if (gerenteRef.includes('GUILHERME%CHAGAS')) gerenteRef = '%GUILHERME%DAS%CHAGAS%';
+    }
+
+    console.log(`📊 [DEBUG HIERARQUIA] User: ${user?.name} | Nível: ${user?.nivel} | GerenteRef: ${gerenteRef}`);
 
     if (!navigator.onLine) {
       console.log("🌐 Sem internet. Buscando Vendedores no Cache Local (Novo Modelo)...");
       const cacheVendedores = await getAllFromDB(STORES.VENDEDORES_CACHE);
-      
+
       return cacheVendedores.filter(vend => {
         if (user?.nivel === 'Niv4' && user?.name) {
           const search = user.name.toUpperCase();
           return vend.nome_supervisor?.toUpperCase().includes(search);
-        } else if (user?.nivel === 'Niv3') {
-          const gRef = gerenteRef || "";
-          if (user.unidade?.toUpperCase().includes("MACA")) {
-            return vend.filial === 'M' || vend.filial?.toUpperCase().includes('MACAE') || (vend.gerente && vend.gerente.toUpperCase() === gRef);
-          } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
-            return vend.filial === 'C' || vend.filial?.toUpperCase().includes('CAMPOS') || (vend.gerente && vend.gerente.toUpperCase() === gRef);
-          }
-          return vend.gerente && vend.gerente.toUpperCase() === gRef;
+        } else if (user?.nivel === 'Niv2' || user?.nivel === 'Niv3') {
+          const gRef = gerenteRef?.replace(/%/g, '') || "";
+          return (vend.gerente_comercial?.toUpperCase()?.includes(gRef)) || (vend.gerente?.toUpperCase()?.includes(gRef));
         }
         return true;
       });
@@ -174,29 +176,14 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         cod_vendedor,
         nome,
         cidade,
-        supervisores!inner (
-          id,
-          nome,
-          filial,
-          gerente,
-          gerente_comercial
-        )
+        supervisores!inner (*)
       `);
 
       if (user?.empresa_id) {
         queryVend = queryVend.eq('empresa_id', user.empresa_id);
       }
 
-      if (user?.nivel === 'Niv4' && supervisorId) {
-        queryVend = queryVend.ilike('supervisores.nome', supervisorId);
-      } else if (user?.nivel === 'Niv3') {
-        if (user.unidade?.toUpperCase().includes("MACA")) {
-          queryVend = queryVend.or('filial.eq.M,filial.ilike.%MACAE%', { foreignTable: 'supervisores' });
-        } else if (user.unidade?.toUpperCase().includes("CAMPOS")) {
-          queryVend = queryVend.or('filial.eq.C,filial.ilike.%CAMPOS%', { foreignTable: 'supervisores' });
-        }
-      }
-
+      // Filtramos em JS para evitar erro 42703 (coluna inexistente) e ser resiliente a variações de esquema
       let data: any[] | null = null;
       let error: any = null;
 
@@ -204,46 +191,112 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       data = res.data;
       error = res.error;
 
-      // Resiliência: Se a coluna gerente_comercial ainda não existir no Supabase, tenta sem ela
-      if (error && (error.code === '42703' || error.message?.includes('gerente_comercial'))) {
-        console.warn("Coluna gerente_comercial ausente no Supabase. Tentando fallback...");
-        const queryFallback = supabase.from("vendedores").select(`
-          cod_vendedor,
-          nome,
-          cidade,
-          supervisores!inner (
-            id,
-            nome,
-            filial,
-            gerente
-          )
-        `);
-        
-        let qf = queryFallback;
-        if (user?.empresa_id) qf = qf.eq('empresa_id', user.empresa_id);
-        if (user?.nivel === 'Niv4' && supervisorId) qf = qf.ilike('supervisores.nome', supervisorId);
-        
-        const { data: d2, error: e2 } = await qf;
-        data = d2;
-        error = e2;
-      }
+      console.log(`📊 [DEBUG HIERARQUIA] Resultado SQL: ${data?.length || 0} vnds | Erro:`, error);
+
 
       if (error) {
         console.error("Erro ao buscar vendedores ativos:", error);
         return [];
       }
 
-      const formatado: VendedorAtivo[] = (data as any[]).map((r: any) => ({
-        cod_vendedor: r.cod_vendedor,
-        nome_vendedor: r.nome,
-        nome_supervisor: r.supervisores?.nome || "",
-        codigo_sup: r.supervisores?.id?.toString() || "",
-        municipio: r.cidade || "",
-        filial: r.supervisores?.filial || "",
-        gerente: r.supervisores?.gerente || "",
-        gerente_comercial: (r.supervisores as any)?.gerente_comercial || ""
-      }));
+      let formatado: VendedorAtivo[] = (data as any[]).map((r: any) => {
+        const s = r.supervisores || {};
+        return {
+          cod_vendedor: r.cod_vendedor,
+          nome_vendedor: r.nome,
+          nome_supervisor: s.nome || "",
+          codigo_sup: s.id?.toString() || "",
+          municipio: r.cidade || "",
+          filial: s.filial || "",
+          gerente: s.gerente || "",
+          // Tenta encontrar o Gerente Comercial em qualquer coluna que ele possa estar
+          gerente_comercial: s.gerente_comercial || s.nome_gerente_comercial || r.nome_gerente_comercial || s.gerente_com || ""
+        };
+      });
 
+      const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0';
+
+      if (isAnalista) {
+        // Analista não filtra nada no JS (Visão de Diretor)
+      } else if (user?.nivel === 'Niv4' && supervisorId) {
+        const sMatch = supervisorId.replace(/%/g, '').toUpperCase();
+        formatado = formatado.filter(v => v.nome_supervisor?.toUpperCase().includes(sMatch));
+      } else if (user?.nivel === 'Niv2' && gerenteRef) {
+        const gMatch = gerenteRef.replace(/%/g, '').toUpperCase();
+        formatado = formatado.filter(v => {
+          const matchesGCom = v.gerente_comercial?.toUpperCase().includes(gMatch) ||
+            v.gerente?.toUpperCase().includes(gMatch);
+
+          if (user.unidade?.toUpperCase() === "TODAS") return true;
+
+          if (user.unidade?.toUpperCase().includes("MACA")) {
+            return matchesGCom || v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE');
+          }
+          if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+            return matchesGCom || v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS');
+          }
+          return matchesGCom;
+        });
+      } else if (user?.nivel === 'Niv3' && gerenteRef) {
+        const gMatch = gerenteRef.replace(/%/g, '').toUpperCase();
+        formatado = formatado.filter(v => {
+          const matchesGerente = v.gerente?.toUpperCase().includes(gMatch);
+          if (user.unidade?.toUpperCase().includes("MACA")) {
+            return matchesGerente || v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE');
+          }
+          if (user.unidade?.toUpperCase().includes("CAMPOS")) {
+            return matchesGerente || v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS');
+          }
+          return matchesGerente;
+        });
+      }
+
+      if ((user?.nivel === 'Niv1' || user?.nivel === 'Niv0' || isAnalista) && gerenteRef) {
+        console.log("🚑 [DEBUG HIERARQUIA] Iniciando Busca Híbrida Aditiva (Rescue Multi-Unid v3-M/C Explicit)...");
+        const unid = (user.unidade || "").toUpperCase();
+        
+        // Eduardo Breda (Niv2) agora recupera M e C obrigatoriamente
+        const rescueOrs = [
+          `nome_gerente_comercial.ilike.${gerenteRef}`,
+          "filial.eq.M",
+          "filial.ilike.%MACAE%",
+          "filial.eq.C",
+          "filial.ilike.%CAMPOS%"
+        ];
+
+        const { data: pdvData } = await supabase.from("pdvs")
+          .select('cod_vendedor, nome_vendedor, nome_supervisor, cod_supervisor, filial, nome_gerente_vendas, nome_gerente_comercial')
+          .or(rescueOrs.join(','))
+          .limit(5000);
+
+        if (pdvData && pdvData.length > 0) {
+          console.log(`🚑 [DEBUG HIERARQUIA] Resgatados do Data Lake (PDVs): ${pdvData.length} records.`);
+          const vMap = new Map<string, VendedorAtivo>();
+
+          // 1. Prioridade para o que já estava formatado (Cadastro Oficial)
+          formatado.forEach(v => vMap.set(v.cod_vendedor, v));
+
+          // 2. Complemento via PDVs (Data Lake)
+          pdvData.forEach(p => {
+            if (!vMap.has(p.cod_vendedor)) {
+              vMap.set(p.cod_vendedor, {
+                cod_vendedor: p.cod_vendedor,
+                nome_vendedor: p.nome_vendedor,
+                nome_supervisor: p.nome_supervisor || "",
+                codigo_sup: p.cod_supervisor?.toString() || "",
+                municipio: "",
+                filial: p.filial || "",
+                gerente: p.nome_gerente_vendas || "",
+                gerente_comercial: p.nome_gerente_comercial || ""
+              });
+            }
+          });
+          formatado = Array.from(vMap.values());
+          console.log(`🚑 [DEBUG HIERARQUIA] Fusão concluída: ${formatado.length} vnds totais.`);
+        }
+      }
+
+      console.log(`📊 [DEBUG HIERARQUIA] Pós-Filtro: ${formatado.length} vnds`);
       return formatado;
     }
   } catch (error) {
@@ -285,7 +338,7 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
       .from('supervisores')
       .select('id, nome')
       .eq('empresa_id', empresaId);
-    
+
     const supMap = new Map<string, number>();
     if (supData) supData.forEach(s => supMap.set(s.nome, s.id));
 
@@ -295,7 +348,7 @@ export async function uploadBasePDVs(dados: any[], user?: any): Promise<{ succes
       const codVend = row.cod_vendedor?.toString().trim() || row.codigo_vendedor?.toString().trim();
       const nomeVend = row.nome_vendedor?.trim();
       const nomeSup = row.nome_supervisor?.trim()?.toUpperCase();
-      
+
       if (codVend && nomeVend && !uniqueVendedores.has(codVend)) {
         uniqueVendedores.set(codVend, {
           cod_vendedor: codVend.toUpperCase(),

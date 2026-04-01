@@ -11,7 +11,9 @@ export interface User {
   role: UserRole;
   unidade?: string;
   funcao?: string;
+  codigo?: string;
   nivel?: NivelHieriaquico | string;
+  formattedRole?: string;
   indicadores?: string[];
   empresa_id?: number;
   empresa_nome?: string;
@@ -39,12 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: profile, error } = await supabase
         .from("profiles")
         .select(`
-          unidade, 
-          funcao, 
-          nivel, 
-          Nome, 
-          ativo,
-          empresa_id,
+          *,
           empresas (
             nome,
             logo_url,
@@ -56,7 +53,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error && error.code !== "PGRST116") {
-        console.error("Error fetching profile", error);
+        console.error("❌ [Auth Sync] Erro ao buscar perfil no Supabase:", error);
+      }
+      
+      if (profile) {
+        console.log("👤 [Auth Sync] Perfil carregado com sucesso:", {
+          id: sessionUser.id,
+          nome: profile.Nome,
+          funcao: profile.funcao,
+          nivel: profile.nivel,
+          unidade: profile.unidade,
+          empresa: profile.empresa_id
+        });
+      } else {
+        console.warn("⚠️ [Auth Sync] Nenhum perfil encontrado para o ID:", sessionUser.id);
       }
       
       const empresaInfo = profile?.empresas ? (Array.isArray(profile.empresas) ? profile.empresas[0] : profile.empresas) as any : null;
@@ -71,14 +81,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const isMaster = profile?.nivel === 'Master';
 
+      const formatRoleHelper = (funcao?: string, codigo?: string, nivel?: string) => {
+        const mapping: Record<string, string> = {
+          "NIV0": "ADMINISTRADOR",
+          "NIV1": "DIRETOR", 
+          "NIV2": "GERENTE COMERCIAL",
+          "NIV3": "GERENTE DE VENDAS",
+          "NIV4": "SUPERVISOR",
+          "NIV5": "VENDEDOR"
+        };
+        const levelNormalized = nivel?.toUpperCase().trim() || "";
+        let cargoBase = "";
+        if (levelNormalized.includes("NIV0")) cargoBase = mapping["NIV0"];
+        else if (levelNormalized.includes("NIV1")) cargoBase = mapping["NIV1"];
+        else if (levelNormalized.includes("NIV2")) cargoBase = mapping["NIV2"];
+        else if (levelNormalized.includes("NIV3")) cargoBase = mapping["NIV3"];
+        else if (levelNormalized.includes("NIV4")) cargoBase = mapping["NIV4"];
+        else if (levelNormalized.includes("NIV5")) cargoBase = mapping["NIV5"];
+        if (!cargoBase) {
+          const f = funcao?.trim().toUpperCase();
+          if (f && f !== "USUÁRIO" && f !== "USUARIO") cargoBase = f;
+        }
+        if (!cargoBase) {
+          if (levelNormalized.includes("SUPERVISOR")) cargoBase = "SUPERVISOR";
+          else if (levelNormalized.includes("GERENTE")) cargoBase = "GERENTE";
+          else if (levelNormalized.includes("DIRETOR")) cargoBase = "DIRETOR";
+          else cargoBase = "USUÁRIO";
+        }
+        return `${cargoBase}${codigo ? ` ${codigo}` : ""}`;
+      };
+
       setUser({
         id: sessionUser.id,
         email: sessionUser.email || "",
-        name: sessionUser.user_metadata?.name || profile?.Nome || sessionUser.email?.split("@")[0] || "",
+        name: profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "",
         role: (sessionUser.user_metadata?.role as UserRole) || "user",
-        unidade: profile?.unidade,
+        unidade: profile?.unidade || (isMaster ? "TODAS" : ""),
         funcao: profile?.funcao,
+        codigo: profile?.codigo,
         nivel: profile?.nivel,
+        formattedRole: profile?.funcao || formatRoleHelper(profile?.funcao, profile?.codigo, profile?.nivel),
         indicadores: getIndicadoresPorNivel(profile?.nivel),
         empresa_id: isMaster ? 0 : (profile?.empresa_id || 1),
         empresa_nome: isMaster ? "Gestão de Rota" : (empresaInfo?.nome || "Gestão de Rota"),

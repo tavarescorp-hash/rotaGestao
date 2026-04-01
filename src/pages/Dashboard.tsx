@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscarVisitas, excluirVisita, buscarVendedoresAtivos, type Visita, type VendedorAtivo } from "@/lib/api";
+import { buscarVisitas, excluirVisita, buscarVendedoresAtivos, buscarMetasConfig, type Visita, type VendedorAtivo, type MetaConfig } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,48 +12,134 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, CheckCircle2, ChevronRight, AlertCircle, User, Users, Settings2 } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, ChevronRight, Users, Settings2, User, Trophy, BarChart3, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 import { useDashboardMetrics } from "@/features/relatorios/hooks/useDashboardMetrics";
 import { VisitaModalDialog } from "@/features/relatorios/components/VisitaModalDialog";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip, FunnelChart, Funnel, LabelList, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+
 
 const Dashboard = () => {
-  const { isAdmin, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [vendedoresBaseReal, setVendedoresBaseReal] = useState<VendedorAtivo[]>([]);
+  const [metasUsuario, setMetasUsuario] = useState<MetaConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filtroIndicadorModal, setFiltroIndicadorModal] = useState<string | null>(null);
-
+  const [filtroPiramideModal, setFiltroPiramideModal] = useState<string | null>(null);
+  const [filtroAvaliadorDetalhe, setFiltroAvaliadorDetalhe] = useState<string | null>(null);
 
   const {
     dateRange, setDateRange,
     unidade, setUnidade,
     indicadorFiltro, setIndicadorFiltro,
     cargoFiltro, setCargoFiltro,
-    activeTab, setActiveTab,
-    avaliadorFiltro, setAvaliadorFiltro,
-    usuarioFiltro, setUsuarioFiltro,
-    isAnalista, isGerenteComercial,
-    filtradas, visitasHierarchy,
-    estatisticasMes, dadosGraficoAnalista, cargosUnicos, unidadesUnicas
-  } = useDashboardMetrics(visitas, vendedoresBaseReal, user);
+    isAnalista,
+    filtradas,
+    estatisticasMes, cargosUnicos, unidadesUnicas,
+    dadosGraficoAnalista
+  } = useDashboardMetrics(visitas, vendedoresBaseReal, user, metasUsuario);
 
+  // Lógica de cascata para encontrar quais indicadores exibir
+  const indicadoresExibicao = React.useMemo(() => {
+    if (metasUsuario && metasUsuario.length > 0) {
+      return metasUsuario.map(m => m.indicador);
+    }
+    const porNivel = getIndicadoresPorNivel(user?.nivel);
+    if (porNivel.length > 0) return porNivel;
+    const porFuncao = getIndicadoresPorNivel(user?.funcao);
+    if (porFuncao.length > 0) return porFuncao;
+    return [];
+  }, [metasUsuario, user?.nivel, user?.funcao]);
+
+  const graficoPizzaData = React.useMemo(() => {
+    let fds = 0, rgb = 0, coaching = 0, compass = 0, quedas = 0, outros = 0;
+    
+    const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+    const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
+    
+    const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
+    const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
+    const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
+    const N_COACHING = listNormalized(REQUER_COACHING);
+
+    filtradas.forEach(v => {
+      const vInd = normalizeInd(v.indicador_avaliado);
+      if (vInd === 'FDS') fds++;
+      else if (N_COACHING.includes(vInd)) coaching++;
+      else if (N_COMPASS.includes(vInd)) compass++;
+      else if (N_QUEDAS.includes(vInd)) quedas++;
+      else if (N_TIPO_RGB.includes(vInd)) rgb++;
+      else outros++;
+    });
+
+    return [
+      { name: 'FDS', value: fds, color: '#FFB800', filterKey: 'FDS' }, 
+      { name: 'RGB', value: rgb, color: '#38BDF8', filterKey: 'RGB' }, 
+      { name: 'Coaching', value: coaching, color: '#10B981', filterKey: 'COACHING' }, 
+      { name: 'Compass', value: compass, color: '#A855F7', filterKey: 'COMPASS' }, 
+      { name: 'Quedas', value: quedas, color: '#F43F5E', filterKey: 'QUEDAS' }, 
+      { name: 'Outros', value: outros, color: '#94A3B8', filterKey: null }
+    ].filter(i => i.value > 0).sort((a, b) => b.value - a.value);
+  }, [filtradas]);
+
+  const graficoPiramideData = React.useMemo(() => {
+    // Escala Hierárquica Pré-definida (Setores da Liderança)
+    const hierarquia = [
+      { key: 'DIRETOR', fill: '#A855F7' },
+      { key: 'GERENTE COMERCIAL', fill: '#EB4898' },
+      { key: 'GERENTE DE VENDAS', fill: '#38BDF8' },
+      { key: 'SUPERVISOR', fill: '#10B981' }
+    ];
+
+    const counts: Record<string, number> = {
+      'DIRETOR': 0, 'GERENTE COMERCIAL': 0, 'GERENTE DE VENDAS': 0, 'SUPERVISOR': 0
+    };
+
+    filtradas.forEach(v => {
+      // Normalizando strings e varrendo pra garantir o matching correto dos Cargos
+      const c = v.cargo?.trim().toUpperCase() || "";
+      if (c.includes('DIRETOR')) counts['DIRETOR']++;
+      else if (c.includes('GERENTE COMERCIAL') || c.includes('GCOM')) counts['GERENTE COMERCIAL']++;
+      else if (c.includes('GERENTE DE VENDAS') || c.includes('GNV') || c.includes('GERENTE REGIONAL')) counts['GERENTE DE VENDAS']++;
+      else if (c.includes('SUPERVISOR')) counts['SUPERVISOR']++;
+    });
+
+    // Filtra e retorna seguindo a estrita ordem hierárquica (Diretoria no Topo e Base Supervisão)
+    return hierarquia.map(h => ({
+      name: h.key,
+      value: counts[h.key] > 0 ? counts[h.key] : 0, 
+      fill: h.fill
+    })).filter(h => h.value > 0); 
+  }, [filtradas]);
 
   const carregarVisitas = async () => {
     setLoading(true);
-    const [dataVisitas, dataVendedores] = await Promise.all([
-      buscarVisitas(user),
-      buscarVendedoresAtivos(user)
-    ]);
-    setVisitas(dataVisitas);
-    setVendedoresBaseReal(dataVendedores);
-    setLoading(false);
+    try {
+      const [dataVisitas, dataVendedores, dataMetas] = await Promise.all([
+        buscarVisitas(user),
+        buscarVendedoresAtivos(user),
+        buscarMetasConfig(user?.id, user?.empresa_id)
+      ]);
+      setVisitas(dataVisitas);
+      setVendedoresBaseReal(dataVendedores);
+      if (dataMetas.length > 0) {
+        console.log("✅ [SaaS Meta Sync] Metas encontradas no Supabase:", dataMetas);
+      } else {
+        console.warn("ℹ️ [SaaS Meta Sync] Nenhuma meta customizada no Supabase para este user_id:", user?.id);
+      }
+      setMetasUsuario(dataMetas);
+    } catch (error) {
+      console.error("❌ [SaaS Meta Sync] Erro ao carregar dados do Supabase:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -61,142 +147,129 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (user?.unidade && user.unidade !== "todas" && unidade === "todas") {
-      setUnidade(user.unidade);
+    if (indicadoresExibicao.length === 0 && !loading) {
+      console.warn("⚠️ Nenhuma métrica vinculada encontrada para:", { 
+        name: user?.name, 
+        nivel: user?.nivel, 
+        funcao: user?.funcao 
+      });
     }
-  }, [user?.unidade, user?.nivel, unidade, setUnidade]);
-
-  const handleExcluir = async (id: string) => {
-    const result = await excluirVisita(id);
-    toast({
-      title: result.success ? "Sucesso" : "Erro",
-      description: result.message,
-      variant: result.success ? "default" : "destructive",
-    });
-    if (result.success) carregarVisitas();
-  };
-
-
+  }, [indicadoresExibicao, user, loading]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border/40">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Visão Geral</h1>
-          <p className="text-sm text-muted-foreground font-semibold">Acompanhe e gerencie as visitas da Rota Unibeer.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={carregarVisitas}
-            disabled={loading}
-            className="border-border/50 hover:bg-accent/50 hover:text-accent-foreground transition-all duration-300 shadow-sm"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Sincronizar
-          </Button>
-          {!isAnalista && (
-            <Button
-              onClick={() => navigate("/nova-visita")}
-              className="shadow-md hover:shadow-primary/20 transition-all duration-300 active:scale-95"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Nova Visita
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      <Card className="bg-amber-50/40 dark:bg-[#0A0F1E]/95 border-amber-100/50 dark:border-none shadow-2xl overflow-hidden relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FFB800]/5 to-transparent pointer-events-none" />
 
-      {/* User Info Highlight Card */}
-      {user && (!isAnalista || user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
-        <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20 shadow-lg shadow-primary/5 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
-          <CardContent className="p-6 relative z-10">
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shadow-inner">
-                  <ClipboardList className="w-7 h-7 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground tracking-tight">{user.name}</h3>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <Badge variant="default" className="text-xs px-2.5 py-0.5 bg-primary/90 text-primary-foreground font-semibold shadow-sm">
-                      {user.funcao || "Sem função"}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs px-2.5 py-0.5 bg-secondary/50 font-medium">
-                      Unidade: <span className="font-bold ml-1">{user.unidade || "Não definida"}</span>
-                    </Badge>
-                  </div>
+        <CardContent className="p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#FFB800] flex items-center justify-center shadow-[0_0_15px_rgba(255,184,0,0.2)]">
+                <ClipboardList className="w-8 h-8 md:w-10 md:h-10 text-black" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-black dark:text-white uppercase">{user?.name}</h2>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <Badge className="bg-[#FFB800] text-black font-black text-[10px] md:text-xs px-3 py-1.5 rounded-lg border-none hover:bg-[#FFB800]/90 transition-colors uppercase">
+                    {user?.formattedRole}
+                  </Badge>
+
+                  <Badge className="bg-slate-500/80 dark:bg-slate-700/80 text-white font-bold text-[10px] md:text-xs px-3 py-1.5 rounded-lg border-none hover:bg-slate-600 transition-colors">
+                    Unidade: <span className="font-black ml-1 uppercase">
+                      {(() => {
+                        const u = user?.unidade?.toUpperCase();
+                        if (u === "C" || u === "CAMPO") return "CAMPOS";
+                        if (u === "M") return "MACAÉ";
+                        return u || "CAMPOS";
+                      })()}
+                    </span>
+                  </Badge>
                 </div>
               </div>
-              <div className="flex-1 md:max-w-md lg:max-w-xl bg-black/20 dark:bg-black/40 p-4 rounded-xl border border-white/5">
-                <p className="text-xs text-muted-foreground mb-2 font-bold uppercase tracking-widest flex items-center gap-2">
+            </div>
+
+            {/* Right: Metrics Tags (Linked Metrics) - Estilo Screenshot Cinza/Branco */}
+            {!isAnalista && (
+              <div className="w-full lg:max-w-md bg-slate-200/60 dark:bg-white/5 p-4 rounded-2xl border border-slate-300/30 dark:border-white/10 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-black uppercase tracking-[0.1em] flex items-center gap-2">
                   <Filter className="w-3 h-3" />
                   Métricas de Avaliação Vinculadas
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {getIndicadoresPorNivel(user.nivel) && getIndicadoresPorNivel(user.nivel).length > 0 ? (
-                    getIndicadoresPorNivel(user.nivel).map((ind, i) => (
-                      <span key={i} className="bg-background/80 backdrop-blur-sm border border-border/50 px-2.5 py-1 rounded-md text-foreground/90 font-medium shadow-sm">
-                        {ind}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground/60 italic px-2">Nenhum indicador mapeado para este cargo.</span>
-                  )}
-                </div>
+                {metasUsuario.length > 0 && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[8px] font-black text-green-600 dark:text-green-400 uppercase tracking-tighter">SaaS Live</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {indicadoresExibicao.length > 0 ? (
+                  indicadoresExibicao.map((ind, i) => (
+                    <span key={i} className="bg-white dark:bg-white/10 text-slate-700 dark:text-white/90 px-3 py-1.5 rounded-xl font-bold text-[10px] shadow-sm border border-slate-200/50 dark:border-none transition-transform hover:scale-105">
+                      {ind}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-400 italic text-[10px] py-1">
+                    Aguardando configuração de metas...
+                  </span>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Metas e Progresso Mensal */}
-      {user && (!isAnalista || user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
-        <>
-          <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0 shadow-inner">
-                <Calendar className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold uppercase tracking-widest text-primary leading-tight">
-                  {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? "Performance da Gestão" : "Meus Indicadores"}
-                </h2>
-                <p className="text-xs text-muted-foreground font-semibold">Toda a sua performance detalhada do período.</p>
-              </div>
-            </div>
+      {/* 2. MEUS INDICADORES SECTION */}
+      {!isAnalista && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 px-1">
+          <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
+            <Calendar className="w-4 h-4 text-[#FFB800]" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
+              Meus Indicadores
+            </h2>
+            <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
+              Acompanhamento de suas avaliações neste período.
+            </p>
+          </div>
+        </div>
 
-            <div className={`grid grid-cols-1 gap-4 items-start ${(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? 'lg:grid-cols-1' : 'lg:grid-cols-[1fr_2fr]'}`}>
+        {(() => {
+          const showFDS = indicadoresExibicao.some(i => i.toUpperCase().includes('FDS'));
+          const showRGB = indicadoresExibicao.some(i => i.toUpperCase() === 'RGB' || i.toUpperCase().includes('FOCO RGB'));
+          const showCoaching = indicadoresExibicao.some(i => i.toUpperCase().includes('COACHING'));
+          const showCompass = indicadoresExibicao.some(i => i.toUpperCase().includes('COMPASS'));
+          const showQuedas = indicadoresExibicao.some(i => i.toUpperCase().includes('QUEDA'));
 
-            {/* Coluna 1 da Direita/Esquerda - FDS, RGB, Compass, Quedas (Empilhados ou Grid) */}
-            <div className={`grid gap-4 ${(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'flex flex-col'}`}>
-              {/* Meta FDS */}
-              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
-                <Card 
-                  onClick={() => setFiltroIndicadorModal('FDS')}
-                  className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm h-full w-full transition-all"
-                >
-                  <CardContent className="p-5">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-end mb-1">
-                        <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">FDS</h3>
-                          <p className="text-xl font-black text-foreground mt-1">
-                            {estatisticasMes.qtdeFDS} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_FDS}</span>
+          const totalCards = [showFDS, showRGB, showCoaching, showCompass, showQuedas].filter(Boolean).length;
+          const colSpanCard = totalCards <= 2 ? "md:col-span-2" : "md:col-span-1";
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              {showCompass && (
+                <Card onClick={() => setFiltroIndicadorModal('COMPASS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores potenciais base compass em RGB BAR</h3>
+                          <p className="text-2xl font-black text-foreground dark:text-white">
+                            {estatisticasMes.qtdeCompass} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COMPASS}</span>
                           </p>
                         </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                            {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100)}%
-                          </span>
+                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                          {Math.round((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100) || 0}%
                         </div>
                       </div>
-                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                          style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100)}%` }}
+                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100, 100) || 0}%` }}
                         />
                       </div>
                     </div>
@@ -204,30 +277,76 @@ const Dashboard = () => {
                 </Card>
               )}
 
-              {/* Meta RGB Padrão */}
-              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
-                <Card 
-                  onClick={() => setFiltroIndicadorModal('RGB')}
-                  className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
-                >
-                  <CardContent className="p-5">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-end mb-1">
-                        <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RGB</h3>
-                          <p className="text-xl font-black text-foreground mt-1">
-                            {estatisticasMes.qtdeRGB} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_RGB}</span>
+              {showQuedas && (
+                <Card onClick={() => setFiltroIndicadorModal('QUEDAS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores quedas RGB mês anterior</h3>
+                          <p className="text-2xl font-black text-foreground dark:text-white">
+                            {estatisticasMes.qtdeQuedas} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_QUEDAS}</span>
                           </p>
                         </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                            {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
-                          </span>
+                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                          {Math.round((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100) || 0}%
                         </div>
                       </div>
-                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
+                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
+                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100, 100) || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {showFDS && (
+                <Card onClick={() => setFiltroIndicadorModal('FDS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">FDS</h3>
+                          <p className="text-2xl font-black text-foreground dark:text-white">
+                            {estatisticasMes.qtdeFDS} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_FDS}</span>
+                          </p>
+                        </div>
+                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                          {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100) || 0}%
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
+                        <div
+                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100) || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {showRGB && (
+                <Card onClick={() => setFiltroIndicadorModal('RGB')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">RGB</h3>
+                          <p className="text-2xl font-black text-foreground dark:text-white">
+                            {estatisticasMes.qtdeRGB} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_RGB}</span>
+                          </p>
+                        </div>
+                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                          {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
+                        <div
+                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
                           style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100) || 0}%` }}
                         />
                       </div>
@@ -236,486 +355,624 @@ const Dashboard = () => {
                 </Card>
               )}
 
-              {/* Meta Maiores Potenciais Compass (Apenas Diretor) */}
-              {user?.nivel === 'Niv1' && (
-                <Card 
-                  onClick={() => setFiltroIndicadorModal('COMPASS')}
-                  className="glass-card bg-card/40 border-blue-500/20 hover:border-blue-500/50 hover:bg-blue-500/10 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
-                >
-                  <CardContent className="p-5">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-end mb-1">
-                        <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores potenciais base <br/> compass em RGB BAR</h3>
-                          <p className="text-xl font-black text-foreground mt-1">
-                            {estatisticasMes.qtdeCompass} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_COMPASS}</span>
+              {showCoaching && (
+                <Card onClick={() => setFiltroIndicadorModal('COACHING')} className="md:col-span-2 bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden flex flex-col transition-all duration-300 shadow-xl relative">
+                  <CardContent className="p-6 flex-1 flex flex-col">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em] flex items-center gap-2">
+                          COACHING <span className="text-[8px] opacity-40 font-bold">({estatisticasMes.detalhesCoaching.length} Vnds)</span>
+                        </h3>
+                        <div className="flex items-end gap-3 mt-1">
+                          <p className="text-2xl font-black text-foreground dark:text-white">
+                            {estatisticasMes.qtdeCoaching} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COACHING}</span>
                           </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">
-                            {Math.round((estatisticasMes.qtdeCompass / estatisticasMes.META_COMPASS) * 100) || 0}%
-                          </span>
+                          <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded mb-1">
+                            {Math.round((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100) || 0}%
+                          </div>
                         </div>
                       </div>
-                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                        <div
-                          className="h-full bg-blue-500 transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                          style={{ width: `${Math.min((estatisticasMes.qtdeCompass / estatisticasMes.META_COMPASS) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Meta Maiores Quedas */}
-              {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
-                <Card 
-                  onClick={() => setFiltroIndicadorModal('QUEDAS')}
-                  className="glass-card bg-card/40 border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer overflow-hidden relative shadow-sm w-full transition-all"
-                >
-                  <CardContent className="p-5">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-end mb-1">
-                        <div>
-                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight">Maiores quedas <br/> RGB mês anterior</h3>
-                          <p className="text-xl font-black text-foreground mt-1">
-                            {estatisticasMes.qtdeQuedas} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_QUEDAS}</span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
-                            {Math.round((estatisticasMes.qtdeQuedas / estatisticasMes.META_QUEDAS) * 100) || 0}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                        <div
-                          className="h-full bg-amber-500 transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                          style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / estatisticasMes.META_QUEDAS) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Meta COACHING (Coluna Larga Esticada) */}
-            {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4') && (
-              <Card 
-                onClick={() => setFiltroIndicadorModal('COACHING')}
-                className="glass-card bg-card/40 border-primary/10 hover:border-primary/50 hover:bg-card/60 cursor-pointer overflow-hidden relative shadow-sm flex flex-col h-full min-h-[220px] transition-all"
-              >
-                <CardContent className="p-5 flex-1 flex flex-col">
-                <div className="flex flex-col gap-3 mb-4">
-                  <div className="flex justify-between items-end mb-1">
-                    <div>
-                      <h3 className="text-[10px] font-bold text-muted-foreground flex gap-1 uppercase tracking-widest">
-                        COACHING <span className="opacity-70 normal-case tracking-normal border border-border/50 px-1 rounded">({estatisticasMes.vendedoresAvaliados} Vnds)</span>
-                      </h3>
-                      <p className="text-xl font-black text-foreground mt-1">
-                        {estatisticasMes.qtdeCoaching} <span className="text-sm font-semibold text-muted-foreground uppercase">/ {estatisticasMes.META_COACHING}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
-                        {Math.round((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner border border-black/5 dark:border-white/5">
-                    <div
-                      className="h-full bg-primary transition-all duration-1000 ease-out rounded-full relative overflow-hidden"
-                      style={{ width: `${Math.min((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Lista de Vendedores */}
-                <div className="pt-3 flex-1 flex flex-col border-t border-border/30">
-                  <h4 className="text-[9px] font-bold text-muted-foreground flex justify-between uppercase tracking-widest mb-3">
-                    <span>Vendedor</span>
-                    <span>Realizado</span>
-                  </h4>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                    {estatisticasMes.detalhesCoaching.map((vend, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px]">
-                          <span className="font-semibold text-foreground/90 truncate mr-2" title={vend.nome}>
-                            {vend.nome}
-                          </span>
-                          <span className="font-bold text-muted-foreground shrink-0">
-                            {vend.atual} / {vend.meta}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-secondary/40 rounded-full overflow-hidden">
+                      <div className="flex-1 max-w-xs">
+                        <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                           <div
-                            className={`h-full transition-all duration-700 ease-out rounded-full ${vend.atual >= vend.meta ? 'bg-green-500' : 'bg-primary/70'}`}
-                            style={{ width: `${Math.min((vend.atual / vend.meta) * 100, 100)}%` }}
+                            className="h-full bg-[#FFB800] rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.min((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100, 100) || 0}%` }}
                           />
                         </div>
                       </div>
-                    ))}
-                    {estatisticasMes.detalhesCoaching.length === 0 && (
-                      <p className="text-[10px] text-muted-foreground italic text-center py-2">
-                        Nenhum vendedor encontrado ou configurado sob sua hierarquia.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )}
-
-            </div>
-          </div>
-
-
-          <Dialog open={!!filtroIndicadorModal} onOpenChange={(open) => !open && setFiltroIndicadorModal(null)}>
-            <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-background/95 backdrop-blur-md border-primary/20">
-              <DialogHeader className="mb-4">
-                <div className="flex items-start sm:items-center gap-3">
-                  <Button variant="ghost" size="icon" onClick={() => setFiltroIndicadorModal(null)} className="h-8 w-8 hover:bg-secondary/50 shrink-0">
-                    <ArrowLeft className="w-5 h-5 text-foreground" />
-                  </Button>
-                  <div>
-                    <DialogTitle className="text-lg sm:text-xl font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      Avaliações: {filtroIndicadorModal}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs sm:text-sm font-semibold text-muted-foreground mt-0.5">
-                      Tickets de avaliação registrados no período com esta métrica.
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-3">
-                {(() => {
-                  const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
-                  const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
-
-                  const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
-                  const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
-                  const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
-                  const N_COACHING = listNormalized(REQUER_COACHING);
-
-                  let filtradasDoModal = [];
-                  const fVal = filtroIndicadorModal || "";
-                  
-                  if (fVal === 'FDS') {
-                    filtradasDoModal = filtradas.filter(v => normalizeInd(v.indicador_avaliado) === 'FDS');
-                  } else if (fVal === 'COMPASS') {
-                    filtradasDoModal = filtradas.filter(v => {
-                      const vInd = normalizeInd(v.indicador_avaliado);
-                      return vInd && N_COMPASS.includes(vInd);
-                    });
-                  } else if (fVal === 'QUEDAS') {
-                    filtradasDoModal = filtradas.filter(v => {
-                      const vInd = normalizeInd(v.indicador_avaliado);
-                      return vInd && N_QUEDAS.includes(vInd);
-                    });
-                  } else if (fVal === 'COACHING') {
-                    filtradasDoModal = filtradas.filter(v => {
-                      const vInd = normalizeInd(v.indicador_avaliado);
-                      return vInd && N_COACHING.includes(vInd);
-                    });
-                  } else if (fVal === 'RGB') {
-                    filtradasDoModal = filtradas.filter(v => {
-                      const vInd = normalizeInd(v.indicador_avaliado);
-                      return vInd && N_TIPO_RGB.includes(vInd);
-                    });
-                  }
-
-                  if (filtradasDoModal.length === 0) {
-                    return (
-                      <div className="text-center py-10 bg-secondary/10 rounded-xl border border-dashed border-border/50 shadow-inner">
-                        <ClipboardList className="w-8 h-8 mx-auto text-muted-foreground/50 mb-3" />
-                        <p className="text-sm font-semibold text-muted-foreground">Nenhuma visita de {filtroIndicadorModal} encontrada no período.</p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="grid gap-3">
-                      {filtradasDoModal.map((v, i) => (
-                        <Card 
-                          key={v.id || i} 
-                          onClick={() => setSelectedVisita(v)}
-                          className="group glass-card bg-card/60 hover:bg-card hover:shadow-md cursor-pointer transition-all duration-300 border-border/40 hover:border-primary/40"
-                        >
-                          <CardContent className="p-4 flex items-center justify-between gap-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-foreground uppercase tracking-wider">{v.avaliador || "Avaliador não informado"}</span>
-                                {v.coaching_realizado && (
-                                  <span className="text-[10px] uppercase tracking-wider font-bold bg-blue-500/20 text-blue-500 px-1.5 py-0.5 rounded">
-                                    Coaching
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold">
-                                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {v.data_visita ? format(new Date(v.data_visita), "dd/MM/yy") : "--/--/--"}</span>
-                                <span className="text-border/50">•</span>
-                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {(v.pdv_nome || "PDV Desconhecido").split(' ').slice(0, 3).join(' ')}</span>
-                              </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground opacity-50 group-hover:opacity-100 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                          </CardContent>
-                        </Card>
-                      ))}
                     </div>
-                  );
-                })()}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </>
-      )}
 
-
-
-
-
-      <div className="space-y-6">
-        {/* Horizontal Filters Bar (Novo Layout) */}
-        <div className="bg-card/40 border border-border/40 p-3 sm:p-6 rounded-xl shadow-sm space-y-4">
-          
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full justify-between">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest hidden md:block">Metas e Performance</h2>
-            
-            <div className="flex gap-2 w-full md:w-auto overflow-hidden">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant={"outline"}
-                    className={cn(
-                      "w-[160px] sm:w-[200px] h-10 justify-start text-left font-normal bg-background/60 flex-shrink-0",
-                      !dateRange && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4 shrink-0" />
-                    <span className="truncate">
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "dd/MM/yy")} -{" "}
-                            {format(dateRange.to, "dd/MM/yy")}
-                          </>
-                        ) : (
-                          format(dateRange.from, "dd/MM/yy")
-                        )
-                      ) : (
-                        "Selecione uma data"
+                    {/* Individual Vendor List Inside Card */}
+                    <div className="border-t border-muted dark:border-white/5 pt-4 space-y-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
+                      <div className="flex items-center justify-between px-1 mb-2">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50">Vendedor</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 text-right">Realizado / Meta</span>
+                      </div>
+                      {estatisticasMes.detalhesCoaching.slice(0, 5).map((vend, idx) => (
+                        <div key={idx} className="space-y-2 group/vend">
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-[10px] font-bold text-foreground/80 group-hover/vend:text-foreground transition-colors uppercase tracking-tight">{vend.nome}</span>
+                            <span className="text-[10px] font-black text-[#FFB800]">{vend.atual} / {vend.meta}</span>
+                          </div>
+                          <div className="h-2 w-full bg-muted/60 dark:bg-black/30 rounded-full overflow-hidden p-[1px]">
+                            <div
+                              className={cn("h-full rounded-full transition-all duration-1000", vend.atual >= vend.meta ? 'bg-green-500' : 'bg-[#FFB800] shadow-[1px_0_5px_rgba(255,184,0,0.2)]')}
+                              style={{ width: `${Math.min((vend.atual / vend.meta) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {estatisticasMes.detalhesCoaching.length === 0 && (
+                        <p className="text-[10px] italic text-muted-foreground/30 text-center py-4">Nenhum dado individual registrado.</p>
                       )}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <CalendarComponent
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={(range) => {
-                      setDateRange(range);
-                    }}
-                    numberOfMonths={1}
-                    locale={ptBR}
-                  />
-                  {(dateRange?.from || dateRange?.to) && (
-                    <div className="p-3 border-t">
-                      <Button variant="ghost" size="sm" className="w-full" onClick={() => { setDateRange(undefined); }}>
-                        Limpar Datas
-                      </Button>
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
-
-              <Button 
-                variant={showAdvancedFilters ? "secondary" : "outline"} 
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="h-10 px-3 bg-background/60 flex-1 whitespace-nowrap"
-              >
-                <Settings2 className="h-4 w-4 sm:mr-2 shrink-0" />
-                <span className="hidden sm:inline">Filtros Avançados</span>
-                <span className="sm:hidden inline ml-2 text-xs">Filtros</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Collapsible: Gaveta Oculta de Filtros */}
-          {showAdvancedFilters && (
-            <div className="pt-4 border-t border-border/50 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-              
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
-                <Select value={unidade} onValueChange={setUnidade}>
-                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as unidades" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as Unidades</SelectItem>
-                    {unidadesUnicas.map(u => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {!(user?.nivel === 'Niv3' && activeTab === 'unidade') ? (
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Função (Cargo)</Label>
-                  <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
-                    <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todas as funções" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas as Funções</SelectItem>
-                      {cargosUnicos.map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Indicador</Label>
-                <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
-                  <SelectTrigger className="bg-background/50 h-9 text-sm"><SelectValue placeholder="Todos os indicadores" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os Indicadores</SelectItem>
-                    {user?.nivel !== 'Niv1' && <SelectItem value="FDS">FDS</SelectItem>}
-                    <SelectItem value="RGB">Foco Mês (RGB)</SelectItem>
-                    {user?.nivel !== 'Niv1' && <SelectItem value="COACHING">Coaching</SelectItem>}
-                  </SelectContent>
-                </Select>
-              </div>
-
-            </div>
-          )}
-        </div>
-
-        {/* Visit List Content Area */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Registros Recentes</h3>
-            <span className="text-xs font-bold text-muted-foreground">{filtradas.length} encontrados (Exibindo últimos 5)</span>
-          </div>
-
-          {filtradas.length === 0 ? (
-            <Card className="glass-card bg-card/20 border-dashed border-2">
-              <CardContent className="py-20 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <ClipboardList className="w-8 h-8 text-muted-foreground/50" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Nenhum registro encontrado</h3>
-                <p className="text-sm text-foreground/80 font-semibold max-w-sm mb-6">Modifique os filtros ao lado ou registre uma nova visita para popular esta lista.</p>
-                <Button onClick={() => navigate("/nova-visita")} variant="secondary" className="shadow-sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Registro
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {filtradas.slice(0, 5).map((v, i) => (
-                <Card key={v.id || i} className="group glass-card bg-card/40 hover:bg-card/80 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
-                      {/* Avatar / Icon & Main Data */}
-                      <div className="flex items-start sm:items-center gap-4 flex-1">
-                        <div className="hidden sm:flex w-10 h-10 rounded-full bg-secondary/20 items-center justify-center border border-secondary/30 shrink-0">
-                          <span className="text-sm font-bold text-secondary-foreground">
-                            {v.avaliador.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-base text-foreground truncate">{v.avaliador}</span>
-                            <span className="text-xs font-bold text-muted-foreground px-1.5 py-0.5 rounded-md bg-secondary/10 border border-secondary/20">
-                              {v.cargo}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
-                              <Calendar className="w-3.5 h-3.5 text-primary" />
-                              {(() => {
-                                const [a, m, d] = (v.data_visita || "").split("-");
-                                return a && m && d ? `${d}/${m}/${a}` : v.data_visita;
-                              })()}
-                            </span>
-                            <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
-                              <MapPin className="w-3.5 h-3.5 text-primary" />
-                              {v.unidade}
-                            </span>
-                            <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50 text-foreground">
-                              <User className="w-3.5 h-3.5 text-primary" />
-                              {v.nome_vendedor || 'Vendedor não informado'}
-                            </span>
-                            <span className="flex items-center gap-1.5 font-medium px-2 py-1 rounded bg-background/50 border border-border/50">
-                              Cód: {v.codigo_pdv}
-                            </span>
-
-                            {/* Badges para marcadores importantes */}
-                            <div className="flex flex-wrap items-center gap-1.5 ml-auto sm:ml-2">
-                              {/* Remove old boolean indicators, only show the main indicator_avaliado badge */}
-                              {v.indicador_avaliado && (
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] uppercase font-bold 
-                                    ${v.indicador_avaliado === 'FDS' ? 'text-green-500 border-green-500/30 bg-green-500/10' : ''}
-                                    ${v.indicador_avaliado === 'COACHING ROTA BASICA COM VENDEDOR' ? 'text-blue-500 border-blue-500/30 bg-blue-500/10' : ''}
-                                    ${v.indicador_avaliado?.includes('RGB') ? 'text-purple-500 border-purple-500/30 bg-purple-500/10' : ''}
-                                    ${v.indicador_avaliado === 'COMPASS / MAIORES POTÊNCIAS' ? 'text-orange-500 border-orange-500/30 bg-orange-500/10' : ''}
-                                  `}
-                                >
-                                  {v.indicador_avaliado === 'COACHING ROTA BASICA COM VENDEDOR' ? 'COACHING' : v.indicador_avaliado}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1 sm:flex-none font-semibold hover:shadow-md transition-all active:scale-95"
-                          onClick={() => setSelectedVisita(v)}
-                        >
-                          Ver Tudo
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
-
-                        {isAdmin && v.id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-auto text-destructive border-destructive/20 hover:text-destructive-foreground hover:bg-destructive shadow-sm"
-                            onClick={() => handleExcluir(v.id!)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 sm:mr-1.5" />
-                            <span className="hidden sm:inline">Excluir</span>
-                          </Button>
-                        )}
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )}
             </div>
-          )}
+          );
+        })()}
+
+        </div>
+      )}
+
+      {/* 3. METAS E PERFORMANCE SECTION (Footer style bottom) */}
+      <div className="space-y-6 pt-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-muted dark:border-white/5 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+              <BarChart3 className="w-4 h-4 text-primary" />
+            </div>
+            <h1 className="text-xl font-black uppercase tracking-widest text-foreground">Visão Geral</h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex-1 sm:flex-none justify-start text-left bg-card dark:bg-card/40 border-border dark:border-border/40 font-bold text-[10px] h-10 px-4">
+                  <Calendar className="mr-2 h-4 w-4 text-[#FFB800]" />
+                  <span>{dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}` : format(dateRange.from, "dd/MM/yy")) : "Selecionar Data"}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} locale={ptBR} numberOfMonths={1} />
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant={showAdvancedFilters ? "secondary" : "outline"}
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex-1 sm:flex-none bg-card dark:bg-card/40 border-border dark:border-border/40 font-bold text-[10px] h-10 px-4"
+            >
+              <Settings2 className="h-4 w-4 mr-2 text-[#FFB800]" />
+              Filtros Avançados
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={carregarVisitas}
+              disabled={loading}
+              className="flex-1 sm:flex-none font-bold text-[10px] h-10 px-4"
+            >
+              <RefreshCw className={`w-3 h-3 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Sincronizar
+            </Button>
+          </div>
+        </div>
+
+        {showAdvancedFilters && (
+          <Card className="bg-card dark:bg-card/20 border-border/40 animate-in fade-in slide-in-from-top-2 duration-300">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Unidade</Label>
+                  <Select value={unidade} onValueChange={setUnidade}>
+                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as Unidades</SelectItem>
+                      {unidadesUnicas.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cargo</Label>
+                  <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
+                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Cargos</SelectItem>
+                      {cargosUnicos.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Métrica</Label>
+                  <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
+                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Métricas</SelectItem>
+                      <SelectItem value="FDS">FDS</SelectItem>
+                      <SelectItem value="RGB">RGB</SelectItem>
+                      <SelectItem value="COACHING">Coaching</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Gráfico de Avaliações por Indicador */}
+        {graficoPizzaData.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-border/40 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-[#FFB800]" />
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#FFB800]">
+                    Distribuição de Avaliações
+                  </h3>
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
+                    Total: {filtradas.length} Registros 
+                  </p>
+                </div>
+              </div>
+              <div className="flex-1 p-4 min-h-[300px]">
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={graficoPizzaData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                      animationDuration={1500}
+                      onClick={(data) => {
+                        const key = data?.payload?.filterKey || data?.filterKey;
+                        if (key) setFiltroIndicadorModal(key);
+                      }}
+                    >
+                      {graficoPizzaData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color} 
+                          className={entry.filterKey ? "cursor-pointer hover:opacity-80 transition-opacity outline-none" : "outline-none"} 
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'var(--card)', 
+                        borderColor: 'var(--border)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }}
+                      itemStyle={{ color: 'var(--foreground)' }}
+                      formatter={(value: number, name: string) => [
+                        `${value} avaliação${value !== 1 ? 'ões' : ''} (${Math.round((value / filtradas.length) * 100)}%)`, 
+                        name
+                      ]}
+                    />
+                    <Legend 
+                      layout="horizontal" 
+                      verticalAlign="bottom" 
+                      align="center"
+                      wrapperStyle={{ 
+                        fontSize: '10px', 
+                        fontWeight: '800', 
+                        textTransform: 'uppercase',
+                        paddingTop: '20px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+            
+            {/* Gráfico Pirâmide de Hierarquia */}
+            <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-border/40 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#38BDF8]" />
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#38BDF8]">
+                    Pirâmide de Resultados
+                  </h3>
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
+                    Resumo Consolidado por Cargo
+                  </p>
+                </div>
+              </div>
+              <div className="flex-1 p-4 min-h-[300px] flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={260}>
+                  <FunnelChart>
+                    <RechartsTooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'var(--card)', 
+                        borderColor: 'var(--border)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                      }}
+                      itemStyle={{ color: 'var(--foreground)' }}
+                      formatter={(value: number, name: string) => [`${value} Avaliações`, name]}
+                    />
+                    <Funnel
+                      dataKey="value"
+                      data={graficoPiramideData}
+                      isAnimationActive
+                      onClick={(data) => {
+                        const key = data?.name || data?.payload?.name;
+                        if (key) setFiltroPiramideModal(key);
+                      }}
+                    >
+                      {graficoPiramideData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.fill} 
+                          className="cursor-pointer hover:opacity-80 transition-opacity outline-none" 
+                        />
+                      ))}
+                      <LabelList 
+                        position="right" 
+                        fill="var(--foreground)" 
+                        stroke="none" 
+                        dataKey="name" 
+                        style={{ fontSize: '10px', fontWeight: 'bold' }} 
+                      />
+                    </Funnel>
+                  </FunnelChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Gráfico de Ranking de Avaliadores (Restaurado) */}
+        {isAnalista && dadosGraficoAnalista.length > 0 && (
+          <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col mt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <div className="p-4 border-b border-border/40 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#A855F7]" />
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#A855F7]">
+                    Ranking de Liderança (Top Produtividade)
+                  </h3>
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
+                    Visão Geral de Engajamento por Supervisor/Gerente
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-2 sm:p-6 w-full max-w-[100vw] overflow-hidden">
+              <div className="h-[400px] w-full mt-4 pe-2">
+                <ResponsiveContainer width="99%" height="100%">
+                  <BarChart
+                    data={dadosGraficoAnalista}
+                    margin={{ top: 20, right: 0, left: -20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 'bold' }}
+                      angle={-35}
+                      textAnchor="end"
+                      interval={0}
+                      height={80}
+                      stroke="rgba(255,255,255,0.1)"
+                    />
+                    <YAxis 
+                      tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 'bold' }} 
+                      stroke="rgba(255,255,255,0.1)"
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}
+                      itemStyle={{ color: 'var(--foreground)' }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase' }} />
+                    <Bar dataKey="FDS" name="FDS" stackId="a" fill="#FFB800" radius={[0, 0, 4, 4]} />
+                    <Bar dataKey="RGB" name="RGB" stackId="a" fill="#38BDF8" />
+                    <Bar dataKey="Coaching" name="Coaching" stackId="a" fill="#10B981" />
+                    <Bar dataKey="Compass" name="Compass" stackId="a" fill="#A855F7" />
+                    <Bar dataKey="Quedas" name="Quedas" stackId="a" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Results List */}
+        <div className="space-y-4 pt-10">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-widest flex items-center gap-2">
+              <ListChecks className="w-3 h-3 text-[#FFB800]" />
+              Últimos Registros
+            </h3>
+            <span className="text-[10px] font-black text-muted-foreground/30">{filtradas.length} encontrados</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {filtradas.slice(0, 10).map((v, i) => (
+              <Card key={v.id || i} className="group bg-card dark:bg-card/20 hover:bg-[#FFB800]/5 transition-all border-border dark:border-white/5 hover:border-[#FFB800]/30 shadow-sm overflow-hidden">
+                <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-muted dark:bg-[#FFB800]/10 flex items-center justify-center shrink-0 border border-border dark:border-[#FFB800]/20 group-hover:scale-110 transition-transform">
+                      <span className="text-sm font-black text-foreground dark:text-[#FFB800]">{v.avaliador.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] font-black h-5 border-[#FFB800] text-[#FFB800] bg-[#FFB800]/5 shrink-0 px-2 uppercase">
+                          CÓD: {v.codigo_pdv}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[9px] font-black h-5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/70 border-none px-2 uppercase flex items-center gap-1">
+                          <Trophy className="w-2.5 h-2.5 text-[#FFB800]" />
+                          {v.indicador_avaliado}
+                        </Badge>
+                        <span className="font-bold text-sm text-foreground truncate">{v.nome_fantasia_pdv}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-[9px] text-muted-foreground font-bold mt-1.5 uppercase tracking-wider">
+                        <span className="flex items-center gap-1 shrink-0 text-[#FFB800]"><User className="w-3 h-3" /> {v.avaliador}</span>
+                        <span className="flex items-center gap-1 shrink-0"><Calendar className="w-3 h-3 opacity-50" /> {v.data_visita}</span>
+                        <span className="flex items-center gap-1 shrink-0"><MapPin className="w-3 h-3 opacity-50" /> {v.unidade}</span>
+                        <span className="text-foreground/50 border-l border-muted-foreground/20 pl-4 truncate">Vendedor: <span className="text-foreground">{v.nome_vendedor || '---'}</span></span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-4 text-[10px] font-black uppercase tracking-[0.1em] hover:bg-[#FFB800] hover:text-black transition-all bg-muted/20 dark:bg-white/5"
+                    onClick={() => setSelectedVisita(v)}
+                  >
+                    Ver Detalhes
+                    <ChevronRight className="w-3 h-3 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
-      <VisitaModalDialog 
-        selectedVisita={selectedVisita} 
-        onClose={() => setSelectedVisita(null)} 
-      />
+      {/* Modais Customizados */}
+      <VisitaModalDialog selectedVisita={selectedVisita} onClose={() => setSelectedVisita(null)} />
+
+      <Dialog open={!!filtroIndicadorModal} onOpenChange={(open) => !open && setFiltroIndicadorModal(null)}>
+        <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[85vh] overflow-y-auto p-0 custom-scrollbar bg-background dark:bg-[#0D121F] border border-border dark:border-white/10 shadow-2xl">
+          <div className="sticky top-0 z-10 bg-background/90 dark:bg-[#0D121F]/90 backdrop-blur-md p-6 border-b border-border dark:border-white/5">
+            <DialogHeader className="m-0 text-left">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => setFiltroIndicadorModal(null)} className="h-10 w-10 hover:bg-muted dark:hover:bg-white/5 rounded-xl border border-border dark:border-white/5">
+                  <ArrowLeft className="w-5 h-5 text-foreground dark:text-white" />
+                </Button>
+                <div>
+                  <DialogTitle className="text-xl font-black uppercase tracking-[0.1em] text-[#FFB800]">Indicador: {filtroIndicadorModal}</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold text-muted-foreground dark:text-white/40 mt-1 uppercase tracking-widest">Registros vinculados a esta métrica no dashboard.</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-3">
+            {(() => {
+              const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+              const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
+              const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
+              const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
+              const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
+              const N_COACHING = listNormalized(REQUER_COACHING);
+
+              const fVal = filtroIndicadorModal || "";
+              const mFiltradas = filtradas.filter(v => {
+                const vInd = normalizeInd(v.indicador_avaliado);
+                if (fVal === 'FDS') return vInd === 'FDS';
+                if (fVal === 'RGB') return N_TIPO_RGB.includes(vInd);
+                if (fVal === 'COACHING') return N_COACHING.includes(vInd);
+                if (fVal === 'COMPASS') return N_COMPASS.includes(vInd);
+                if (fVal === 'QUEDAS') return N_QUEDAS.includes(vInd);
+                return false;
+              });
+
+              if (mFiltradas.length === 0) return <p className="text-sm font-bold italic opacity-30 text-center py-20">Sem visitas para este indicador.</p>;
+
+              return mFiltradas.map((v, i) => (
+                <Card key={v.id || i} onClick={() => setSelectedVisita(v)} className="bg-card dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 border-border dark:border-white/5 hover:border-[#FFB800]/30 transition-all cursor-pointer group">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-muted dark:bg-[#FFB800]/10 flex items-center justify-center text-foreground dark:text-[#FFB800] font-black border border-border dark:border-[#FFB800]/20">
+                        {v.avaliador.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[8px] font-black h-4 border-[#FFB800] text-[#FFB800] bg-[#FFB800]/5 shrink-0 px-1.5 font-mono">
+                            {v.codigo_pdv}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[8px] font-black h-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/70 border-none px-1.5 uppercase flex items-center gap-1">
+                            <Trophy className="w-2 h-2 text-[#FFB800]" />
+                            {v.indicador_avaliado}
+                          </Badge>
+                          <p className="font-bold text-sm text-foreground truncate group-hover:text-[#FFB800] transition-colors">{v.nome_fantasia_pdv}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase mt-1">
+                          <span className="text-[#FFB800]/70">{v.avaliador}</span>
+                          <span>•</span>
+                          <span>{v.data_visita}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-[#FFB800] transition-all" />
+                  </CardContent>
+                </Card>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Pirâmide (Resumo de Usuários) */}
+      <Dialog open={!!filtroPiramideModal} onOpenChange={(open) => !open && setFiltroPiramideModal(null)}>
+        <DialogContent className="max-w-[700px] border-none bg-card/95 backdrop-blur-xl shadow-2xl p-0 overflow-hidden sm:rounded-2xl">
+          <div className="bg-[#38BDF8] px-6 py-6 flex items-start justify-between relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl" />
+            <div className="relative z-10">
+              <DialogTitle className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tighter leading-none mb-1">
+                {filtroPiramideModal}
+              </DialogTitle>
+              <DialogDescription className="text-white/80 font-bold text-xs uppercase tracking-widest">
+                Resumo da Operação Individual
+              </DialogDescription>
+            </div>
+            <div className="relative z-10 w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          
+          <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-card/50">
+            <div className="grid grid-cols-1 gap-4">
+              {(() => {
+                if (!filtroPiramideModal) return null;
+
+                const matchCargo = (c: string, target: string) => {
+                  if (target === 'DIRETOR') return c.includes('DIRETOR');
+                  if (target === 'GERENTE COMERCIAL') return c.includes('GERENTE COMERCIAL') || c.includes('GCOM');
+                  if (target === 'GERENTE DE VENDAS') return c.includes('GERENTE DE VENDAS') || c.includes('GNV') || c.includes('GERENTE REGIONAL');
+                  if (target === 'SUPERVISOR') return c.includes('SUPERVISOR');
+                  return false;
+                };
+
+                const avsDaLideranca = filtradas.filter(
+                  v => matchCargo(v.cargo?.trim().toUpperCase() || "", filtroPiramideModal)
+                );
+                
+                const resumoSellers: Record<string, { fds: number, rgb: number, coaching: number, compass: number, quedas: number, total: number }> = {};
+                
+                const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+                const listN = (arr: string[]) => arr.map(id => normalizeInd(id));
+                const N_COMPASS = listN(INDICADORES_COMPASS_LOCKED);
+                const N_QUEDAS = listN(INDICADORES_QUEDAS_LOCKED);
+                const N_TIPO_RGB = listN(INDICADORES_TIPO_RGB);
+                const N_COACHING = listN(REQUER_COACHING);
+
+                avsDaLideranca.forEach(v => {
+                  const n = v.avaliador?.toUpperCase() || "NÃO IDENTIFICADO";
+                  if (!resumoSellers[n]) {
+                    resumoSellers[n] = { fds: 0, rgb: 0, coaching: 0, compass: 0, quedas: 0, total: 0 };
+                  }
+                  const vInd = normalizeInd(v.indicador_avaliado);
+                  if (vInd === 'FDS') resumoSellers[n].fds++;
+                  else if (N_COACHING.includes(vInd)) resumoSellers[n].coaching++;
+                  else if (N_COMPASS.includes(vInd)) resumoSellers[n].compass++;
+                  else if (N_QUEDAS.includes(vInd)) resumoSellers[n].quedas++;
+                  else if (N_TIPO_RGB.includes(vInd)) resumoSellers[n].rgb++;
+                  resumoSellers[n].total++;
+                });
+
+                const sortedUsers = Object.entries(resumoSellers).sort((a, b) => b[1].total - a[1].total);
+
+                if (sortedUsers.length === 0) {
+                   return <p className="text-center text-muted-foreground/50 py-10 font-bold uppercase tracking-widest text-xs">Nenhum Usuário Vinculado.</p>;
+                }
+
+                return sortedUsers.map(([nome, d], idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => {
+                       setFiltroAvaliadorDetalhe(nome);
+                    }}
+                    className="bg-white dark:bg-[#0F172A]/80 border dark:border-white/5 shadow-sm rounded-xl p-4 flex flex-col sm:flex-row gap-4 justify-between items-center hover:border-[#38BDF8]/50 transition-colors cursor-pointer group hover:bg-[#38BDF8]/5 dark:hover:bg-[#38BDF8]/10 relative"
+                  >
+                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#38BDF8]/20 group-hover:text-[#38BDF8] transition-colors hidden sm:block" />
+                    
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="min-w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center font-black text-xs text-slate-500 dark:text-white/40 uppercase">
+                        {nome.substring(0, 2)}
+                      </div>
+                      <div>
+                        <p className="font-black text-sm uppercase tracking-tight leading-tight">{nome}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">{d.total} Avaliações Realizadas</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto custom-scrollbar mt-2 sm:mt-0">
+                      {d.fds > 0 && <span className="bg-[#FFB800]/10 text-[#FFB800] border border-[#FFB800]/20 text-[9px] font-black px-2 py-1 rounded">FDS: {d.fds}</span>}
+                      {d.coaching > 0 && <span className="bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 text-[9px] font-black px-2 py-1 rounded">COACHING: {d.coaching}</span>}
+                      {d.rgb > 0 && <span className="bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 text-[9px] font-black px-2 py-1 rounded">RGB: {d.rgb}</span>}
+                      {d.compass > 0 && <span className="bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 text-[9px] font-black px-2 py-1 rounded">COMPASS: {d.compass}</span>}
+                      {d.quedas > 0 && <span className="bg-[#F43F5E]/10 text-[#F43F5E] border border-[#F43F5E]/20 text-[9px] font-black px-2 py-1 rounded">QUEDAS: {d.quedas}</span>}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Detalhamento por Avaliador Específico (Origem: Pirâmide) */}
+      <Dialog open={!!filtroAvaliadorDetalhe} onOpenChange={(open) => !open && setFiltroAvaliadorDetalhe(null)}>
+        <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[85vh] overflow-y-auto p-0 custom-scrollbar bg-background dark:bg-[#0D121F] border border-border dark:border-white/10 shadow-2xl">
+          <div className="sticky top-0 z-10 bg-background/90 dark:bg-[#0D121F]/90 backdrop-blur-md p-6 border-b border-border dark:border-white/5 flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setFiltroAvaliadorDetalhe(null)} className="h-10 w-10 hover:bg-muted dark:hover:bg-white/5 rounded-xl border border-border dark:border-white/5 shrink-0">
+              <ArrowLeft className="w-5 h-5 text-foreground dark:text-white" />
+            </Button>
+            <div>
+              <DialogTitle className="text-xl font-black uppercase tracking-[0.1em] text-[#38BDF8] line-clamp-1">{filtroAvaliadorDetalhe}</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold text-muted-foreground dark:text-white/40 mt-1 uppercase tracking-widest line-clamp-1">
+                Todas as avaliações realizadas por este gestor
+              </DialogDescription>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-3">
+            {(() => {
+              if (!filtroAvaliadorDetalhe) return null;
+              
+              const mFiltradas = filtradas.filter(
+                v => (v.avaliador?.toUpperCase() || "NÃO IDENTIFICADO") === filtroAvaliadorDetalhe
+              );
+
+              if (mFiltradas.length === 0) return <p className="text-sm font-bold italic opacity-30 text-center py-20">Sem histórico encontrado.</p>;
+
+              return mFiltradas.map((v, i) => (
+                <Card key={v.id || i} onClick={() => setSelectedVisita(v)} className="bg-card dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 border-border dark:border-white/5 hover:border-[#38BDF8]/30 transition-all cursor-pointer group">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-muted dark:bg-[#38BDF8]/10 flex items-center justify-center text-foreground dark:text-[#38BDF8] font-black border border-border dark:border-[#38BDF8]/20 shrink-0">
+                        {v.avaliador.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[8px] font-black h-4 border-[#38BDF8] text-[#38BDF8] bg-[#38BDF8]/5 shrink-0 px-1.5 font-mono">
+                            {v.codigo_pdv}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[8px] font-black h-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/70 border-none px-1.5 uppercase flex items-center gap-1 shrink-0">
+                            <Trophy className="w-2 h-2 text-[#38BDF8]" />
+                            {v.indicador_avaliado}
+                          </Badge>
+                          <p className="font-bold text-sm text-foreground truncate group-hover:text-[#38BDF8] transition-colors">{v.nome_fantasia_pdv}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase mt-1">
+                          <span className="text-[#38BDF8]/70">Score: {v.pontuacao_total || '--'}/100</span>
+                          <span>•</span>
+                          <span>{v.data_visita}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-[#38BDF8] transition-all" />
+                  </CardContent>
+                </Card>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

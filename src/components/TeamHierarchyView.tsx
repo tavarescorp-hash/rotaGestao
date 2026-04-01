@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { normalizeName } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -11,7 +12,10 @@ import {
   ClipboardList, 
   UserCircle,
   TrendingUp,
-  Star
+  Star,
+  ArrowLeft, 
+  ChevronRight, 
+  MapPin
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { INDICADORES_TIPO_RGB, REQUER_COACHING } from '@/lib/roles';
@@ -23,7 +27,6 @@ import {
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 
 import { VendedorAtivo } from '@/lib/api';
 
@@ -33,193 +36,176 @@ interface HierarchyProps {
   userLevel: string | undefined;
   userName: string | undefined;
   userUnidade: string | undefined;
+  userFuncao?: string | undefined;
   onSelectVisita?: (v: any) => void;
 }
 
-export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, userUnidade, onSelectVisita }: HierarchyProps) {
-  const [filtroLider, setFiltroLider] = useState<{ name: string, type: 'GV' | 'SUP' } | null>(null);
+export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, userUnidade, userFuncao, onSelectVisita }: HierarchyProps) {
+  const [filtroLider, setFiltroLider] = useState<{ name: string, type: 'GCOM' | 'GV' | 'SUP' } | null>(null);
   const [drilldown, setDrilldown] = useState<{ name: string, indicator: string } | null>(null);
-  const [selectedOneVisita, setSelectedOneVisita] = useState<any | null>(null);
 
   // Auto-seleção para Gerente de Vendas (Niv3) e Supervisor (Niv4)
   useEffect(() => {
-    if ((userLevel === 'Niv3' || userLevel === 'Niv4') && userName) {
-      setFiltroLider({ name: userName, type: userLevel === 'Niv3' ? 'GV' : 'SUP' });
+    if (userLevel === 'Niv4' && userName) {
+      setFiltroLider({ name: userName, type: 'SUP' });
+    } else if (userLevel === 'Niv3' && userName) {
+      setFiltroLider({ name: '', type: 'SUP' });
+    } else if (userLevel === 'Niv2' && userName) {
+      setFiltroLider({ name: '', type: 'GV' });
     }
   }, [userLevel, userName]);
 
-  // 1. Agregação de métricas por AVALIADOR (Performance Individual do Líder)
   const metricsByEvaluator = useMemo(() => {
     const stats: Record<string, { fds: number, rgb: number, coaching: number }> = {};
     const currentVisitas = Array.isArray(visitas) ? visitas : [];
+    const N_RGB = INDICADORES_TIPO_RGB.map(i => i.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim());
+    const N_COACHING = REQUER_COACHING.map(i => i.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim());
 
     currentVisitas.forEach(v => {
-      const name = v.avaliador?.trim().toUpperCase();
-      if (!name) return;
-      
-      if (!stats[name]) stats[name] = { fds: 0, rgb: 0, coaching: 0 };
-      
-      if (v.indicador_avaliado === 'FDS') stats[name].fds++;
-      else if (v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado)) stats[name].rgb++;
-      else if (v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado)) stats[name].coaching++;
+      const evalName = normalizeName(v.avaliador);
+      if (!evalName) return;
+      const indNormalized = (v.indicador_avaliado || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+      if (!stats[evalName]) stats[evalName] = { fds: 0, rgb: 0, coaching: 0 };
+      if (indNormalized === 'FDS') stats[evalName].fds++;
+      else if (indNormalized && N_RGB.includes(indNormalized)) stats[evalName].rgb++;
+      else if (indNormalized && (N_COACHING.includes(indNormalized) || indNormalized.includes("COACHING"))) stats[evalName].coaching++;
     });
     return stats;
   }, [visitas]);
 
-  const isSupervisorOnly = userLevel === 'Niv4';
+  const listaGerentesComerciais = useMemo(() => {
+    const nomes = new Set<string>();
+    vendedores.forEach(v => { if (v.gerente_comercial) nomes.add(v.gerente_comercial); });
+    return Array.from(nomes).sort();
+  }, [vendedores]);
 
-  // 2. Listas para os seletores de busca (GVs e Supervisores disponíveis)
   const listaGerentes = useMemo(() => {
     const nomes = new Set<string>();
+    const uNameNormal = normalizeName(userName);
     vendedores.forEach(v => {
-      const canSee = userLevel === 'Niv1' || userLevel === 'Niv2' || (userLevel === 'Niv3' && v.gerente === userName);
+      const gCNormal = normalizeName(v.gerente_comercial);
+      const uUnid = (userUnidade || "").toUpperCase();
+      const isRegionalMacaé = (uUnid.includes("MACA") || uUnid === "M" || uUnid === "TODAS") && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE'));
+      const isRegionalCampos = (uUnid.includes("CAMPOS") || uUnid === "C" || uUnid === "TODAS") && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'));
+      const canSee = userLevel === 'Niv1' || (userLevel === 'Niv2' && (gCNormal === uNameNormal || isRegionalMacaé || isRegionalCampos || uUnid === 'TODAS'));
       if (canSee && v.gerente) nomes.add(v.gerente);
     });
     return Array.from(nomes).sort();
-  }, [vendedores, userLevel, userName]);
+  }, [vendedores, userLevel, userName, userUnidade]);
 
   const listaSupervisores = useMemo(() => {
     const nomes = new Set<string>();
+    const uNameNormal = normalizeName(userName);
     vendedores.forEach(v => {
-      const canSee = userLevel === 'Niv1' || userLevel === 'Niv2' || (userLevel === 'Niv3' && v.gerente === userName) || (userLevel === 'Niv4' && v.nome_supervisor === userName);
+      const gCNormal = normalizeName(v.gerente_comercial);
+      const gNormal = normalizeName(v.gerente);
+      const supNormal = normalizeName(v.nome_supervisor);
+      const uUnid = (userUnidade || "").toUpperCase();
+      const isRegionalMacaé = (uUnid.includes("MACA") || uUnid === "M" || uUnid === "TODAS") && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE'));
+      const isRegionalCampos = (uUnid.includes("CAMPOS") || uUnid === "C" || uUnid === "TODAS") && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'));
+      const isAnalista = userFuncao?.toUpperCase().includes('ANALISTA');
+      const canSee = userLevel === 'Niv1' || userLevel === 'Niv0' || isAnalista || (userLevel === 'Niv2' && (gCNormal === uNameNormal || isRegionalMacaé || isRegionalCampos || uUnid === 'TODAS')) || (userLevel === 'Niv3' && gNormal === uNameNormal) || (userLevel === 'Niv4' && supNormal === uNameNormal);
       if (canSee && v.nome_supervisor) nomes.add(v.nome_supervisor);
     });
     return Array.from(nomes).sort();
-  }, [vendedores, userLevel, userName]);
+  }, [vendedores, userLevel, userName, userUnidade, userFuncao]);
 
-  // Componente de Card de Dashboard Individual
-  const LeaderDashboardCard = ({ name, type }: { name: string, type: 'GV' | 'SUP' }) => {
-    const stats = metricsByEvaluator[name.toUpperCase()] || { fds: 0, rgb: 0, coaching: 0 };
-    const total = stats.fds + stats.rgb + stats.coaching;
-    // Meta arbitrária de 30 visitas/mês para o progresso (exemplo)
-    const progress = Math.min((total / 30) * 100, 100);
+  const LeaderDashboardCard = ({ name, type }: { name: string, type: string }) => {
+    const stats = metricsByEvaluator[normalizeName(name)] || { fds: 0, rgb: 0, coaching: 0 };
+    const progress = Math.min(((stats.fds + stats.rgb + stats.coaching) / 30) * 100, 100);
 
     return (
       <Card className="border border-border/60 bg-card rounded-2xl shadow-lg overflow-hidden mb-6 animate-in fade-in zoom-in duration-300">
         <div className="p-6 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex justify-between items-start mb-8 pb-4 border-b border-border/40">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
-                {type === 'GV' ? <Users className="w-8 h-8" /> : <UserCircle className="w-8 h-8" />}
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                {type === 'GV' ? <Users /> : type === 'GCOM' ? <Target /> : <UserCircle />}
               </div>
               <div>
-                <h3 className="font-black text-xl text-foreground tracking-tight">{name}</h3>
-                <p className="text-[10px] text-primary/70 font-black uppercase tracking-[0.2em]">
-                  {type === 'GV' ? 'Gerente de Vendas' : 'Supervisor de Vendas'}
-                </p>
+                <h3 className="font-black text-xl">{name}</h3>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] uppercase font-black opacity-60">{type}</p>
+                  {type === 'SUP' && vendedores.find(v => normalizeName(v.nome_supervisor) === normalizeName(name))?.codigo_sup && (
+                    <Badge variant="outline" className="text-[8px] font-black h-4 px-1.5 border-primary/30">
+                      CÓD: {vendedores.find(v => normalizeName(v.nome_supervisor) === normalizeName(name))?.codigo_sup}
+                    </Badge>
+                  )}
+                </div>
               </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setFiltroLider(prev => prev ? { ...prev, name: '' } : null)}>
+               <ArrowLeft className="w-3 h-3 h-3" /> Voltar
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div onClick={() => setDrilldown({ name, indicator: 'FDS' })} className="bg-emerald-500/10 p-5 rounded-2xl text-center cursor-pointer">
+              <p className="text-[10px] font-black text-emerald-600">FDS</p>
+              <p className="text-3xl font-black">{stats.fds}</p>
+            </div>
+            <div onClick={() => setDrilldown({ name, indicator: 'RGB' })} className="bg-blue-500/10 p-5 rounded-2xl text-center cursor-pointer">
+              <p className="text-[10px] font-black text-blue-600">RGB</p>
+              <p className="text-3xl font-black">{stats.rgb}</p>
+            </div>
+            <div onClick={() => setDrilldown({ name, indicator: 'COACHING' })} className="bg-amber-500/10 p-5 rounded-2xl text-center cursor-pointer">
+              <p className="text-[10px] font-black text-amber-600">COACHING</p>
+              <p className="text-3xl font-black">{stats.coaching}</p>
             </div>
           </div>
-
-          <div className="space-y-6">
-            <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-              <ClipboardList className="w-3.5 h-3.5" /> AVALIAÇÕES REALIZADAS PELO LÍDER
-            </h5>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div 
-                onClick={() => setDrilldown({ name, indicator: 'FDS' })}
-                className="bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95"
-              >
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </div>
-                <p className="text-[10px] font-black text-emerald-600/70 uppercase mb-1">FDS</p>
-                <p className="text-3xl font-black text-emerald-700">{stats.fds}</p>
-              </div>
-
-              <div 
-                onClick={() => setDrilldown({ name, indicator: 'RGB' })}
-                className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-blue-500/20 transition-all cursor-pointer active:scale-95"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
-                  <Target className="w-4 h-4 text-blue-600" />
-                </div>
-                <p className="text-[10px] font-black text-blue-600/70 uppercase mb-1">RGB</p>
-                <p className="text-3xl font-black text-blue-700">{stats.rgb}</p>
-              </div>
-
-              <div 
-                onClick={() => setDrilldown({ name, indicator: 'COACHING' })}
-                className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex flex-col items-center justify-center shadow-sm group hover:bg-amber-500/20 transition-all cursor-pointer active:scale-95"
-              >
-                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center mb-2">
-                  <Star className="w-4 h-4 text-amber-600" />
-                </div>
-                <p className="text-[10px] font-black text-amber-600/70 uppercase mb-1">COACHING</p>
-                <p className="text-3xl font-black text-amber-700">{stats.coaching}</p>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nível de Atividade Mensal</span>
-                <span className="text-[10px] font-black text-primary">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2.5 bg-muted/40" />
-            </div>
+          <div className="pt-4">
+            <Progress value={progress} className="h-2" />
           </div>
         </div>
       </Card>
     );
   };
 
-  const LiderBuscaBar = () => {
-    if (userLevel === 'Niv3' || userLevel === 'Niv4') return null;
+  const CompactLeaderCard = ({ name, type }: { name: string, type: string }) => {
+    const stats = metricsByEvaluator[normalizeName(name)] || { fds: 0, rgb: 0, coaching: 0 };
+    const progress = Math.min(((stats.fds + stats.rgb + stats.coaching) / 30) * 100, 100);
 
+    return (
+      <Card className="hover:border-primary/50 cursor-pointer p-4 transition-all" onClick={() => setFiltroLider(prev => prev ? { ...prev, name } : null)}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Users className="w-5 h-5" /></div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-xs truncate">{name}</h3>
+            {type === 'SUP' && (
+              <p className="text-[8px] font-black opacity-40 uppercase tracking-tighter">
+                CÓD: {vendedores.find(v => normalizeName(v.nome_supervisor) === normalizeName(name))?.codigo_sup || "---"}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          <div className="bg-emerald-500/5 p-1 rounded text-center"><span className="block text-[8px] font-black">FDS</span><span className="text-xs font-bold">{stats.fds}</span></div>
+          <div className="bg-blue-500/5 p-1 rounded text-center"><span className="block text-[8px] font-black">RGB</span><span className="text-xs font-bold">{stats.rgb}</span></div>
+          <div className="bg-amber-500/5 p-1 rounded text-center"><span className="block text-[8px] font-black">COA</span><span className="text-xs font-bold">{stats.coaching}</span></div>
+        </div>
+        <Progress value={progress} className="h-1 mt-3" />
+      </Card>
+    );
+  };
+
+  const LiderBuscaBar = () => {
+    const isAnalista = userFuncao?.toUpperCase().includes('ANALISTA');
+    if ((userLevel === 'Niv3' || userLevel === 'Niv4') && !isAnalista) return null;
     return (
       <div className="flex flex-col gap-2 mb-6">
         <div className="flex flex-wrap gap-2">
-          {userLevel !== 'Niv3' && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className={`flex-1 h-10 font-black text-[10px] uppercase gap-2 tracking-widest transition-all ${filtroLider?.type === 'GV' ? 'bg-primary/10 border-primary shadow-sm text-primary scale-[1.02]' : ''}`}
-              onClick={() => {
-                if (filtroLider?.type === 'GV' && !filtroLider.name) setFiltroLider(null);
-                else setFiltroLider({ name: '', type: 'GV' });
-              }}
-            >
-              <Users className="w-3.5 h-3.5" /> Gerente de Vendas
-            </Button>
+          {(userLevel === 'Niv1' || userLevel === 'Niv0' || isAnalista) && (
+            <Button variant="outline" size="sm" className={`flex-1 ${filtroLider?.type === 'GCOM' ? 'border-primary' : ''}`} onClick={() => setFiltroLider({ name: '', type: 'GCOM' })}>G. COMERCIAL</Button>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={`flex-1 h-10 font-black text-[10px] uppercase gap-2 tracking-widest transition-all ${filtroLider?.type === 'SUP' ? 'bg-primary/10 border-primary shadow-sm text-primary scale-[1.02]' : ''}`}
-            onClick={() => {
-              if (filtroLider?.type === 'SUP' && !filtroLider.name) setFiltroLider(null);
-              else setFiltroLider({ name: '', type: 'SUP' });
-            }}
-          >
-            <UserCircle className="w-3.5 h-3.5" /> Supervisor
-          </Button>
-          {filtroLider && (
-            <Button variant="ghost" size="sm" className="h-10 px-4 text-muted-foreground hover:text-destructive font-bold text-xs" onClick={() => setFiltroLider(null)}>
-              Resetar
-            </Button>
+          {(userLevel === 'Niv1' || userLevel === 'Niv0' || userLevel === 'Niv2' || isAnalista) && (
+            <Button variant="outline" size="sm" className={`flex-1 ${filtroLider?.type === 'GV' ? 'border-primary' : ''}`} onClick={() => setFiltroLider({ name: '', type: 'GV' })}>G. VENDAS</Button>
           )}
+          <Button variant="outline" size="sm" className={`flex-1 ${filtroLider?.type === 'SUP' ? 'border-primary' : ''}`} onClick={() => setFiltroLider({ name: '', type: 'SUP' })}>SUPERVISOR</Button>
         </div>
-
         {filtroLider && (
-          <div className="bg-card/50 p-3 rounded-2xl border border-border/50 animate-in slide-in-from-top-2 duration-200">
-             <div className="flex flex-wrap gap-2 p-1 max-h-48 overflow-y-auto custom-scrollbar">
-               {(filtroLider.type === 'GV' ? listaGerentes : listaSupervisores).map(nome => (
-                 <Badge 
-                   key={nome}
-                   className={`cursor-pointer px-4 py-2 text-[10px] uppercase tracking-wider transition-all rounded-full border-none shadow-sm ${filtroLider.name === nome ? 'bg-primary text-white scale-110' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                   onClick={() => {
-                     if (filtroLider.name === nome) setFiltroLider({ ...filtroLider, name: '' });
-                     else setFiltroLider({ ...filtroLider, name: nome });
-                   }}
-                 >
-                   {nome}
-                 </Badge>
-               ))}
-               {(filtroLider.type === 'GV' ? listaGerentes : listaSupervisores).length === 0 && (
-                 <p className="text-[10px] text-muted-foreground italic w-full text-center py-2">Nenhum líder encontrado para esta função.</p>
-               )}
-             </div>
+          <div className="flex flex-wrap gap-2 p-2 bg-muted/20 rounded-lg">
+            {(filtroLider.type === 'GCOM' ? listaGerentesComerciais : filtroLider.type === 'GV' ? listaGerentes : listaSupervisores).map(n => (
+              <Badge key={n} className="cursor-pointer" variant={filtroLider.name === n ? 'default' : 'outline'} onClick={() => setFiltroLider({ ...filtroLider, name: n })}>{n}</Badge>
+            ))}
           </div>
         )}
       </div>
@@ -227,103 +213,30 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
   };
 
   const renderResults = () => {
-    if (!filtroLider) {
-      return (
-        <div className="flex flex-col items-center justify-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50 text-center animate-in fade-in duration-500">
-           <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4">
-              <TrendingUp className="w-8 h-8 text-primary/30" />
-           </div>
-           <h3 className="text-lg font-black text-foreground uppercase tracking-widest">Dashboard de Performance</h3>
-           <p className="text-xs text-muted-foreground font-semibold mt-2 max-w-xs">
-             Selecione uma função acima para analisar a produtividade individual dos líderes em campo.
-           </p>
-        </div>
-      );
-    }
-
-    if (filtroLider.name) {
-      return <LeaderDashboardCard name={filtroLider.name} type={filtroLider.type} />;
-    }
-
-    // Se nenhum nome selecionado, mostrar todos os líderes daquela função
-    const leaders = filtroLider.type === 'GV' ? listaGerentes : listaSupervisores;
+    if (!filtroLider) return <div className="p-10 text-center text-muted-foreground uppercase font-black">Escolha um nível para auditar</div>;
+    if (filtroLider.name) return <LeaderDashboardCard name={filtroLider.name} type={filtroLider.type} />;
     
+    const leaders = filtroLider.type === 'GCOM' ? listaGerentesComerciais : filtroLider.type === 'GV' ? listaGerentes : listaSupervisores;
     return (
       <div className="space-y-4">
-        {leaders.map(nome => (
-          <LeaderDashboardCard key={nome} name={nome} type={filtroLider.type} />
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {leaders.map(n => <CompactLeaderCard key={n} name={n} type={filtroLider.type} />)}
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4">
       <LiderBuscaBar />
       {renderResults()}
-
-      {/* Modal de Drilldown (Lista de Visitas) */}
-      <Dialog open={!!drilldown} onOpenChange={(open) => !open && setDrilldown(null)}>
-        <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[85vh] overflow-y-auto p-6 bg-background/95 backdrop-blur-md border-primary/20 custom-scrollbar">
-          <DialogHeader className="mb-6">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => setDrilldown(null)} className="h-8 w-8 hover:bg-accent shrink-0">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <DialogTitle className="text-xl font-black uppercase tracking-widest text-primary leading-tight">
-                  Visitas: {drilldown?.indicator}
-                </DialogTitle>
-                <DialogDescription className="text-xs font-bold text-muted-foreground uppercase opacity-70">
-                   Realizadas por {drilldown?.name}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            {(() => {
-              if (!drilldown) return null;
-              const filtered = visitas.filter(v => {
-                const evalMatch = v.avaliador?.trim().toUpperCase() === drilldown.name.toUpperCase();
-                if (!evalMatch) return false;
-
-                const ind = v.indicador_avaliado?.trim().toUpperCase();
-                if (drilldown.indicator === 'FDS') return ind === 'FDS';
-                if (drilldown.indicator === 'RGB') return ind && INDICADORES_TIPO_RGB.includes(ind);
-                if (drilldown.indicator === 'COACHING') return ind && REQUER_COACHING.includes(ind);
-                return false;
-              });
-
-              if (filtered.length === 0) {
-                return <p className="text-center py-10 text-muted-foreground italic text-sm">Nenhuma visita encontrada.</p>;
-              }
-
-              return filtered.map((v, i) => (
-                <Card 
-                  key={i} 
-                  className="group hover:border-primary/40 transition-all cursor-pointer bg-card/50"
-                  onClick={() => {
-                    setDrilldown(null);
-                    onSelectVisita && onSelectVisita(v);
-                  }}
-                >
-                  <CardContent className="p-4 flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="font-black text-sm text-foreground uppercase truncate">
-                        {v.nome_fantasia_pdv || "PDV DESCONHECIDO"}
-                      </p>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {v.data_visita ? format(parseISO(v.data_visita), "dd/MM/yy") : "--/--/--"}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {v.filial}</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:text-primary transition-all" />
-                  </CardContent>
-                </Card>
-              ));
-            })()}
+      <Dialog open={!!drilldown} onOpenChange={() => setDrilldown(null)}>
+        <DialogContent className="max-w-[600px]">
+          <DialogTitle>Visitas: {drilldown?.indicator}</DialogTitle>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {visitas.filter(v => normalizeName(v.avaliador) === normalizeName(drilldown?.name)).map((v, i) => (
+              <Card key={i} className="p-3"><p className="font-bold text-sm">{v.nome_fantasia_pdv}</p></Card>
+            ))}
           </div>
         </DialogContent>
       </Dialog>

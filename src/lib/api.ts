@@ -10,4 +10,5 @@ export * from '@/features/fds/api/fds.service';
 export * from '@/features/usuarios/api/usuarios.service';
 export * from '@/features/empresas/api/empresas.service';
 export * from '@/features/config/api/config.service';
+export * from '@/features/config/api/metas.service';
 export * from '@/features/offline/api/syncWorker.service';

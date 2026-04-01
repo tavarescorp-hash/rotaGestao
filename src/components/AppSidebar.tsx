@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Equipe", url: "/performance-equipe", icon: Users },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
   { title: "Visita Retroativa", url: "/retroativa", icon: CalendarPlus },
   { title: "Gestão de Dados", url: "/admin-data", icon: Database },
@@ -81,7 +80,7 @@ export function AppSidebar() {
                 } else {
                   const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
                   
-                  if (isAnalista && !isGestor && (item.title === "Nova Visita" || item.title === "Equipe")) return null;
+                  if (isAnalista && !isGestor && (item.title === "Nova Visita")) return null;
                   if (!isAnalista && item.title === "Gestão de Dados") return null;
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)
@@ -89,8 +88,9 @@ export function AppSidebar() {
                    // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
                   if (item.title === "SaaS Admin") return null;
 
-                  // Ocultar aba Equipe para Supervisor (Niv4) para evitar redundância
-                  if (user?.nivel === 'Niv4' && item.title === "Equipe") return null;
+                  // Ocultar aba Equipe para Supervisor (Niv4) para evitar redundância e a pedido do usuário
+                  const isNivelRestrito = user?.nivel === 'Niv4' || user?.funcao?.toUpperCase().includes('SUPERVISOR') || !user?.nivel;
+                  if (item.title === "Equipe" && isNivelRestrito) return null;
                 }
 
                 return (
@@ -133,9 +133,9 @@ export function AppSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             {/* Standardized user name and role text sizes/colors */}
-            <p className="text-sm font-bold truncate text-foreground">{user?.name}</p>
-            <Badge variant="secondary" className="mt-1 text-xs uppercase font-bold tracking-wider bg-muted text-muted-foreground border-none">
-              {user?.role === "admin" ? "Admin" : "Usuário"}
+            <p className="text-sm font-black truncate text-foreground uppercase tracking-tight">{user?.name}</p>
+            <Badge className="mt-1.5 text-[10px] uppercase font-black tracking-widest bg-[#FFB800] text-black border-none hover:bg-[#FFB800]/90 px-2 py-0.5 rounded-md transition-colors">
+              {user?.formattedRole}
             </Badge>
           </div>
         </div>

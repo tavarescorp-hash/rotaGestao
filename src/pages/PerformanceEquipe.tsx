@@ -161,6 +161,7 @@ const PerformanceEquipe = () => {
             userLevel={user?.nivel} 
             userName={user?.name} 
             userUnidade={unidade === "todas" ? user?.unidade : unidade} 
+            userFuncao={user?.funcao}
             onSelectVisita={setSelectedVisita}
           />
         )}

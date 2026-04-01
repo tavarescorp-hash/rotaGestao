@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Loader2, Search, MapPin } from "lucide-react";
@@ -367,16 +368,24 @@ const VisitaRetroativa = () => {
             <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Responsável</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.name || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Responsável</Label>
+                  <p className="text-sm font-black text-foreground truncate uppercase">{user?.name || ""}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.unidade || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Unidade</Label>
+                  <div className="flex">
+                    <Badge variant="outline" className="bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-200/50 font-bold text-[10px] px-2 py-0.5 rounded-md uppercase">
+                      {user?.unidade === 'TODAS' ? "TODAS AS UNIDADES" : (user?.unidade || "Não definida")}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cargo</Label>
-                  <p className="text-sm font-bold text-foreground truncate">{user?.funcao || ""}</p>
+                  <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Cargo / Função</Label>
+                  <div className="flex">
+                    <Badge className="bg-[#FFB800] text-black font-black text-[10px] px-2 py-0.5 rounded-md border-none uppercase tracking-wider">
+                      {user?.formattedRole}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>

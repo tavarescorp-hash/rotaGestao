@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { Visita, VendedorAtivo } from "@/lib/api";
+import { Visita, VendedorAtivo, MetaConfig } from "@/lib/api";
+import { normalizeName } from "@/lib/utils";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 
 export function useDashboardMetrics(
   visitas: Visita[], 
   vendedoresBaseReal: VendedorAtivo[], 
-  user: any
+  user: any,
+  metasUsuario: MetaConfig[] = []
 ) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -20,37 +22,31 @@ export function useDashboardMetrics(
   const [avaliadorFiltro, setAvaliadorFiltro] = useState("todos");
   const [usuarioFiltro, setUsuarioFiltro] = useState("todos");
 
-  const isGlobalView = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv1';
+  // Níveis de Diretoria e Analistas (Niv0, Niv1 e Analistas) veem dados agregados por padrão
+  const isGlobalView = user?.funcao?.toUpperCase().includes('ANALISTA') || 
+                       user?.nivel === 'Niv1' || 
+                       user?.nivel === 'Niv0';
+  
   const isGerenteComercial = user?.nivel === 'Niv2';
 
   const minhasVisitas = useMemo(() => {
-    // Para Diretoria e Gerência Comercial (Niv1/Niv2)
-    if (isGlobalView || isGerenteComercial) {
-      // Se não houver filtro ativo, mostra apenas o DASHBOARD PESSOAL (minhas visitas)
-      if (usuarioFiltro === "todos" && avaliadorFiltro === "todos" && activeTab === "minhas") {
-        return visitas.filter(v => v.avaliador === user?.name);
-      }
-      
-      // Se houver filtro de unidade (GC) ou se clicou em alguém na equipe, libera o global para o filtro
-      if (activeTab === 'macae') return visitas.filter(v => v.unidade?.toUpperCase().includes('MACA') || v.unidade === 'M');
-      if (activeTab === 'campos') return visitas.filter(v => v.unidade?.toUpperCase().includes('CAMPO') || v.unidade === 'C');
-      
+    if (!user?.name) return [];
+    
+    // Diretoria e Analistas possuem visão macro do negócio.
+    // Os "Meus Indicadores" deles representam o todo da empresa.
+    if (isGlobalView) {
       return visitas;
     }
-
-    if (user?.nivel === 'Niv3' && activeTab === 'unidade') {
-      const uLogada = user?.unidade?.toUpperCase() || "";
-      return visitas.filter(v => {
-        const dUnidade = v.unidade?.toUpperCase() || "";
-        const isSameUnidade = (uLogada.includes('MACA') && (dUnidade.includes('MACA') || dUnidade === 'M')) ||
-                              (uLogada.includes('CAMPO') && (dUnidade.includes('CAMPO') || dUnidade === 'C')) ||
-                              (dUnidade === uLogada);
-        return isSameUnidade && !v.cargo?.toUpperCase().includes('GERENTE');
-      });
-    }
-
-    return visitas.filter(v => v.avaliador === user?.name);
-  }, [visitas, user?.name, user?.nivel, user?.unidade, activeTab, isGlobalView, isGerenteComercial, usuarioFiltro, avaliadorFiltro]);
+    
+    // Filtro rígido para os líderes de campo (Gerentes, Supervisores, etc):
+    // Ver apenas as pesquisas (avaliações) realizadas por eles próprios.
+    const nomeLogado = user.name.trim().toUpperCase();
+    
+    return visitas.filter(v => 
+      v.avaliador && 
+      v.avaliador.trim().toUpperCase() === nomeLogado
+    );
+  }, [visitas, user?.name, isGlobalView]);
 
   const avaliadoresUnicos = useMemo(() => {
     const avaliadoresValidos = minhasVisitas.map(v => v.avaliador).filter(Boolean) as string[];
@@ -116,7 +112,9 @@ export function useDashboardMetrics(
   }, [visitas, dateRange]);
 
   const estatisticasMes = useMemo(() => {
-    const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
+    // Normalização agressiva: sem acentos, sem espaços, tudo em caixa alta
+    const normalizeInd = (s?: string) => 
+      s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "").trim().toUpperCase() : "";
 
     const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
     
@@ -126,16 +124,16 @@ export function useDashboardMetrics(
     const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
     const N_COACHING = listNormalized(REQUER_COACHING);
 
-    const qtdeFDS = filtradas.filter(v => normalizeInd(v.indicador_avaliado) === 'FDS').length;
+    const qtdeFDS = filtradas.filter(v => normalizeInd(v.indicador_avaliado).includes('FDS')).length;
     
     const qtdeCompass = filtradas.filter(v => {
       const vInd = normalizeInd(v.indicador_avaliado);
-      return vInd && N_COMPASS.includes(vInd);
+      return vInd && (N_COMPASS.includes(vInd) || vInd.includes('COMPASS'));
     }).length;
 
     const qtdeQuedas = filtradas.filter(v => {
       const vInd = normalizeInd(v.indicador_avaliado);
-      return vInd && N_QUEDAS.includes(vInd);
+      return vInd && (N_QUEDAS.includes(vInd) || vInd.includes('QUEDA'));
     }).length;
     
     // RGB Total (Incluindo subcategorias se fizerem parte da coleção de RGB)
@@ -153,13 +151,12 @@ export function useDashboardMetrics(
 
     const mapaVendedores = new Map<string, number>();
     const baseVendedoresOficiais = new Set<string>();
-    const normalizeStr = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
-
-    const avaliadorEscolhido = normalizeStr(avaliadorFiltro);
+    
+    const avaliadorEscolhido = normalizeName(avaliadorFiltro);
 
     vendedoresBaseReal.forEach(v => {
       let match = true;
-      const supName = normalizeStr(v.nome_supervisor);
+      const supName = normalizeName(v.nome_supervisor);
 
       if (avaliadorFiltro !== "todos") {
         match = supName === avaliadorEscolhido;
@@ -215,7 +212,7 @@ export function useDashboardMetrics(
     let META_COMPASS = 0;
     let META_QUEDAS = 0;
 
-    if (user?.nivel === 'Niv1') {
+     if (user?.nivel === 'Niv1' || user?.nivel === 'Niv0') {
       // Diretor: Meta fixa de 10 para cada indicador
       META_FDS = 10;
       META_RGB = 10; 
@@ -238,6 +235,27 @@ export function useDashboardMetrics(
       META_RGB = 20;
     }
 
+    // SOBREPOSIÇÃO POR METAS DINÂMICAS (Banco de Dados)
+    if (metasUsuario && metasUsuario.length > 0) {
+      metasUsuario.forEach(m => {
+        const ind = normalizeInd(m.indicador);
+        const val = m.meta_mensal;
+        
+        // Mapeamento Flexível: Tenta encontrar termos-chave se não houver match direto nas listas de roles.ts
+        if (ind === 'FDS' || ind.includes('FDS')) {
+          META_FDS = val;
+        } else if (ind === 'RGB' || ind.includes('RGB') || N_TIPO_RGB.includes(ind)) {
+          META_RGB = val;
+        } else if (ind === 'COACHING' || ind.includes('COACHING') || N_COACHING.includes(ind)) {
+          META_COACHING = val;
+        } else if (ind === 'COMPASS' || ind.includes('COMPASS') || N_COMPASS.includes(ind)) {
+          META_COMPASS = val;
+        } else if (ind === 'QUEDA' || ind.includes('QUEDA') || N_QUEDAS.includes(ind)) {
+          META_QUEDAS = val;
+        }
+      });
+    }
+
     const hoje = new Date();
     const fim = dateRange?.to || new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
     const diasRestantes = Math.max(0, Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 3600 * 24)));
@@ -250,38 +268,45 @@ export function useDashboardMetrics(
       detalhesCoaching,
       diasRestantes
     };
-  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab, vendedoresBaseReal, user?.name]);
+  }, [filtradas, minhasVisitas, avaliadorFiltro, unidade, cargoFiltro, dateRange, avaliadoresUnicos, user?.nivel, activeTab, vendedoresBaseReal, user?.name, metasUsuario]);
 
   const dadosGraficoAnalista = useMemo(() => {
     if (!isGlobalView) return [];
 
-    const mapa = new Map<string, { name: string, FDS: number, RGB: number, Coaching: number }>();
+    const mapa = new Map<string, { name: string, FDS: number, RGB: number, Coaching: number, Compass: number, Quedas: number }>();
+    
+    const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "").trim().toUpperCase() : "";
+    const listN = (arr: string[]) => arr.map(id => normalizeInd(id));
+    const N_COMPASS = listN(INDICADORES_COMPASS_LOCKED);
+    const N_QUEDAS = listN(INDICADORES_QUEDAS_LOCKED);
+    const N_TIPO_RGB = listN(INDICADORES_TIPO_RGB);
+    const N_COACHING = listN(REQUER_COACHING);
+
     filtradas.forEach(v => {
       const nomeAvaliador = v.avaliador;
       if (!nomeAvaliador) return;
 
-      if (!mapa.has(nomeAvaliador)) mapa.set(nomeAvaliador, { name: nomeAvaliador, FDS: 0, RGB: 0, Coaching: 0 });
+      if (!mapa.has(nomeAvaliador)) mapa.set(nomeAvaliador, { name: nomeAvaliador, FDS: 0, RGB: 0, Coaching: 0, Compass: 0, Quedas: 0 });
 
       const curr = mapa.get(nomeAvaliador)!;
-      if (v.indicador_avaliado === 'FDS') curr.FDS++;
-      else if (v.indicador_avaliado && INDICADORES_TIPO_RGB.includes(v.indicador_avaliado)) curr.RGB++;
-      else if (v.indicador_avaliado && REQUER_COACHING.includes(v.indicador_avaliado)) curr.Coaching++;
+      const vInd = normalizeInd(v.indicador_avaliado);
+
+      if (vInd === 'FDS') curr.FDS++;
+      else if (N_TIPO_RGB.includes(vInd)) curr.RGB++;
+      else if (N_COACHING.includes(vInd)) curr.Coaching++;
+      else if (N_COMPASS.includes(vInd) || vInd.includes('COMPASS')) curr.Compass++;
+      else if (N_QUEDAS.includes(vInd) || vInd.includes('QUEDA')) curr.Quedas++;
     });
 
-    return Array.from(mapa.values()).sort((a, b) => (b.FDS + b.RGB + b.Coaching) - (a.FDS + a.RGB + a.Coaching));
+    return Array.from(mapa.values()).sort((a, b) => 
+      (b.FDS + b.RGB + b.Coaching + b.Compass + b.Quedas) - (a.FDS + a.RGB + a.Coaching + a.Compass + a.Quedas)
+    );
   }, [filtradas, isGlobalView]);
 
   const usuariosUnicos = useMemo(() => {
     const nomes = new Set<string>();
     
-    // Função universal flexível: Em vez de match exato, verifica se todos os fragmentos do 'search' (guilherme.chagas) estão em 'target' (Guilherme DAS Chagas)
-    const checkNameMatch = (target?: string, search?: string) => {
-      if (!target || !search) return false;
-      const t = target.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      const parts = search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/);
-      return parts.every(part => t.includes(part));
-    };
-
+    // Usar o utilitário centralizado normalizeName para garantir consistência
     const isMacae = user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ');
 
     vendedoresBaseReal.forEach(v => {
@@ -293,12 +318,12 @@ export function useDashboardMetrics(
          if (v.gerente) nomes.add(v.gerente.trim().toUpperCase());
          if (v.gerente_comercial) nomes.add(v.gerente_comercial.trim().toUpperCase());
       } else if (user?.nivel === 'Niv3') {
-         if (checkNameMatch(v.gerente, user?.name) || isMyBranch) {
+         if (normalizeName(v.gerente) === normalizeName(user?.name) || isMyBranch) {
             if (v.nome_vendedor) nomes.add(v.nome_vendedor.trim().toUpperCase());
             if (v.nome_supervisor) nomes.add(v.nome_supervisor.trim().toUpperCase());
          }
       } else if (user?.nivel === 'Niv4') {
-         if (checkNameMatch(v.nome_supervisor, user?.name)) {
+         if (normalizeName(v.nome_supervisor) === normalizeName(user?.name)) {
             if (v.nome_vendedor) nomes.add(v.nome_vendedor.trim().toUpperCase());
          }
       }

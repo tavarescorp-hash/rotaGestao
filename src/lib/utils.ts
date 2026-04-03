@@ -12,13 +12,16 @@ export function cn(...inputs: ClassValue[]) {
 export function normalizeName(s?: string): string {
   if (!s) return "";
   
-  let name = s.toUpperCase().trim();
+  // NUCLEAR: Remove quebras de linha e caracteres invisíveis de controle ANTES de qualquer coisa
+  let name = s.replace(/[\n\r\t]/g, ' ').toUpperCase().trim();
   
   // Resolução de Apelidos (Aliases) conhecidos para unificação de base
-  if (name.includes("DIEGO") && name.includes("MANHANINI")) name = "DIEGO MANHANINI";
-  if (name.includes("GERENTE") && name.includes("CAMPOS")) name = "GERENTE CAMPOS";
-  if (name === "CARLOS JUNIOR") name = "CARLOS TAVARES";
-  if (name === "GUILHERME CHAGAS") name = "GUILHERME DAS CHAGAS";
+  if (name.includes("ANDERSON") && (name.includes("ALEXANDRE") || name.includes("LUCIANO"))) return "andersonlucianodesouza";
+  if (name.includes("CLEYTON") && (name.includes("SOUZA") || name.includes("FELIX") || name.includes("SANTOS"))) return "cleytondossantosfelix";
+  if (name.includes("DIEGO") && name.includes("MANHANINI")) return "diegomanhanini";
+  if (name.includes("GERENTE") && name.includes("CAMPOS")) return "gerentecampos";
+  if (name.includes("CARLOS") && name.includes("TAVARES")) return "carlostavares";
+  if (name.includes("GUILHERME") && name.includes("CHAGAS")) return "guilhermedaschagas";
   
   return name
     .normalize("NFD")

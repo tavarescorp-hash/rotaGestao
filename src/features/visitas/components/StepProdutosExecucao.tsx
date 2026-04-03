@@ -44,7 +44,7 @@ const canalOptions = [
   "Restaurante A/B",
   "Bar C/D",
   "Bar A/B",
-  "Entretenimento Espec.",
+  "Entretenimento Espec",
   "Loja de Conveniência",
   "Mini C/D",
   "Mini A/B",

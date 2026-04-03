@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { NivelHieriaquico, getIndicadoresPorNivel } from "../lib/roles";
+import { normalizeName } from "../lib/utils";
 
 export type UserRole = "admin" | "user";
 
@@ -111,17 +112,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return `${cargoBase}${codigo ? ` ${codigo}` : ""}`;
       };
 
+      // REGRA DE RESGATE (Self-Healing): Garantir que o Diego Manhanini seja Niv3 de Macaé
+      // mesmo que o perfil no Supabase esteja incompleto.
+      const rawName = (profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "").toUpperCase();
+      const uNameNormal = normalizeName(rawName);
+      
+      // Identificação Resiliente: Se contém DIEGO MANHANINI, ativa o resgate regional.
+      const isDiegoManhanini = uNameNormal.includes(normalizeName("DIEGO MANHANINI"));
+      
+      console.log(`🛡️ [AUTH] Validando Diego: ${rawName} (${uNameNormal}) -> ${isDiegoManhanini}`);
+      
+      const userNivel = isDiegoManhanini ? (profile?.nivel || "Niv3") : profile?.nivel;
+      const userUnidade = isDiegoManhanini ? (profile?.unidade || "M") : (profile?.unidade || (isMaster ? "TODAS" : ""));
+      const userFuncao = isDiegoManhanini ? (profile?.funcao || "GERENTE DE VENDAS") : profile?.funcao;
+
       setUser({
         id: sessionUser.id,
         email: sessionUser.email || "",
-        name: profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "",
+        name: rawName.replace(/[\n\r]/g, ' ').trim(), // Limpa quebras de linha no nome exibido
         role: (sessionUser.user_metadata?.role as UserRole) || "user",
-        unidade: profile?.unidade || (isMaster ? "TODAS" : ""),
-        funcao: profile?.funcao,
+        unidade: userUnidade,
+        funcao: userFuncao,
         codigo: profile?.codigo,
-        nivel: profile?.nivel,
-        formattedRole: profile?.funcao || formatRoleHelper(profile?.funcao, profile?.codigo, profile?.nivel),
-        indicadores: getIndicadoresPorNivel(profile?.nivel),
+        nivel: userNivel,
+        formattedRole: userFuncao || formatRoleHelper(userFuncao, profile?.codigo, userNivel),
+        indicadores: getIndicadoresPorNivel(userNivel),
         empresa_id: isMaster ? 0 : (profile?.empresa_id || 1),
         empresa_nome: isMaster ? "Gestão de Rota" : (empresaInfo?.nome || "Gestão de Rota"),
         empresa_logo: isMaster ? "/logo-gestao-rota.png" : (empresaInfo?.logo_url || "/logo-gestao-rota.png"),

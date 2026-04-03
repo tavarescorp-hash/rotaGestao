@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Equipe", url: "/performance-equipe", icon: Users },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
   { title: "Visita Retroativa", url: "/retroativa", icon: CalendarPlus },
   { title: "Gestão de Dados", url: "/admin-data", icon: Database },
@@ -88,9 +89,10 @@ export function AppSidebar() {
                    // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
                   if (item.title === "SaaS Admin") return null;
 
-                  // Ocultar aba Equipe para Supervisor (Niv4) para evitar redundância e a pedido do usuário
-                  const isNivelRestrito = user?.nivel === 'Niv4' || user?.funcao?.toUpperCase().includes('SUPERVISOR') || !user?.nivel;
-                  if (item.title === "Equipe" && isNivelRestrito) return null;
+                  // Ocultar aba Equipe apenas para quem não tem nível (Vendedores ou Deslogados)
+                  // Supervisores (Niv4) agora possuem acesso.
+                  const isNivelInexistente = !user?.nivel;
+                  if (item.title === "Equipe" && isNivelInexistente) return null;
                 }
 
                 return (

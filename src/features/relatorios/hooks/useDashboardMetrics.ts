@@ -23,7 +23,7 @@ export function useDashboardMetrics(
   const [usuarioFiltro, setUsuarioFiltro] = useState("todos");
 
   // Níveis de Diretoria e Analistas (Niv0, Niv1 e Analistas) veem dados agregados por padrão
-  const isGlobalView = user?.funcao?.toUpperCase().includes('ANALISTA') || 
+  const isGlobalView = user?.funcao?.toUpperCase()?.includes('ANALISTA') || 
                        user?.nivel === 'Niv1' || 
                        user?.nivel === 'Niv0';
   
@@ -39,8 +39,8 @@ export function useDashboardMetrics(
     }
     
     // Filtro rígido para os líderes de campo (Gerentes, Supervisores, etc):
-    // Ver apenas as pesquisas (avaliações) realizadas por eles próprios.
-    const nomeLogado = user.name.trim().toUpperCase();
+    // Ver apenas as pesquisas (avaliações) realizadas por eles próprios na tela inicial.
+    const nomeLogado = (user?.name || "").trim().toUpperCase();
     
     return visitas.filter(v => 
       v.avaliador && 
@@ -307,10 +307,16 @@ export function useDashboardMetrics(
     const nomes = new Set<string>();
     
     // Usar o utilitário centralizado normalizeName para garantir consistência
-    const isMacae = user?.unidade?.toUpperCase().includes('MACAE') || user?.unidade?.toUpperCase().includes('MACAÉ');
+    const uRaw = (user?.unidade || "").toUpperCase();
+    // TRUMP CARD: Se for Diego, independente do que está salvo no banco, é Macaé.
+    const isDiegos = normalizeName(user?.name || "").includes("diegomanhanini");
+    const isMacae = isDiegos || uRaw === "M" || uRaw.includes("MACA");
+    // Campos nunca pode ser se for Diego (evita colisão de dados sujos)
+    const isCampos = !isDiegos && (uRaw === "C" || uRaw.includes("CAMPOS"));
 
     vendedoresBaseReal.forEach(v => {
-      const isMyBranch = isMacae ? (v.filial === 'M' || v.filial === 'MACAE') : (v.filial === 'C' || v.filial === 'CAMPOS');
+      const isMyBranch = (isMacae && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACA'))) ||
+                         (isCampos && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPO')));
 
       if (isGlobalView || isGerenteComercial) {
          if (v.nome_vendedor) nomes.add(v.nome_vendedor.trim().toUpperCase());

@@ -631,7 +631,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Gráfico de Ranking de Avaliadores (Restaurado) */}
+        {/* Gráfico de Ranking de Liderança (Top Produtividade) - Exclusivo para Analistas na Home */}
         {isAnalista && dadosGraficoAnalista.length > 0 && (
           <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col mt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
             <div className="p-4 border-b border-border/40 flex items-center justify-between gap-2">

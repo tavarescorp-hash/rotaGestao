@@ -8,8 +8,10 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
 
     let canalBusca = normalize(canal);
 
-    if (canalBusca === "entretenimento espec") {
-      canalBusca = normalize("Entretenimento Espec.");
+    // Ajuste de Normalização: Garantir que variações comuns de entrada para entretenimento coincidam.
+    // O banco de dados está como 'Entretenimento Espec' (sem ponto).
+    if (canalBusca.includes("entretenimento esp")) {
+      canalBusca = "entretenimento espec";
     }
 
     let data;

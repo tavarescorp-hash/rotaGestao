@@ -5,18 +5,18 @@ export type NivelHieriaquico = "Niv0" | "Niv1" | "Niv2" | "Niv3" | "Niv4" | "Niv
 export const INDICADORES_MAP = {
     "Niv0": [],
     "Niv1": [
-        "Maiores potenciais base compass em RGB BAR",
-        "Maiores quedas RGB mês anterior"
+        "Maiores Potenciais Base Compass em RGB BAR",
+        "Maiores Quedas RGB Mês Anterior"
     ],
     "Niv2": [
         "FDS",
         "Coaching Rotina Básica com Vendedor",
-        "Maiores quedas RGB mês anterior"
+        "Maiores Quedas RGB Mês Anterior"
     ],
     "Niv3": [
         "FDS",
         "Coaching Rotina Básica com Vendedor",
-        "Maiores potenciais base compass em RGB BAR"
+        "Maiores Potenciais Base Compass em RGB BAR"
     ],
     "Niv4": [
         "FDS",
@@ -57,10 +57,10 @@ export const getIndicadoresPorNivel = (nivel?: string | null): string[] => {
 export const REQUER_PRODUTOS_EXECUCAO = [
     "FDS",
     "Foco RGB",
-    "Maior potencial COMPASS em RGB BAR",
-    "Maiores potenciais base compass em RGB BAR",
-    "Maiores quedas RGB do mês anterior",
-    "Maiores quedas RGB mês anterior",
+    "Maior Potencial COMPASS em RGB BAR",
+    "Maiores Potenciais Base Compass em RGB BAR",
+    "Maiores Quedas RGB Mês Anterior",
+    "Maiores Quedas RGB Mês Anterior",
     "FOCO RGB",
     "FOCO MAIORES QUEDAS RGB",
     "MAIORES POTENCIAS BASE DE COMPRAS RGB",
@@ -77,31 +77,31 @@ export const REQUER_COACHING = [
 
 export const INDICADORES_TIPO_RGB = [
     "Foco RGB",
-    "Maior potencial COMPASS em RGB BAR",
-    "Maiores potenciais base compass em RGB BAR",
-    "Maiores quedas RGB do mês anterior",
-    "Maiores quedas RGB mês anterior",
+    "Maior Potencial COMPASS em RGB BAR",
+    "Maiores Potenciais Base Compass em RGB BAR",
+    "Maiores Quedas RGB Mês Anterior",
+    "Maiores Quedas RGB Mês Anterior",
     "FOCO RGB",
     "FOCO MAIORES QUEDAS RGB",
     "MAIORES POTENCIAS BASE DE COMPRAS RGB",
     "MAIORES POTENCIAS COMPASS em RGB BAR",
     "MAIORES POTENCIAIS COMPASS em RGB BAR",
     "MAIORES POTENCIAIS BASE COMPASS em RGB BAR",
-    "RGB - Maiores clientes",
+    "RGB - Maiores Clientes",
     "MAIORES QUEDAS RGB MES ANTERIOR"
 ];
 
 export const INDICADORES_COMPASS_LOCKED = [
-    "Maior potencial COMPASS em RGB BAR",
-    "Maiores potenciais base compass em RGB BAR",
+    "Maior Potencial COMPASS em RGB BAR",
+    "Maiores Potenciais Base Compass em RGB BAR",
     "MAIORES POTENCIAS COMPASS em RGB BAR",
     "MAIORES POTENCIAIS COMPASS em RGB BAR",
     "MAIORES POTENCIAIS BASE COMPASS em RGB BAR",
-    "RGB - Maiores clientes"
+    "RGB - Maiores Clientes"
 ];
 
 export const INDICADORES_QUEDAS_LOCKED = [
-    "Maiores quedas RGB do mês anterior",
+    "Maiores Quedas RGB Mês Anterior",
     "Maiores quedas RGB mês anterior",
     "MAIORES QUEDAS RGB MES ANTERIOR",
     "FOCO MAIORES QUEDAS RGB"

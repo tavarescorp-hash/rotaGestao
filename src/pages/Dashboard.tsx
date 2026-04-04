@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
 import { useDashboardMetrics } from "@/features/relatorios/hooks/useDashboardMetrics";
 import { VisitaModalDialog } from "@/features/relatorios/components/VisitaModalDialog";
+import { TeamHierarchyView } from "@/components/TeamHierarchyView";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip, FunnelChart, Funnel, LabelList, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 
 
@@ -40,10 +41,11 @@ const Dashboard = () => {
     unidade, setUnidade,
     indicadorFiltro, setIndicadorFiltro,
     cargoFiltro, setCargoFiltro,
+    usuarioFiltro, setUsuarioFiltro,
     isAnalista,
     filtradas,
-    estatisticasMes, cargosUnicos, unidadesUnicas,
-    dadosGraficoAnalista
+    estatisticasMes, cargosUnicos, unidadesUnicas, usuariosUnicos,
+    dadosGraficoAnalista, visitasHierarchy
   } = useDashboardMetrics(visitas, vendedoresBaseReal, user, metasUsuario);
 
   // Lógica de cascata para encontrar quais indicadores exibir
@@ -57,67 +59,6 @@ const Dashboard = () => {
     if (porFuncao.length > 0) return porFuncao;
     return [];
   }, [metasUsuario, user?.nivel, user?.funcao]);
-
-  const graficoPizzaData = React.useMemo(() => {
-    let fds = 0, rgb = 0, coaching = 0, compass = 0, quedas = 0, outros = 0;
-    
-    const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
-    const listNormalized = (arr: string[]) => arr.map(id => normalizeInd(id));
-    
-    const N_COMPASS = listNormalized(INDICADORES_COMPASS_LOCKED);
-    const N_QUEDAS = listNormalized(INDICADORES_QUEDAS_LOCKED);
-    const N_TIPO_RGB = listNormalized(INDICADORES_TIPO_RGB);
-    const N_COACHING = listNormalized(REQUER_COACHING);
-
-    filtradas.forEach(v => {
-      const vInd = normalizeInd(v.indicador_avaliado);
-      if (vInd === 'FDS') fds++;
-      else if (N_COACHING.includes(vInd)) coaching++;
-      else if (N_COMPASS.includes(vInd)) compass++;
-      else if (N_QUEDAS.includes(vInd)) quedas++;
-      else if (N_TIPO_RGB.includes(vInd)) rgb++;
-      else outros++;
-    });
-
-    return [
-      { name: 'FDS', value: fds, color: '#FFB800', filterKey: 'FDS' }, 
-      { name: 'RGB', value: rgb, color: '#38BDF8', filterKey: 'RGB' }, 
-      { name: 'Coaching', value: coaching, color: '#10B981', filterKey: 'COACHING' }, 
-      { name: 'Compass', value: compass, color: '#A855F7', filterKey: 'COMPASS' }, 
-      { name: 'Quedas', value: quedas, color: '#F43F5E', filterKey: 'QUEDAS' }, 
-      { name: 'Outros', value: outros, color: '#94A3B8', filterKey: null }
-    ].filter(i => i.value > 0).sort((a, b) => b.value - a.value);
-  }, [filtradas]);
-
-  const graficoPiramideData = React.useMemo(() => {
-    // Escala Hierárquica Pré-definida (Setores da Liderança)
-    const hierarquia = [
-      { key: 'DIRETOR', fill: '#A855F7' },
-      { key: 'GERENTE COMERCIAL', fill: '#EB4898' },
-      { key: 'GERENTE DE VENDAS', fill: '#38BDF8' },
-      { key: 'SUPERVISOR', fill: '#10B981' }
-    ];
-
-    const counts: Record<string, number> = {
-      'DIRETOR': 0, 'GERENTE COMERCIAL': 0, 'GERENTE DE VENDAS': 0, 'SUPERVISOR': 0
-    };
-
-    filtradas.forEach(v => {
-      // Normalizando strings e varrendo pra garantir o matching correto dos Cargos
-      const c = v.cargo?.trim().toUpperCase() || "";
-      if (c.includes('DIRETOR')) counts['DIRETOR']++;
-      else if (c.includes('GERENTE COMERCIAL') || c.includes('GCOM')) counts['GERENTE COMERCIAL']++;
-      else if (c.includes('GERENTE DE VENDAS') || c.includes('GNV') || c.includes('GERENTE REGIONAL')) counts['GERENTE DE VENDAS']++;
-      else if (c.includes('SUPERVISOR')) counts['SUPERVISOR']++;
-    });
-
-    // Filtra e retorna seguindo a estrita ordem hierárquica (Diretoria no Topo e Base Supervisão)
-    return hierarquia.map(h => ({
-      name: h.key,
-      value: counts[h.key] > 0 ? counts[h.key] : 0, 
-      fill: h.fill
-    })).filter(h => h.value > 0); 
-  }, [filtradas]);
 
   const carregarVisitas = async () => {
     setLoading(true);
@@ -192,35 +133,122 @@ const Dashboard = () => {
             {!isAnalista && (
               <div className="w-full lg:max-w-md bg-slate-200/60 dark:bg-white/5 p-4 rounded-2xl border border-slate-300/30 dark:border-white/10 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] text-slate-500 dark:text-white/40 font-black uppercase tracking-[0.1em] flex items-center gap-2">
-                  <Filter className="w-3 h-3" />
-                  Métricas de Avaliação Vinculadas
-                </p>
-                {metasUsuario.length > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-[8px] font-black text-green-600 dark:text-green-400 uppercase tracking-tighter">SaaS Live</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {indicadoresExibicao.length > 0 ? (
-                  indicadoresExibicao.map((ind, i) => (
-                    <span key={i} className="bg-white dark:bg-white/10 text-slate-700 dark:text-white/90 px-3 py-1.5 rounded-xl font-bold text-[10px] shadow-sm border border-slate-200/50 dark:border-none transition-transform hover:scale-105">
-                      {ind}
+                  <p className="text-[10px] text-slate-500 dark:text-white/40 font-black uppercase tracking-[0.1em] flex items-center gap-2">
+                    <Filter className="w-3 h-3" />
+                    Métricas de Avaliação Vinculadas
+                  </p>
+                  {metasUsuario.length > 0 && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-[8px] font-black text-green-600 dark:text-green-400 uppercase tracking-tighter">SaaS Live</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {indicadoresExibicao.length > 0 ? (
+                    indicadoresExibicao.map((ind, i) => (
+                      <span key={i} className="bg-white dark:bg-white/10 text-slate-700 dark:text-white/90 px-3 py-1.5 rounded-xl font-bold text-[10px] shadow-sm border border-slate-200/50 dark:border-none transition-transform hover:scale-105">
+                        {ind}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 italic text-[10px] py-1">
+                      Aguardando configuração de metas...
                     </span>
-                  ))
-                ) : (
-                  <span className="text-slate-400 italic text-[10px] py-1">
-                    Aguardando configuração de metas...
-                  </span>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* FERRAMENTAS DE FILTRO E SINCRONIZAÇÃO */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-[#0A0F1E]/60 p-4 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex-1 sm:flex-none justify-start text-left bg-card dark:bg-card/40 border-border dark:border-border/10 font-bold text-[10px] h-10 px-4 rounded-xl">
+                <Calendar className="mr-2 h-4 w-4 text-[#FFB800]" />
+                <span>{dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}` : format(dateRange.from, "dd/MM/yy")) : "Selecionar Data"}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} locale={ptBR} numberOfMonths={1} />
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            variant={showAdvancedFilters ? "secondary" : "outline"}
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="flex-1 sm:flex-none bg-card dark:bg-card/40 border-border dark:border-border/10 font-bold text-[10px] h-10 px-4 rounded-xl"
+          >
+            <Settings2 className="h-4 w-4 mr-2 text-[#FFB800]" />
+            Filtros Avançados
+          </Button>
+        </div>
+
+        <Button
+          variant="secondary"
+          onClick={carregarVisitas}
+          disabled={loading}
+          className="font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-sm hover:shadow-md transition-all shrink-0"
+        >
+          <RefreshCw className={`w-3 h-3 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Sincronizar Dados
+        </Button>
+      </div>
+
+      {showAdvancedFilters && (
+        <Card className="bg-card dark:bg-card/20 border-border/40 animate-in fade-in slide-in-from-top-2 duration-300 rounded-2xl overflow-hidden shadow-xl">
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Unidade</Label>
+                <Select value={unidade} onValueChange={setUnidade}>
+                  <SelectTrigger className="bg-background/50 h-10 font-bold text-xs rounded-xl border-border/60"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="todas">Todas as Unidades</SelectItem>
+                    {unidadesUnicas.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cargo</Label>
+                <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
+                  <SelectTrigger className="bg-background/50 h-10 font-bold text-xs rounded-xl border-border/60"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="todos">Todos os Cargos</SelectItem>
+                    {cargosUnicos.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Métrica Indicador</Label>
+                <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
+                  <SelectTrigger className="bg-background/50 h-10 font-bold text-xs rounded-xl border-border/60"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="todos">Todas as Métricas</SelectItem>
+                    <SelectItem value="FDS">FDS</SelectItem>
+                    <SelectItem value="RGB">RGB</SelectItem>
+                    <SelectItem value="COACHING">Coaching</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-3 space-y-1.5 pt-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Pesquisar por Usuário (Líder ou Vendedor)</Label>
+                <Select value={usuarioFiltro} onValueChange={setUsuarioFiltro}>
+                  <SelectTrigger className="bg-background/50 h-11 font-bold text-xs rounded-xl border-border/60 shadow-inner"><SelectValue placeholder="Pesquisar por usuário..." /></SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-[300px]">
+                    <SelectItem value="todos">Todos os Usuários</SelectItem>
+                    {usuariosUnicos.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 2. MEUS INDICADORES SECTION */}
       {!isAnalista && (
@@ -412,333 +440,30 @@ const Dashboard = () => {
             </div>
           );
         })()}
-
-        </div>
-      )}
-
-      {/* 3. METAS E PERFORMANCE SECTION (Footer style bottom) */}
-      <div className="space-y-6 pt-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-muted dark:border-white/5 pt-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-              <BarChart3 className="w-4 h-4 text-primary" />
-            </div>
-            <h1 className="text-xl font-black uppercase tracking-widest text-foreground">Visão Geral</h1>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 sm:flex-none justify-start text-left bg-card dark:bg-card/40 border-border dark:border-border/40 font-bold text-[10px] h-10 px-4">
-                  <Calendar className="mr-2 h-4 w-4 text-[#FFB800]" />
-                  <span>{dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}` : format(dateRange.from, "dd/MM/yy")) : "Selecionar Data"}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <CalendarComponent mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} locale={ptBR} numberOfMonths={1} />
-              </PopoverContent>
-            </Popover>
-
-            <Button
-              variant={showAdvancedFilters ? "secondary" : "outline"}
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="flex-1 sm:flex-none bg-card dark:bg-card/40 border-border dark:border-border/40 font-bold text-[10px] h-10 px-4"
-            >
-              <Settings2 className="h-4 w-4 mr-2 text-[#FFB800]" />
-              Filtros Avançados
-            </Button>
-
-            <Button
-              variant="secondary"
-              onClick={carregarVisitas}
-              disabled={loading}
-              className="flex-1 sm:flex-none font-bold text-[10px] h-10 px-4"
-            >
-              <RefreshCw className={`w-3 h-3 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Sincronizar
-            </Button>
-          </div>
-        </div>
-
-        {showAdvancedFilters && (
-          <Card className="bg-card dark:bg-card/20 border-border/40 animate-in fade-in slide-in-from-top-2 duration-300">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Unidade</Label>
-                  <Select value={unidade} onValueChange={setUnidade}>
-                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todas">Todas as Unidades</SelectItem>
-                      {unidadesUnicas.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cargo</Label>
-                  <Select value={cargoFiltro} onValueChange={setCargoFiltro}>
-                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos os Cargos</SelectItem>
-                      {cargosUnicos.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Métrica</Label>
-                  <Select value={indicadorFiltro} onValueChange={setIndicadorFiltro}>
-                    <SelectTrigger className="bg-background h-9 font-bold text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas as Métricas</SelectItem>
-                      <SelectItem value="FDS">FDS</SelectItem>
-                      <SelectItem value="RGB">RGB</SelectItem>
-                      <SelectItem value="COACHING">Coaching</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Gráfico de Avaliações por Indicador */}
-        {graficoPizzaData.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-border/40 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#FFB800]" />
-                <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#FFB800]">
-                    Distribuição de Avaliações
-                  </h3>
-                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
-                    Total: {filtradas.length} Registros 
-                  </p>
-                </div>
-              </div>
-              <div className="flex-1 p-4 min-h-[300px]">
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={graficoPizzaData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                      animationDuration={1500}
-                      onClick={(data) => {
-                        const key = data?.payload?.filterKey || data?.filterKey;
-                        if (key) setFiltroIndicadorModal(key);
-                      }}
-                    >
-                      {graficoPizzaData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color} 
-                          className={entry.filterKey ? "cursor-pointer hover:opacity-80 transition-opacity outline-none" : "outline-none"} 
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'var(--card)', 
-                        borderColor: 'var(--border)',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                      }}
-                      itemStyle={{ color: 'var(--foreground)' }}
-                      formatter={(value: number, name: string) => [
-                        `${value} avaliação${value !== 1 ? 'ões' : ''} (${Math.round((value / filtradas.length) * 100)}%)`, 
-                        name
-                      ]}
-                    />
-                    <Legend 
-                      layout="horizontal" 
-                      verticalAlign="bottom" 
-                      align="center"
-                      wrapperStyle={{ 
-                        fontSize: '10px', 
-                        fontWeight: '800', 
-                        textTransform: 'uppercase',
-                        paddingTop: '20px'
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-            
-            {/* Gráfico Pirâmide de Hierarquia */}
-            <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-border/40 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#38BDF8]" />
-                <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#38BDF8]">
-                    Pirâmide de Resultados
-                  </h3>
-                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
-                    Resumo Consolidado por Cargo
-                  </p>
-                </div>
-              </div>
-              <div className="flex-1 p-4 min-h-[300px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height={260}>
-                  <FunnelChart>
-                    <RechartsTooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'var(--card)', 
-                        borderColor: 'var(--border)',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                      }}
-                      itemStyle={{ color: 'var(--foreground)' }}
-                      formatter={(value: number, name: string) => [`${value} Avaliações`, name]}
-                    />
-                    <Funnel
-                      dataKey="value"
-                      data={graficoPiramideData}
-                      isAnimationActive
-                      onClick={(data) => {
-                        const key = data?.name || data?.payload?.name;
-                        if (key) setFiltroPiramideModal(key);
-                      }}
-                    >
-                      {graficoPiramideData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.fill} 
-                          className="cursor-pointer hover:opacity-80 transition-opacity outline-none" 
-                        />
-                      ))}
-                      <LabelList 
-                        position="right" 
-                        fill="var(--foreground)" 
-                        stroke="none" 
-                        dataKey="name" 
-                        style={{ fontSize: '10px', fontWeight: 'bold' }} 
-                      />
-                    </Funnel>
-                  </FunnelChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Gráfico de Ranking de Liderança (Top Produtividade) - Exclusivo para Analistas na Home */}
-        {isAnalista && dadosGraficoAnalista.length > 0 && (
-          <Card className="bg-card dark:bg-card/20 border-border/40 shadow-sm overflow-hidden flex flex-col mt-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-            <div className="p-4 border-b border-border/40 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#A855F7]" />
-                <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-[#A855F7]">
-                    Ranking de Liderança (Top Produtividade)
-                  </h3>
-                  <p className="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">
-                    Visão Geral de Engajamento por Supervisor/Gerente
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-2 sm:p-6 w-full max-w-[100vw] overflow-hidden">
-              <div className="h-[400px] w-full mt-4 pe-2">
-                <ResponsiveContainer width="99%" height="100%">
-                  <BarChart
-                    data={dadosGraficoAnalista}
-                    margin={{ top: 20, right: 0, left: -20, bottom: 60 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 'bold' }}
-                      angle={-35}
-                      textAnchor="end"
-                      interval={0}
-                      height={80}
-                      stroke="rgba(255,255,255,0.1)"
-                    />
-                    <YAxis 
-                      tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 'bold' }} 
-                      stroke="rgba(255,255,255,0.1)"
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}
-                      itemStyle={{ color: 'var(--foreground)' }}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase' }} />
-                    <Bar dataKey="FDS" name="FDS" stackId="a" fill="#FFB800" radius={[0, 0, 4, 4]} />
-                    <Bar dataKey="RGB" name="RGB" stackId="a" fill="#38BDF8" />
-                    <Bar dataKey="Coaching" name="Coaching" stackId="a" fill="#10B981" />
-                    <Bar dataKey="Compass" name="Compass" stackId="a" fill="#A855F7" />
-                    <Bar dataKey="Quedas" name="Quedas" stackId="a" fill="#F43F5E" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Results List */}
-        <div className="space-y-4 pt-10">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <ListChecks className="w-3 h-3 text-[#FFB800]" />
-              Últimos Registros
-            </h3>
-            <span className="text-[10px] font-black text-muted-foreground/30">{filtradas.length} encontrados</span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            {filtradas.slice(0, 10).map((v, i) => (
-              <Card key={v.id || i} className="group bg-card dark:bg-card/20 hover:bg-[#FFB800]/5 transition-all border-border dark:border-white/5 hover:border-[#FFB800]/30 shadow-sm overflow-hidden">
-                <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-muted dark:bg-[#FFB800]/10 flex items-center justify-center shrink-0 border border-border dark:border-[#FFB800]/20 group-hover:scale-110 transition-transform">
-                      <span className="text-sm font-black text-foreground dark:text-[#FFB800]">{v.avaliador.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] font-black h-5 border-[#FFB800] text-[#FFB800] bg-[#FFB800]/5 shrink-0 px-2 uppercase">
-                          CÓD: {v.codigo_pdv}
-                        </Badge>
-                        <Badge variant="secondary" className="text-[9px] font-black h-5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/70 border-none px-2 uppercase flex items-center gap-1">
-                          <Trophy className="w-2.5 h-2.5 text-[#FFB800]" />
-                          {v.indicador_avaliado}
-                        </Badge>
-                        <span className="font-bold text-sm text-foreground truncate">{v.nome_fantasia_pdv}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4 text-[9px] text-muted-foreground font-bold mt-1.5 uppercase tracking-wider">
-                        <span className="flex items-center gap-1 shrink-0 text-[#FFB800]"><User className="w-3 h-3" /> {v.avaliador}</span>
-                        <span className="flex items-center gap-1 shrink-0"><Calendar className="w-3 h-3 opacity-50" /> {v.data_visita}</span>
-                        <span className="flex items-center gap-1 shrink-0"><MapPin className="w-3 h-3 opacity-50" /> {v.unidade}</span>
-                        <span className="text-foreground/50 border-l border-muted-foreground/20 pl-4 truncate">Vendedor: <span className="text-foreground">{v.nome_vendedor || '---'}</span></span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-4 text-[10px] font-black uppercase tracking-[0.1em] hover:bg-[#FFB800] hover:text-black transition-all bg-muted/20 dark:bg-white/5"
-                    onClick={() => setSelectedVisita(v)}
-                  >
-                    Ver Detalhes
-                    <ChevronRight className="w-3 h-3 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
+    )}
+
+        {/* 4. GESTÃO DE EQUIPE SECTION */}
+        {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4' || isAnalista) && (
+          <div className="space-y-6 pt-16 border-t border-muted/30">
+            <TeamHierarchyView 
+              visitas={visitasHierarchy} 
+              vendedores={usuarioFiltro === "todos" ? vendedoresBaseReal : vendedoresBaseReal.filter(v => 
+                v.nome_vendedor?.toUpperCase() === usuarioFiltro.toUpperCase() || 
+                v.nome_supervisor?.toUpperCase() === usuarioFiltro.toUpperCase() ||
+                v.gerente?.toUpperCase() === usuarioFiltro.toUpperCase() ||
+                v.gerente_comercial?.toUpperCase() === usuarioFiltro.toUpperCase()
+              )} 
+              userLevel={user?.nivel} 
+              userName={user?.name} 
+              userId={user?.id}
+              userUnidade={unidade === "todas" ? user?.unidade : unidade} 
+              userFuncao={user?.funcao}
+              searchTerm={usuarioFiltro}
+              onSelectVisita={setSelectedVisita}
+            />
+          </div>
+        )}
 
       {/* Modais Customizados */}
       <VisitaModalDialog selectedVisita={selectedVisita} onClose={() => setSelectedVisita(null)} />

@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { getQuestionsForIndicator, FormQuestion } from "@/lib/formulariosConfig";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { canalProdutosExecucao } from "@/lib/canalData";
 import { buscarFdsPorCanal, getConfiguracao } from "@/lib/api";
 import { INDICADORES_TIPO_RGB, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED } from "@/lib/roles";
 import { useAuth } from "@/contexts/AuthContext";

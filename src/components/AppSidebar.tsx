@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Equipe", url: "/performance-equipe", icon: Users },
   { title: "Nova Visita", url: "/nova-visita", icon: PlusCircle },
   { title: "Visita Retroativa", url: "/retroativa", icon: CalendarPlus },
   { title: "Gestão de Dados", url: "/admin-data", icon: Database },
@@ -77,7 +76,7 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 // Nível Master de SaaS não mistura operações de rua (ocultar relatórios)
                 if (isMaster) {
-                  if (item.title === "Dashboard" || item.title === "Equipe" || item.title === "Nova Visita" || item.title === "Visita Retroativa") return null;
+                  // Nível Master não vê nada operacional
                 } else {
                   const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
                   
@@ -88,11 +87,6 @@ export function AppSidebar() {
 
                    // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
                   if (item.title === "SaaS Admin") return null;
-
-                  // Ocultar aba Equipe apenas para quem não tem nível (Vendedores ou Deslogados)
-                  // Supervisores (Niv4) agora possuem acesso.
-                  const isNivelInexistente = !user?.nivel;
-                  if (item.title === "Equipe" && isNivelInexistente) return null;
                 }
 
                 return (

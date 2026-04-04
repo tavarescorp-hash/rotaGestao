@@ -23,3 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 Base_clientes_unibeer.xlsx
+Base_PDVS_Actual.csv
+Base_PDVS_Actual.xlsx
+*.mjs
+*.sql
+*.js
+!src/**/*.js
+!src/**/*.ts
+!src/**/*.tsx
+!vite.config.ts
+!tailwind.config.js
+!postcss.config.js
+!src/lib/supabase.ts
+!src/core/api/supabaseClient.ts

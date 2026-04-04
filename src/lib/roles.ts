@@ -36,7 +36,7 @@ export const getIndicadoresPorNivel = (nivel?: string | null): string[] => {
     const normalized = nivel.toUpperCase();
     let levelKey: NivelHieriaquico = "Niv5";
 
-    if (normalized.includes("NIV0") || normalized.includes("MASTER") || normalized.includes("ADMIN")) levelKey = "Niv0";
+    if (normalized.includes("NIV0") || normalized.includes("MASTER") || normalized.includes("ADMIN") || normalized.includes("ANALISTA")) levelKey = "Niv0";
     else if (normalized.includes("NIV1") || normalized.includes("DIRETOR") || normalized.includes("DIRETORIA")) levelKey = "Niv1";
     else if (normalized.includes("NIV2") || normalized.includes("GERENTE COMERCIAL")) levelKey = "Niv2";
     else if (normalized.includes("NIV3") || normalized.includes("GERENTE")) levelKey = "Niv3";

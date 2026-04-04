@@ -229,7 +229,7 @@ export function useDashboardMetrics(
       META_FDS = 20; 
       META_RGB = 10; 
       META_COACHING = 20;
-    } else if (user?.nivel === 'Niv4' || user?.email === 'carlos.junior@unibeer.com.br') {
+    } else if (user?.nivel === 'Niv4') {
       META_COACHING = 40;
       META_FDS = 10;
       META_RGB = 20;
@@ -308,11 +308,8 @@ export function useDashboardMetrics(
     
     // Usar o utilitário centralizado normalizeName para garantir consistência
     const uRaw = (user?.unidade || "").toUpperCase();
-    // TRUMP CARD: Se for Diego, independente do que está salvo no banco, é Macaé.
-    const isDiegos = normalizeName(user?.name || "").includes("diegomanhanini");
-    const isMacae = isDiegos || uRaw === "M" || uRaw.includes("MACA");
-    // Campos nunca pode ser se for Diego (evita colisão de dados sujos)
-    const isCampos = !isDiegos && (uRaw === "C" || uRaw.includes("CAMPOS"));
+    const isMacae = uRaw === "M" || uRaw.includes("MACA");
+    const isCampos = uRaw === "C" || uRaw.includes("CAMPOS");
 
     vendedoresBaseReal.forEach(v => {
       const isMyBranch = (isMacae && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACA'))) ||

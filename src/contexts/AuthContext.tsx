@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const formatRoleHelper = (funcao?: string, codigo?: string, nivel?: string) => {
         const mapping: Record<string, string> = {
-          "NIV0": "ADMINISTRADOR",
+          "NIV0": "ANALISTA",
           "NIV1": "DIRETOR", 
           "NIV2": "GERENTE COMERCIAL",
           "NIV3": "GERENTE DE VENDAS",
@@ -93,9 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         const levelNormalized = nivel?.toUpperCase().trim() || "";
         let cargoBase = "";
-        if (levelNormalized.includes("NIV0")) cargoBase = mapping["NIV0"];
-        else if (levelNormalized.includes("NIV1")) cargoBase = mapping["NIV1"];
-        else if (levelNormalized.includes("NIV2")) cargoBase = mapping["NIV2"];
+        if (levelNormalized.includes("NIV0") || levelNormalized.includes("ANALISTA")) cargoBase = mapping["NIV0"];
+        else if (levelNormalized.includes("NIV1") || levelNormalized.includes("DIRETOR")) cargoBase = mapping["NIV1"];
+        else if (levelNormalized.includes("NIV2") || levelNormalized.includes("GERENTE COMERCIAL")) cargoBase = mapping["NIV2"];
         else if (levelNormalized.includes("NIV3")) cargoBase = mapping["NIV3"];
         else if (levelNormalized.includes("NIV4")) cargoBase = mapping["NIV4"];
         else if (levelNormalized.includes("NIV5")) cargoBase = mapping["NIV5"];
@@ -112,19 +112,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return `${cargoBase}${codigo ? ` ${codigo}` : ""}`;
       };
 
-      // REGRA DE RESGATE (Self-Healing): Garantir que o Diego Manhanini seja Niv3 de Macaé
-      // mesmo que o perfil no Supabase esteja incompleto.
       const rawName = (profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "").toUpperCase();
-      const uNameNormal = normalizeName(rawName);
       
-      // Identificação Resiliente: Se contém DIEGO MANHANINI, ativa o resgate regional.
-      const isDiegoManhanini = uNameNormal.includes(normalizeName("DIEGO MANHANINI"));
-      
-      console.log(`🛡️ [AUTH] Validando Diego: ${rawName} (${uNameNormal}) -> ${isDiegoManhanini}`);
-      
-      const userNivel = isDiegoManhanini ? (profile?.nivel || "Niv3") : profile?.nivel;
-      const userUnidade = isDiegoManhanini ? (profile?.unidade || "M") : (profile?.unidade || (isMaster ? "TODAS" : ""));
-      const userFuncao = isDiegoManhanini ? (profile?.funcao || "GERENTE DE VENDAS") : profile?.funcao;
+      const userNivel = profile?.nivel;
+      const userUnidade = profile?.unidade || (isMaster ? "TODAS" : "");
+      const userFuncao = profile?.funcao;
 
       setUser({
         id: sessionUser.id,

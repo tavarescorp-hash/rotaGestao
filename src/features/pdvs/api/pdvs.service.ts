@@ -6,6 +6,7 @@ export interface VendedorAtivo {
   nome_vendedor: string;
   nome_supervisor?: string;
   codigo_sup?: string;
+  id_supervisor?: string | null;
   municipio?: string;
   filial?: string;
   gerente?: string;
@@ -74,19 +75,15 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     }
 
     if (user?.nivel === 'Niv4' && user?.name) {
-      let supNome = user.name.toUpperCase();
-      if (supNome === 'GUILHERME CHAGAS') supNome = 'GUILHERME DAS CHAGAS';
-      if (supNome === 'CARLOS JUNIOR') supNome = 'CARLOS TAVARES';
-      query = query.ilike('nome_supervisor', `%${supNome}%`);
+      query = query.ilike('nome_supervisor', `%${user.name.toUpperCase()}%`);
     } else if (user?.nivel === 'Niv3') {
-      let gerenteRef = user?.name ? user.name : null;
-      if (gerenteRef?.toUpperCase() === 'CARLOS JUNIOR') gerenteRef = 'CARLOS TAVARES';
-      if (gerenteRef?.toUpperCase() === 'GUILHERME CHAGAS') gerenteRef = 'GUILHERME DAS CHAGAS';
+      const gerenteRef = user?.name || null;
+      const uUnid = (user?.unidade || "").toUpperCase();
 
-      if (user?.unidade?.toUpperCase().includes("MACA")) {
-        query = query.or(`nome_gerente_vendas.eq.${gerenteRef},filial.eq.M,filial.ilike.%MACA%`);
-      } else if (user?.unidade?.toUpperCase().includes("CAMPOS")) {
-        query = query.or(`nome_gerente_vendas.eq.${gerenteRef},filial.eq.C,filial.ilike.%CAMPOS%`);
+      if (uUnid.includes("MACA") || uUnid === "M") {
+        query = query.or(`nome_gerente_vendas.eq."${gerenteRef}",filial.eq.M,filial.ilike.%MACA%`);
+      } else if (uUnid.includes("CAMPOS") || uUnid === "C") {
+        query = query.or(`nome_gerente_vendas.eq."${gerenteRef}",filial.eq.C,filial.ilike.%CAMPOS%`);
       }
     }
 
@@ -140,20 +137,14 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
   try {
     let supervisorId = null;
     if (user?.nivel === 'Niv4' && user?.name) {
-      // Uso de Wildcard % do SQL para superar divergências do tipo "Guilherme DAS Chagas" vs "guilherme.chagas"
       const cleaned = user.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, '%');
       supervisorId = `%${cleaned}%`;
-
-      if (supervisorId.includes('CARLOS%JUNIOR')) supervisorId = '%CARLOS%TAVARES%';
     }
 
     let gerenteRef: string | null = null;
     if ((user?.nivel === 'Niv3' || user?.nivel === 'Niv2') && user?.name) {
       const cleaned = user.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, '%');
       gerenteRef = `%${cleaned}%`;
-
-      if (gerenteRef.includes('CARLOS%JUNIOR')) gerenteRef = '%CARLOS%TAVARES%';
-      if (gerenteRef.includes('GUILHERME%CHAGAS')) gerenteRef = '%GUILHERME%DAS%CHAGAS%';
     }
 
     console.log(`📊 [DEBUG HIERARQUIA] User: ${user?.name} | Nível: ${user?.nivel} | GerenteRef: ${gerenteRef}`);
@@ -168,18 +159,17 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           return vend.nome_supervisor?.toUpperCase().includes(search);
         } else if (user?.nivel === 'Niv2' || user?.nivel === 'Niv3') {
           const gRef = (gerenteRef?.replace(/%/g, '') || "").toUpperCase();
-          const loginU = (user?.name || "").toUpperCase();
           const uUnid = (user?.unidade || "").toUpperCase();
-          
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || normalizeName(loginU).includes(normalizeName("DIEGO MANHANINI"));
-          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || loginU.includes("CAMPOS");
+
+          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 
           const matchesGerente = (vend.gerente_comercial?.toUpperCase()?.includes(gRef)) || (vend.gerente?.toUpperCase()?.includes(gRef));
-          
+
           const matchesFilial = (isMacaeUser && (vend.filial === 'M' || vend.filial?.toUpperCase().includes('MACAE'))) ||
-                               (isCamposUser && (vend.filial === 'C' || vend.filial?.toUpperCase().includes('CAMPOS'))) ||
-                               isMasterView;
+            (isCamposUser && (vend.filial === 'C' || vend.filial?.toUpperCase().includes('CAMPOS'))) ||
+            isMasterView;
 
           return matchesGerente || matchesFilial;
         }
@@ -189,7 +179,14 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       let queryVend = supabase.from("vendedores").select(`
         cod_vendedor,
         nome,
-        cidade
+        cidade,
+        supervisores (
+          id,
+          nome,
+          filial,
+          gerente,
+          gerente_comercial
+        )
       `);
 
       if (user?.empresa_id) {
@@ -236,127 +233,119 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         const sMatch = supervisorId.replace(/%/g, '').toUpperCase();
         formatado = formatado.filter(v => v.nome_supervisor?.toUpperCase().includes(sMatch));
       } else if (user?.nivel === 'Niv2' && gerenteRef) {
-        const gMatch = gerenteRef.replace(/%/g, '').toUpperCase();
         const uUnidRaw = String(user?.unidade || "");
         const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();
-        const loginU = (user?.name || "").toUpperCase();
-        
-        formatado = formatado.filter(v => {
-          const matchesGCom = v.gerente_comercial?.toUpperCase().includes(gMatch) ||
-            v.gerente?.toUpperCase().includes(gMatch);
+        const nMatch = normalizeName(gerenteRef.replace(/%/g, ''));
 
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || normalizeName(loginU).includes(normalizeName("DIEGO MANHANINI"));
-          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || loginU.includes("CAMPOS");
+        formatado = formatado.filter(v => {
+          const matchesGCom = normalizeName(v.gerente_comercial).includes(nMatch) ||
+            normalizeName(v.gerente).includes(nMatch);
+
+          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
-          
           const emptyUnid = uUnid === '' || uUnid === 'NULL' || uUnid === 'UNDEFINED';
 
           const matchesFilial = (isMacaeUser && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE'))) ||
-                               (isCamposUser && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'))) ||
-                               isMasterView;
+            (isCamposUser && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'))) ||
+            isMasterView;
 
           return matchesGCom || matchesFilial || emptyUnid;
         });
       } else if (user?.nivel === 'Niv3' && gerenteRef) {
-        const gMatch = gerenteRef.replace(/%/g, '').toUpperCase();
+        const nMatch = normalizeName(gerenteRef.replace(/%/g, ''));
         const uUnidRaw = String(user?.unidade || "");
         const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();
-        const loginU = (user?.name || "").toUpperCase();
-
-        console.log(`📊 [DATA_SERVICE] Iniciando Filtro Niv3 para ${user?.name}. Unidade: ${uUnid}. Ref: ${gMatch}`);
 
         formatado = formatado.filter(v => {
-          const nGerente = normalizeName(v.gerente);
-          const nMatch = normalizeName(gMatch);
-          const matchesGerente = nGerente.includes(nMatch);
-          
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || normalizeName(loginU).includes(normalizeName("DIEGO MANHANINI"));
-          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || normalizeName(loginU).includes(normalizeName("CAMPOS"));
+          const matchesGerente = normalizeName(v.gerente).includes(nMatch);
+          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 
-          // Acesso Exclusivo por Filial
           const matchesFilial = (isMacaeUser && (v.filial === 'M' || v.filial?.toUpperCase().includes('MACAE'))) ||
-                               (isCamposUser && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'))) ||
-                               isMasterView;
+            (isCamposUser && (v.filial === 'C' || v.filial?.toUpperCase().includes('CAMPOS'))) ||
+            isMasterView;
 
           return matchesGerente || matchesFilial;
         });
       }
 
       if ((user?.nivel === 'Niv1' || user?.nivel === 'Niv0' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || isAnalista) && gerenteRef) {
-        console.log("🚑 [DEBUG HIERARQUIA] Iniciando Busca Híbrida Aditiva (DataLake)...");
-
-        // Vamos baixar o bulk bruto e filtrar com segurança no Javascript para evitar falhas silenciosas do PostgREST (.or syntax crash)
+        // Buscamos os PDVs (DataLake) para complementar a hierarquia (Rescue Force)
         let dlQuery = supabase.from("pdvs")
-          .select('cod_vendedor, codigo, nome_vendedor, nome_supervisor, cod_supervisor, filial, nome_gerente_vendas, nome_gerente_comercial')
-          .limit(6000);
-        
+          .select('cod_vendedor, codigo, nome_vendedor, nome_supervisor, id_supervisor, cod_supervisor, filial, nome_gerente_vendas, nome_gerente_comercial')
+          .limit(4000);
+
         if (user?.empresa_id) dlQuery = dlQuery.eq('empresa_id', user.empresa_id);
 
         const { data: pdvData, error: errRescue } = await dlQuery;
 
-        if (errRescue) {
-           console.error("Erro fatal no DataLake Rescue:", errRescue);
-        }
-
         if (pdvData && pdvData.length > 0) {
-          const gMatch = (gerenteRef || "").replace(/%/g, '').toUpperCase();
+          const nMatchStr = normalizeName(gerenteRef.replace(/%/g, ''));
           const uUnidRaw = String(user?.unidade || "");
           const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();
-          const loginU = (user?.name || "").toUpperCase();
+          const loginNormal = normalizeName(user?.name || "");
 
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || normalizeName(loginU).includes("diegomanhanini");
-          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || normalizeName(loginU).includes("campos");
+          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || loginNormal.includes("diegomanhanini");
+          const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || loginNormal.includes("campos");
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 
           const pdvFiltrado = pdvData.filter((p: any) => {
-             const nSales = normalizeName(p.nome_gerente_vendas);
-             const nComercial = normalizeName(p.nome_gerente_comercial);
-             const nMatch = normalizeName(gMatch);
-             const matchesGerente = nSales.includes(nMatch) || nComercial.includes(nMatch);
-             
-             const matchesFilial = (isMacaeUser && (p.filial === 'M' || p.filial?.toUpperCase().includes('MACA'))) ||
-                                  (isCamposUser && (p.filial === 'C' || p.filial?.toUpperCase().includes('CAMPOS'))) ||
-                                  isMasterView;
+            const matchesId = p.id_supervisor && user?.id && p.id_supervisor === user.id;
+            if (matchesId) return true;
 
-             return matchesGerente || matchesFilial;
+            const nSales = normalizeName(p.nome_gerente_vendas || "");
+            const nComercial = normalizeName(p.nome_gerente_comercial || "");
+            const matchesGerente = nSales.includes(nMatchStr) || nComercial.includes(nMatchStr);
+
+            // 1. Prioridade: Se o nome do gerente bate com o filtro (Auditoria), INCLUA independente da filial.
+            // Isso resolve o caso do Diego Manhanini que tem PDVs em Macaé (M) e Campos (C).
+            if (matchesGerente) return true;
+
+            // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial original do usuário
+            const matchesFilial = (isMacaeUser && (p.filial === 'M' || p.filial?.toUpperCase().includes('MACAE'))) ||
+              (isCamposUser && (p.filial === 'C' || p.filial?.toUpperCase().includes('CAMPOS'))) ||
+              isMasterView;
+
+            return matchesFilial;
           });
 
-          if (isMacaeUser && pdvFiltrado.length === 0 && pdvData.length > 0) {
-            console.warn("🛡️ [ALERTA] Filtro de Macaé retornou ZERO mesmo com dados no banco. Forçando inclusão por Filial...");
-            // Fallback nuclear: se fôr Diego/Macaé e o filtro falhou, pega tudo que fôr 'M'
-            pdvData.filter(p => p.filial === 'M').forEach(p => pdvFiltrado.push(p));
+          // Rescue Force Macaé: Garante que o Diego Manhanini apareça para usuários de Macaé mesmo sem auditoria ativa
+          if (isMacaeUser && pdvData.length > 0) {
+            pdvData.forEach(p => {
+              const isDiegoPdv = normalizeName(p.nome_gerente_vendas || "").includes("diegomanhanini");
+              if (isDiegoPdv && !pdvFiltrado.some(pf => pf.codigo === p.codigo)) {
+                pdvFiltrado.push(p);
+              }
+            });
           }
 
-          console.log(`🚑 [DEBUG HIERARQUIA] Resgatados pós-filtro na RAM: ${pdvFiltrado.length} records.`);
           const vMap = new Map<string, VendedorAtivo>();
+          formatado.forEach(v => vMap.set(v.cod_vendedor || v.nome_vendedor, v));
 
-          // 1. Prioridade para o que já estava formatado (Cadastro Oficial)
-          // Se fôr usuário de Macaé, ignoramos o 'vendedores' oficial para evitar vazamentos de Campos
-          if (!isMacaeUser) {
-            formatado.forEach(v => vMap.set(v.cod_vendedor || v.nome_vendedor, v));
-          }
-
-          // 2. Complemento via PDVs (Data Lake)
           pdvFiltrado.forEach(p => {
-            if (!vMap.has(p.cod_vendedor)) {
-              vMap.set(p.cod_vendedor, {
-                cod_vendedor: p.cod_vendedor || p.codigo,
-                nome_vendedor: p.nome_vendedor || "VENDEDOR " + (p.cod_vendedor || p.codigo || "MACAÉ"),
-                nome_supervisor: (p.nome_supervisor || "").replace(/[\n\r]/g, '').trim(),
+            const vKey = p.cod_vendedor || p.codigo;
+            if (!vMap.has(vKey)) {
+              vMap.set(vKey, {
+                cod_vendedor: vKey,
+                nome_vendedor: p.nome_vendedor || "VENDEDOR " + (vKey || ""),
+                nome_supervisor: (p.nome_supervisor || "").replace(/[\n\r]/g, ' ').trim() || "SEM SUPERVISOR",
                 codigo_sup: p.cod_supervisor?.toString() || "",
+                id_supervisor: p.id_supervisor,
                 filial: (p.filial || "").replace(/[\n\r]/g, '').trim(),
-                gerente: (p.nome_gerente_vendas || "").replace(/[\n\r]/g, '').trim(),
-                gerente_comercial: (p.nome_gerente_comercial || "").replace(/[\n\r]/g, '').trim()
+                gerente: (p.nome_gerente_vendas || "").replace(/[\n\r]/g, ' ').trim(),
+                gerente_comercial: (p.nome_gerente_comercial || "").replace(/[\n\r]/g, ' ').trim()
               });
             }
           });
           formatado = Array.from(vMap.values());
-          console.log(`🚑 [DEBUG HIERARQUIA] Fusão concluída: ${formatado.length} vnds totais.`);
         }
       }
 
-      console.log(`📊 [DEBUG HIERARQUIA] Pós-Filtro: ${formatado.length} vnds`);
+      const diegoFound = formatado.filter(v => normalizeName(v.gerente).includes("diegomanhanini"));
+      console.log(`📊 [DEBUG_DIEGO] Registros para Diego Manhanini encontrados: ${diegoFound.length}`);
+
       return formatado;
     }
   } catch (error) {

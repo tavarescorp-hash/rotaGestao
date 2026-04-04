@@ -16,33 +16,37 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
 
   return (
     <Dialog open={!!selectedVisita} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0 border-primary/20 bg-background/95 backdrop-blur-xl">
-        <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/30">
-          <div className="flex items-start justify-between">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0 border-none bg-background/95 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl">
+        <DialogHeader className="p-8 pb-6 border-b border-border/10 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary shadow-inner">
+              <ClipboardList className="w-7 h-7" />
+            </div>
             <div>
-              <DialogTitle className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-                <ClipboardList className="w-6 h-6 text-primary" />
+              <DialogTitle className="text-2xl font-black tracking-tight text-foreground">
                 Detalhes do Registro
               </DialogTitle>
-              <DialogDescription className="mt-1 font-medium">
+              <DialogDescription className="mt-1 font-black text-[10px] uppercase tracking-[0.2em] opacity-50 flex items-center gap-2">
                 {(() => {
                   const [a, m, d] = (selectedVisita.data_visita || "").split("-");
                   return a && m && d ? `${d}/${m}/${a}` : selectedVisita.data_visita;
-                })()} • {selectedVisita?.unidade}
+                })()} 
+                <span className="w-1 h-1 rounded-full bg-primary" />
+                {selectedVisita?.unidade}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
-          <div className="space-y-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+          <div className="space-y-8 pb-8">
 
-            <div className="bg-card border border-border/50 p-6 rounded-xl shadow-sm space-y-5">
-              {/* Linha 1 */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/30">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Data da Visita</span>
-                  <span className="text-sm font-bold flex items-center gap-2">
+            <div className="bg-card/40 border border-border/40 p-6 rounded-[2rem] shadow-sm space-y-6">
+              {/* Linha 1: Info Base */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pb-6 border-b border-border/10">
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Data</span>
+                  <span className="text-sm font-black flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
                     {(() => {
                       const [a, m, d] = (selectedVisita.data_visita || "").split("-");
@@ -50,60 +54,60 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
                     })()}
                   </span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Unidade</span>
-                  <span className="text-sm font-semibold flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Unidade</span>
+                  <span className="text-sm font-black flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
                     {selectedVisita.unidade}
                   </span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Avaliador</span>
-                  <span className="text-sm font-semibold">{selectedVisita.avaliador}</span>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Avaliador</span>
+                  <span className="text-sm font-black text-foreground/80">{selectedVisita.avaliador}</span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Cargo</span>
-                  <Badge variant="secondary" className="text-[10px] font-bold py-0.5">{selectedVisita.cargo}</Badge>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Cargo</span>
+                  <Badge variant="secondary" className="text-[9px] font-black py-1 bg-primary/10 text-primary border-none uppercase">{selectedVisita.cargo}</Badge>
                 </div>
               </div>
 
-              {/* Linha 2 */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/30">
-                <div className="col-span-2 lg:col-span-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Vendedor Rep.</span>
-                  <span className="text-sm font-semibold">
-                    {selectedVisita.codigo_vendedor ? `${selectedVisita.codigo_vendedor} - ${selectedVisita.nome_vendedor}` : selectedVisita.nome_vendedor || "-"}
+              {/* Linha 2: PDV & Vendedor */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pb-6 border-b border-border/10">
+                <div className="col-span-2 lg:col-span-1 space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Vendedor</span>
+                  <span className="text-sm font-black truncate block">
+                    {selectedVisita.nome_vendedor || "-"}
                   </span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Código PDV</span>
-                  <span className="text-sm font-mono font-bold bg-muted/50 px-2 py-0.5 rounded">{selectedVisita.codigo_pdv}</span>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Código PDV</span>
+                  <span className="text-sm font-black text-primary font-mono bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 inline-block">{selectedVisita.codigo_pdv}</span>
                 </div>
-                <div className="col-span-2 lg:col-span-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Nome Fantasia do PDV</span>
-                  <span className="text-sm font-bold truncate block" title={selectedVisita.nome_fantasia_pdv}>
+                <div className="col-span-2 lg:col-span-1 space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">PDV</span>
+                  <span className="text-sm font-black truncate block" title={selectedVisita.nome_fantasia_pdv}>
                     {selectedVisita.nome_fantasia_pdv}
                   </span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Potencial Cliente</span>
-                  <span className="text-sm font-semibold">{selectedVisita.potencial_cliente || "-"}</span>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Potencial</span>
+                  <span className="text-sm font-black">{selectedVisita.potencial_cliente || "-"}</span>
                 </div>
               </div>
 
-              {/* Linha 3 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Canal Cadastrado</span>
-                  <span className="text-sm font-semibold">{selectedVisita.canal_cadastrado || "-"}</span>
+              {/* Linha 3: Canais e Indicador */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Canal Cad.</span>
+                  <span className="text-sm font-black opacity-80">{selectedVisita.canal_cadastrado || "-"}</span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Canal Identificado</span>
-                  <span className="text-sm font-semibold">{selectedVisita.canal_identificado || selectedVisita.canal_cadastrado || "-"}</span>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest block">Canal Ident.</span>
+                  <span className="text-sm font-black opacity-80">{selectedVisita.canal_identificado || selectedVisita.canal_cadastrado || "-"}</span>
                 </div>
-                <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 -mt-2">
-                  <span className="text-[10px] uppercase font-bold text-primary block mb-1">Indicador Avaliado</span>
-                  <Badge className="bg-primary text-primary-foreground font-bold shadow-sm whitespace-normal text-center w-full block">
+                <div className="bg-primary/10 p-4 rounded-2xl border border-primary/20">
+                  <span className="text-[9px] uppercase font-black text-primary block mb-2 tracking-widest">Indicador Avaliado</span>
+                  <Badge className="bg-primary text-black font-black shadow-lg text-[10px] uppercase py-1.5 w-full block text-center rounded-xl border-none">
                     {selectedVisita.indicador_avaliado}
                   </Badge>
                 </div>
@@ -111,7 +115,7 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
             </div>
 
             {/* Dinâmico por Tipo de Visita */}
-            <div className="space-y-6 pt-4 border-t border-border/50">
+            <div className="space-y-8">
               {(() => {
                 const indicadorUpper = (selectedVisita.indicador_avaliado || "").toUpperCase().trim();
                 const isCoaching = REQUER_COACHING.some(rc => indicadorUpper.includes(rc.toUpperCase().trim()));
@@ -119,74 +123,64 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
 
                 return (
                   <>
-                    {/* 1. Questionário Dinâmico (Se houver) */}
+                    {/* 1. Questionário Dinâmico */}
                     {selectedVisita.respostas_json_dynamic && Object.keys(selectedVisita.respostas_json_dynamic).length > 0 && (
-                      <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3 mb-6">
-                        <h4 className="text-sm font-extrabold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
-                          📋 Questionário: {selectedVisita.indicador_avaliado}
+                      <div className="bg-card/40 border border-border/40 p-6 rounded-[2rem] space-y-4">
+                        <h4 className="text-xs font-black text-primary mb-4 uppercase tracking-[0.2em] flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"><ClipboardList className="w-4 h-4" /></div>
+                          Questionário: {selectedVisita.indicador_avaliado}
                         </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {(() => {
                           const qs = getQuestionsForIndicator(selectedVisita.indicador_avaliado || "");
                           return qs.map(q => {
                             const answer = selectedVisita.respostas_json_dynamic?.[q.id];
                             if (!answer) return null;
                             return (
-                              <div key={q.id}>
-                                <span className="text-xs font-bold text-muted-foreground block">{q.label}</span>
-                                <span className="text-sm font-semibold">{answer}</span>
+                              <div key={q.id} className="bg-background/40 p-3 rounded-xl border border-border/20">
+                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">{q.label}</span>
+                                <span className="text-sm font-black text-foreground/90">{answer}</span>
                               </div>
                             );
                           });
                         })()}
+                        </div>
                       </div>
                     )}
 
                     {/* 2. Seção FDS / RGB (Mix e Execução) */}
                     {isProdExec && (
-                      <div className="space-y-6">
-                        {/* Questionário Tradicional (Retrocompatibilidade) */}
-                        {!selectedVisita.respostas_json_dynamic && (
-                          <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl space-y-3 mb-6">
-                            <h4 className="text-sm font-extrabold text-yellow-600 dark:text-yellow-400 mb-3 uppercase tracking-widest">
-                              📋 Questionário de Execução
-                            </h4>
-                            {selectedVisita.fds_qtd_skus && <div><span className="text-xs font-bold text-muted-foreground block">SKUs no PDV</span><span className="text-sm font-semibold">{selectedVisita.fds_qtd_skus}</span></div>}
-                            {selectedVisita.fds_refrigerador && <div><span className="text-xs font-bold text-muted-foreground block">Possui Refrigerador?</span><span className="text-sm font-semibold">{selectedVisita.fds_refrigerador}</span></div>}
-                            {selectedVisita.fds_posicionamento && <div><span className="text-xs font-bold text-muted-foreground block">Posicionamento Cia</span><span className="text-sm font-semibold">{selectedVisita.fds_posicionamento}</span></div>}
-                            {selectedVisita.fds_precificados && <div><span className="text-xs font-bold text-muted-foreground block">Precificados?</span><span className="text-sm font-semibold">{selectedVisita.fds_precificados}</span></div>}
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            Mix Padrão Localizado
+                      <div className="space-y-8">
+                        <div className="flex items-center justify-between px-2">
+                          <h4 className="text-xs font-black text-foreground flex items-center gap-3 uppercase tracking-[0.2em]">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>
+                            Mix e Execução
                           </h4>
-                          <Badge variant="outline" className="font-bold border-primary shadow-sm">
-                            Score: {selectedVisita.pontuacao_total} pts
+                          <Badge className="font-black bg-emerald-500 text-black shadow-lg rounded-xl px-4 py-1.5 border-none">
+                            SCORE: {selectedVisita.pontuacao_total} PTS
                           </Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-4 rounded-xl bg-card border border-border/40">
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Produtos ({selectedVisita.produtos_selecionados ? selectedVisita.produtos_selecionados.split(";").length : 0})</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="p-6 rounded-[2rem] bg-card/40 border border-border/40 shadow-sm">
+                            <span className="text-[9px] uppercase font-black text-muted-foreground/60 mb-4 block tracking-[0.2em]">Produtos Localizados</span>
                             {selectedVisita.produtos_selecionados ? (
-                              <ul className="space-y-1.5 text-sm">
+                              <ul className="space-y-2.5">
                                 {selectedVisita.produtos_selecionados.split("; ").map((p, idx) => (
-                                  <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />{p}</li>
+                                  <li key={idx} className="flex items-center gap-3 text-sm font-black text-foreground/80"><div className="w-2 h-2 rounded-full bg-primary shrink-0 shadow-[0_0_8px_rgba(255,184,0,0.4)]" />{p}</li>
                                 ))}
                               </ul>
-                            ) : (<span className="text-sm text-muted-foreground font-medium italic">Nenhum produto listado</span>)}
+                            ) : (<span className="text-sm text-muted-foreground font-black italic opacity-40">Nenhum produto listado</span>)}
                           </div>
-                          <div className="p-4 rounded-xl bg-card border border-border/40">
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground mb-3 block">Execução ({selectedVisita.execucao_selecionada ? selectedVisita.execucao_selecionada.split(";").length : 0})</span>
+                          <div className="p-6 rounded-[2rem] bg-card/40 border border-border/40 shadow-sm">
+                            <span className="text-[9px] uppercase font-black text-muted-foreground/60 mb-4 block tracking-[0.2em]">Ativos de Execução</span>
                             {selectedVisita.execucao_selecionada ? (
-                              <ul className="space-y-1.5 text-sm">
+                              <ul className="space-y-2.5">
                                 {selectedVisita.execucao_selecionada.split("; ").map((e, idx) => (
-                                  <li key={idx} className="flex items-start gap-2 text-foreground/80 font-medium"><div className="w-1.5 h-1.5 rounded-full bg-secondary-foreground/30 mt-1.5 shrink-0" />{e}</li>
+                                  <li key={idx} className="flex items-center gap-3 text-sm font-black text-foreground/80"><div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(56,189,248,0.4)]" />{e}</li>
                                 ))}
                               </ul>
-                            ) : (<span className="text-sm text-muted-foreground font-medium italic">Nenhuma execução listada</span>)}
+                            ) : (<span className="text-sm text-muted-foreground font-black italic opacity-40">Nenhuma execução listada</span>)}
                           </div>
                         </div>
                       </div>
@@ -194,35 +188,36 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
 
                     {/* 3. Seção específica de COACHING */}
                     {isCoaching && (
-                      <div className="space-y-6">
+                      <div className="space-y-8">
                         <div>
-                          <h4 className="text-sm font-extrabold text-blue-500 mb-3 flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4" /> Passos da Rotina Básica Realizados
+                          <h4 className="text-xs font-black text-blue-500 mb-5 flex items-center gap-3 uppercase tracking-[0.2em]">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center"><CheckCircle2 className="w-4 h-4" /></div>
+                            Passos da Rotina Básica
                           </h4>
-                          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                          <div className="p-6 rounded-[2rem] bg-blue-500/5 border border-blue-500/10 shadow-sm">
                             {selectedVisita.passos_coaching ? (
-                              <ul className="space-y-2 text-sm">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {selectedVisita.passos_coaching.split("; ").map((p, idx) => (
-                                  <li key={idx} className="flex items-start gap-2 font-semibold text-foreground/80">
-                                    {p.includes("Não realizou") ? <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" /> : <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />}
-                                    {p}
-                                  </li>
+                                  <div key={idx} className="flex items-center gap-3 p-3 bg-background/40 rounded-2xl border border-blue-500/10">
+                                    {p.includes("Não realizou") ? <XCircle className="w-4 h-4 text-destructive shrink-0" /> : <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />}
+                                    <span className="text-xs font-black text-foreground/80 tracking-tight">{p}</span>
+                                  </div>
                                 ))}
-                              </ul>
-                            ) : (<span className="text-sm text-muted-foreground italic">Nada computado</span>)}
+                              </div>
+                            ) : (<span className="text-sm text-muted-foreground italic font-black opacity-40">Nada computado</span>)}
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <span className="text-xs font-bold uppercase tracking-widest text-green-500">Pontos Fortes</span>
-                            <div className="p-4 text-sm font-medium bg-green-500/5 rounded-xl border border-green-500/20 min-h-[100px] whitespace-pre-wrap">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 px-2">Pontos Fortes</span>
+                            <div className="p-6 text-sm font-black text-foreground/80 bg-emerald-500/5 rounded-[2rem] border border-emerald-500/10 min-h-[120px] shadow-inner whitespace-pre-wrap leading-relaxed">
                               {selectedVisita.pontos_fortes || "-"}
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <span className="text-xs font-bold uppercase tracking-widest text-destructive">Pontos a Desenvolver</span>
-                            <div className="p-4 text-sm font-medium bg-destructive/5 rounded-xl border border-destructive/20 min-h-[100px] whitespace-pre-wrap">
+                          <div className="space-y-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-destructive px-2">A Desenvolver</span>
+                            <div className="p-6 text-sm font-black text-foreground/80 bg-destructive/5 rounded-[2rem] border border-destructive/10 min-h-[120px] shadow-inner whitespace-pre-wrap leading-relaxed">
                               {selectedVisita.pontos_desenvolver || "-"}
                             </div>
                           </div>
@@ -234,14 +229,14 @@ export function VisitaModalDialog({ selectedVisita, onClose, actionFooter }: Vis
               })()}
             </div>
 
-            {/* Observações Gerais (Sempre visível se houver) */}
+            {/* Observações Gerais */}
             {selectedVisita.observacoes && (
-              <div className="pt-6 border-t border-border/50">
-                <h4 className="text-sm font-extrabold text-foreground mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-orange-400" />
-                  Observações Finais / Plano de Ação
+              <div className="pt-8 border-t border-border/10">
+                <h4 className="text-xs font-black text-foreground mb-4 flex items-center gap-3 uppercase tracking-[0.2em]">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center"><AlertCircle className="w-4 h-4 text-amber-500" /></div>
+                  Plano de Ação / Obs
                 </h4>
-                <div className="p-4 rounded-xl bg-orange-400/5 border border-orange-400/20 text-sm font-medium text-foreground/80 italic leading-relaxed whitespace-pre-wrap">
+                <div className="p-6 rounded-[2rem] bg-amber-500/5 border border-amber-500/10 text-sm font-black text-foreground/70 italic leading-relaxed whitespace-pre-wrap shadow-inner">
                   "{selectedVisita.observacoes}"
                 </div>
               </div>

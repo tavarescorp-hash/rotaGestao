@@ -91,35 +91,44 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
   };
 
   const tryInsert = async (currentPayload: any, attempt: number = 1): Promise<{ success: boolean; message: string; offline?: boolean }> => {
-    if (attempt > 5) throw new Error("Muitas tentativas de salvamento sem sucesso.");
+    // Aumentado drasticamente para auto-curar todas colunas caso o banco seja novo (SaaS 2.0 schema)
+    if (attempt > 40) throw new Error("Muitas tentativas de salvamento sem sucesso.");
 
     const { error } = await supabase.from("visitas").insert([currentPayload]);
 
     if (error) {
-      // Detectar erro de coluna inexistente
       const isMissingColumn = error.code === 'PGRST204' || 
                               error.message?.includes('column') || 
-                              error.message?.includes('schema cache');
+                              error.message?.includes('schema cache') ||
+                              error.message?.includes('field');
 
       if (isMissingColumn) {
-        // Tentar extrair o nome da coluna do erro (ex: Could not find the 'column_name' column)
-        const match = error.message?.match(/column ['"](.+?)['"]/);
+        // Exemplo: "Could not find the 'avaliador' column of 'visitas' in the schema cache"
+        const match = error.message?.match(/'([^']+)' column/) || error.message?.match(/column ['"](.+?)['"]/);
         const missingColumn = match ? match[1] : null;
 
-        if (missingColumn && currentPayload[missingColumn] !== undefined) {
-          console.warn(`⚠️ Coluna [${missingColumn}] não encontrada. Removendo e tentando novamente...`);
-          const { [missingColumn]: _, ...nextPayload } = currentPayload;
+        if (missingColumn && missingColumn in currentPayload) {
+          console.warn(`⚠️ Coluna [${missingColumn}] não encontrada. Movendo para fallback JSON e tentando novamente...`);
+          const { [missingColumn]: missingValue, ...nextPayload } = currentPayload;
+          
+          // Preserva o dado na coluna JSON genérica 'respostas' se ela existir no db, ou falha gracefully
+          if (!nextPayload.respostas) nextPayload.respostas = {};
+          if (typeof nextPayload.respostas === 'object') {
+             nextPayload.respostas[missingColumn] = missingValue;
+          }
+
           return tryInsert(nextPayload, attempt + 1);
         } else {
-          // Fallback cego: remover id_avaliador ou respostas_json_dynamic se existirem
-          console.warn("⚠️ Erro de coluna desconhecido. Removendo campos opcionais conhecidos...");
-          const { id_avaliador, respostas_json_dynamic, execucao_nao_selecionada, ...safePayload } = currentPayload;
+          // Último recurso
+          console.warn("⚠️ Erro de coluna desconhecido. Removendo campos problemáticos conhecidos...");
+          const { id_avaliador, respostas_json_dynamic, respostas, execucao_nao_selecionada, ...safePayload } = currentPayload;
+          if (Object.keys(safePayload).length === Object.keys(currentPayload).length) throw error; 
           return tryInsert(safePayload, attempt + 1);
         }
       }
       throw error;
     }
-    return { success: true, message: attempt > 1 ? "Visita salva (Modo de Compatibilidade)!" : "Visita salva com sucesso!" };
+    return { success: true, message: attempt > 1 ? "Visita salva (Estrutura Auto-Corrigida)!" : "Visita salva com sucesso!" };
   };
 
   try {
@@ -174,7 +183,13 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    
+    // Auto-flatten para manter a UI 100% compátivel caso variáveis estejam dentro de 'respostas'
+    return (data || []).map(v => ({
+      ...v,
+      ...(typeof v.respostas === 'object' ? v.respostas : {}),
+      ...(typeof v.respostas_json_dynamic === 'object' ? v.respostas_json_dynamic : {})
+    }));
   } catch (error) {
     console.error("Erro ao buscar visitas:", error);
     return [];
@@ -196,7 +211,12 @@ export async function buscarVisitasPendentes(user?: any): Promise<Visita[]> {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(v => ({
+      ...v,
+      ...(typeof v.respostas === 'object' ? v.respostas : {}),
+      ...(typeof v.respostas_json_dynamic === 'object' ? v.respostas_json_dynamic : {})
+    }));
   } catch (error) {
     console.error("Erro ao buscar visitas pendentes:", error);
     return [];

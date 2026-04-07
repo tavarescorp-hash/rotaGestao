@@ -8,8 +8,6 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
 
     let canalBusca = normalize(canal);
 
-    // Ajuste de Normalização: Garantir que variações comuns de entrada para entretenimento coincidam.
-    // O banco de dados está como 'Entretenimento Espec' (sem ponto).
     if (canalBusca.includes("entretenimento esp")) {
       canalBusca = "entretenimento espec";
     }
@@ -27,7 +25,7 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
     } else {
       let query = supabase
         .from("produtos_fds")
-        .select('"CANAL", "PRODUTO", "PONTOS", "EXECUCAO"');
+        .select('*');
 
       const res = await query;
       if (res.error) {
@@ -37,20 +35,39 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
       data = res.data;
     }
 
+    // Helper to get field case-insensitively since CSV imports often change the case
+    const getField = (obj: any, fieldName: string) => {
+      const key = Object.keys(obj).find(k => k.toLowerCase() === fieldName.toLowerCase());
+      return key ? obj[key] : undefined;
+    };
+
     const dataFiltrada = data.filter((row: any) => {
-      if (!row.CANAL) return false;
-      return normalize(row.CANAL) === canalBusca;
+      const canalRow = getField(row, 'canal');
+      if (!canalRow) return false;
+      return normalize(String(canalRow)) === canalBusca;
     });
 
     const produtosRaw = dataFiltrada
-      .filter((row: any) => row.PRODUTO && row.PRODUTO.trim() !== "")
-      .map((row: any) => ({ nome: row.PRODUTO.trim(), pontos: row.PONTOS || 0 }));
+      .filter((row: any) => {
+        const prod = getField(row, 'produto');
+        return prod && String(prod).trim() !== "";
+      })
+      .map((row: any) => ({ 
+        nome: String(getField(row, 'produto')).trim(), 
+        pontos: parseInt(getField(row, 'pontos')) || 0 
+      }));
 
     const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values()) as { nome: string, pontos: number }[];
 
     const execucaoRaw = dataFiltrada
-      .filter((row: any) => row.EXECUCAO && row.EXECUCAO.trim() !== "")
-      .map((row: any) => ({ nome: row.EXECUCAO.trim(), pontos: row.PONTOS || 0 }));
+      .filter((row: any) => {
+        const exec = getField(row, 'execucao');
+        return exec && String(exec).trim() !== "";
+      })
+      .map((row: any) => ({ 
+        nome: String(getField(row, 'execucao')).trim(), 
+        pontos: parseInt(getField(row, 'pontos')) || 0 
+      }));
 
     const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values()) as { nome: string, pontos: number }[];
 

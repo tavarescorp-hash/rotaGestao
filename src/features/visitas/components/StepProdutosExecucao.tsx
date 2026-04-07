@@ -343,6 +343,12 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {produto.nome}
                       </span>
+                      <Badge 
+                        variant="outline" 
+                        className={`ml-auto font-bold text-xs shrink-0 ${isChecked ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background/50 text-muted-foreground'}`}
+                      >
+                        {produto.pontos} PTS
+                      </Badge>
 
                     </label>
                   );
@@ -389,6 +395,12 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {item.nome}
                       </span>
+                      <Badge 
+                        variant="outline" 
+                        className={`ml-auto font-bold text-xs shrink-0 ${isChecked ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background/50 text-muted-foreground'}`}
+                      >
+                        {item.pontos} PTS
+                      </Badge>
 
                     </label>
                   );

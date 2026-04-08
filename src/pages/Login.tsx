@@ -72,7 +72,7 @@ const Login = () => {
       } else {
         toast({
           title: "Erro de autenticação",
-          description: "Email ou senha incorretos, ou credenciais não encontradas no Supabase.",
+          description: "Email ou senha incorretos.",
           variant: "destructive",
         });
       }

@@ -94,13 +94,13 @@ export async function processOfflineQueue(): Promise<{ successCount: number; fai
 
   for (const item of pendingQueue) {
     try {
-      // O item atual modela uma "Visita". Se no futuro houverem outras tabelas, precisaremos de um discriminador (ex: action_type)
       const { id, _localTimestamp, ...payloadToInsert } = item;
+      
+      const { enviarVisita } = await import('@/features/visitas/api/visitas.service');
+      const result = await enviarVisita(payloadToInsert as any);
 
-      const { error } = await supabase.from("visitas").insert([payloadToInsert]);
-
-      if (error) {
-        console.error("Falha ao sincronizar item pendente", error);
+      if (!result.success && !result.offline) {
+        console.error("Falha ao sincronizar item pendente", result.message);
         failCount++;
       } else {
         await deleteFromDB(STORES.OFFLINE_QUEUE, id);

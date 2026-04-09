@@ -52,19 +52,19 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
   useEffect(() => {
     if (searchTerm && searchTerm !== "todos") {
       const s = searchTerm.toUpperCase().trim();
-      const match = vendedores.find(v => 
-        v.nome_supervisor?.toUpperCase() === s || 
-        v.gerente?.toUpperCase() === s || 
+      const match = vendedores.find(v =>
+        v.nome_supervisor?.toUpperCase() === s ||
+        v.gerente?.toUpperCase() === s ||
         v.gerente_comercial?.toUpperCase() === s
       );
-      
+
       if (match) {
         if (match.nome_supervisor?.toUpperCase() === s) setFiltroLider({ name: match.nome_supervisor, type: 'SUP' });
         else if (match.gerente?.toUpperCase() === s) setFiltroLider({ name: match.gerente, type: 'GV' });
         else if (match.gerente_comercial?.toUpperCase() === s) setFiltroLider({ name: match.gerente_comercial, type: 'GCOM' });
       }
     } else if (searchTerm === "todos") {
-       setFiltroLider(null);
+      setFiltroLider(null);
     }
   }, [searchTerm, vendedores]);
 
@@ -107,14 +107,14 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
   const listaGerentes = useMemo(() => {
     const nomes = new Set<string>();
     const filterNormal = filtroLider?.type === 'GCOM' ? normalizeName(filtroLider.name) : null;
-    
+
     vendedores.forEach(v => {
-       if (v.gerente) {
-         const vGComNormal = normalizeName(v.gerente_comercial);
-         if (!filterNormal || vGComNormal.includes(filterNormal)) {
-           nomes.add(v.gerente.trim());
-         }
-       }
+      if (v.gerente) {
+        const vGComNormal = normalizeName(v.gerente_comercial);
+        if (!filterNormal || vGComNormal.includes(filterNormal)) {
+          nomes.add(v.gerente.trim());
+        }
+      }
     });
 
     const list = Array.from(nomes).sort();
@@ -125,7 +125,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
   const listaSupervisores = useMemo(() => {
     const nomes = new Set<string>();
     const filterNormal = filtroLider?.type === 'GV' ? normalizeName(filtroLider.name) : null;
-    
+
     vendedores.forEach(v => {
       if (v.nome_supervisor) {
         const vGerenteNormal = normalizeName(v.gerente);
@@ -190,7 +190,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
   const CompactCard = ({ name, type }: { name: string, type: 'GCOM' | 'GV' | 'SUP' }) => {
     const stats = metricsByEvaluator[normalizeName(name)] || { fds: 0, rgb: 0, coaching: 0 };
     return (
-      <div 
+      <div
         onClick={() => setFiltroLider({ name, type })}
         className="bg-card/40 border border-border/40 p-4 rounded-2xl flex items-center justify-between group transition-all cursor-pointer hover:border-primary/50 hover:bg-card shadow-sm"
       >
@@ -205,9 +205,9 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
         </div>
         <div className="flex items-center gap-3">
           <div className="flex gap-1">
-             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-             <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-all group-hover:translate-x-1" />
         </div>
@@ -229,17 +229,16 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
     // 2. Visualização de GCOM
     if (filtroLider?.type === 'GCOM' || (userLevel === 'Niv2' && !filtroLider)) {
-      const isInitial = !filtroLider;
       const topName = filtroLider?.name || userName || "";
       return (
         <div className="space-y-10">
-          {!isInitial && <LeaderCard name={topName} type="G. COMERCIAL" isMain={true} />}
+          <LeaderCard name={topName} type="G. COMERCIAL" isMain={true} />
           <div className="space-y-6">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 px-2 flex items-center gap-3">
               <div className="w-1 h-3 bg-primary rounded-full" /> Gerentes de Vendas da Equipe
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-               {listaGerentes.map(n => <CompactCard key={n} name={n} type="GV" />)}
+              {listaGerentes.map(n => <CompactCard key={n} name={n} type="GV" />)}
             </div>
           </div>
         </div>
@@ -248,17 +247,16 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
     // 3. Visualização de GV
     if (filtroLider?.type === 'GV' || (userLevel === 'Niv3' && !filtroLider)) {
-      const isInitial = !filtroLider;
       const topName = filtroLider?.name || userName || "";
       return (
         <div className="space-y-10">
-          {!isInitial && <LeaderCard name={topName} type="G. VENDAS" isMain={true} />}
+          <LeaderCard name={topName} type="G. VENDAS" isMain={true} />
           <div className="space-y-6">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 px-2 flex items-center gap-3">
               <div className="w-1 h-3 bg-primary rounded-full" /> Supervisores da Equipe
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-               {listaSupervisores.map(n => <CompactCard key={n} name={n} type="SUP" />)}
+              {listaSupervisores.map(n => <CompactCard key={n} name={n} type="SUP" />)}
             </div>
           </div>
         </div>
@@ -267,7 +265,6 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
     // 4. Visualização de SUP
     if (filtroLider?.type === 'SUP' || (userLevel === 'Niv4' && !filtroLider)) {
-      const isInitial = !filtroLider;
       const topName = filtroLider?.name || userName || "";
       const vendedoresEquipe = Array.from(new Set(vendedores
         .filter(v => normalizeName(v.nome_supervisor) === normalizeName(topName))
@@ -275,18 +272,18 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
       return (
         <div className="space-y-10">
-          {!isInitial && <LeaderCard name={topName} type="SUPERVISOR" isMain={true} />}
+          <LeaderCard name={topName} type="SUPERVISOR" isMain={true} />
           <div className="space-y-6">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 px-2 flex items-center gap-3">
               <div className="w-1 h-3 bg-primary rounded-full" /> Vendedores da Equipe
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-               {vendedoresEquipe.map(n => (
-                 <div key={n} className="bg-card/40 border border-border/30 p-4 rounded-2xl flex flex-col items-center gap-2 text-center">
-                    <User className="w-6 h-6 opacity-30" />
-                    <p className="text-[10px] font-black uppercase tracking-tight truncate w-full">{n}</p>
-                 </div>
-               ))}
+              {vendedoresEquipe.map(n => (
+                <div key={n} className="bg-card/40 border border-border/30 p-4 rounded-2xl flex flex-col items-center gap-2 text-center">
+                  <User className="w-6 h-6 opacity-30" />
+                  <p className="text-[10px] font-black uppercase tracking-tight truncate w-full">{n}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -305,7 +302,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
             Minha <span className="text-[#FFB800]">Equipe</span>
           </h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em] mt-3 opacity-60">
-             Gestão Hierárquica Progressiva - {userUnidade || 'Geral'}
+            Gestão Hierárquica Progressiva - {userUnidade || 'Geral'}
           </p>
         </div>
       </div>
@@ -339,14 +336,14 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
               })
               .map((v, i) => (
                 <div key={i} className="flex items-center justify-between p-6 bg-card/60 backdrop-blur-sm border border-border/40 rounded-3xl hover:border-primary/40 hover:bg-primary/5 transition-all animate-in fade-in slide-in-from-right-4">
-                   <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center text-muted-foreground"><MapPin className="w-6 h-6" /></div>
-                      <div>
-                         <p className="font-black text-sm uppercase leading-tight mb-1">{v.ponto_de_venda || v.nome_fantasia_pdv}</p>
-                         <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{v.vendedor} | {v.data_visita ? format(parseISO(v.data_visita), 'dd/MM/yyyy') : 'S/D'}</p>
-                      </div>
-                   </div>
-                   <ChevronRight className="w-5 h-5 opacity-20" />
+                  <div className="flex items-center gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center text-muted-foreground"><MapPin className="w-6 h-6" /></div>
+                    <div>
+                      <p className="font-black text-sm uppercase leading-tight mb-1">{v.ponto_de_venda || v.nome_fantasia_pdv}</p>
+                      <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{v.vendedor} | {v.data_visita ? format(parseISO(v.data_visita), 'dd/MM/yyyy') : 'S/D'}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 opacity-20" />
                 </div>
               ))}
           </div>

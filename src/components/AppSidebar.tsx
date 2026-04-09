@@ -79,8 +79,10 @@ export function AppSidebar() {
                   // Nível Master não vê nada operacional
                 } else {
                   const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
+                  const isNiv5 = user?.nivel === 'Niv5';
                   
-                  if (isAnalista && !isGestor && (item.title === "Nova Visita")) return null;
+                  if (isNiv5 && item.title === "Nova Visita") return null;
+                  if ((isAnalista || isNiv5) && !isGestor && (item.title === "Nova Visita")) return null;
                   if (!isAnalista && item.title === "Gestão de Dados") return null;
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)

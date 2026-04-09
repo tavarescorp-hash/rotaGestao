@@ -34,6 +34,11 @@ const NovaVisita = () => {
     setPdvBuscado
   } = useVisitaForm();
 
+  if (user?.nivel === "Niv5") {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
   const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
   return (

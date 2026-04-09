@@ -1,0 +1,12 @@
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+Auth Error: AuthApiError: A user with this email address has already been registered
+    at handleError (/Users/carlostavares/Desktop/unibeer/rotaunibeer/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:66:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/carlostavares/Desktop/unibeer/rotaunibeer/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:109:9)
+    at async _request (/Users/carlostavares/Desktop/unibeer/rotaunibeer/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:91:18)
+    at async GoTrueAdminApi.createUser (/Users/carlostavares/Desktop/unibeer/rotaunibeer/node_modules/@supabase/auth-js/dist/main/GoTrueAdminApi.js:127:20)
+    at async seedUser (/Users/carlostavares/Desktop/unibeer/rotaunibeer/seed_single_user2.cjs:18:48) {
+  __isAuthError: true,
+  status: 422,
+  code: 'email_exists'
+}

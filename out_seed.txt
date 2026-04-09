@@ -1,0 +1,8 @@
+[dotenv@17.3.1] injecting env (3) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Iniciando criação...
+Erro no profile: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'codigo' column of 'profiles' in the schema cache"
+}

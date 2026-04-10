@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, ChevronRight, Users, Settings2, User, Trophy, BarChart3, ListChecks } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCw, Trash2, Filter, Calendar, MapPin, ClipboardList, ChevronRight, Users, Settings2, User, Trophy, BarChart3, ListChecks, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getIndicadoresPorNivel, INDICADORES_COMPASS_LOCKED, INDICADORES_QUEDAS_LOCKED, INDICADORES_TIPO_RGB, REQUER_COACHING } from "@/lib/roles";
@@ -130,35 +130,38 @@ const Dashboard = () => {
             </div>
 
             {/* Right: Metrics Tags (Linked Metrics) - Estilo Screenshot Cinza/Branco */}
-            {!isAnalista && (
-              <div className="w-full lg:max-w-md bg-slate-200/60 dark:bg-white/5 p-4 rounded-2xl border border-slate-300/30 dark:border-white/10 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] text-slate-500 dark:text-white/40 font-black uppercase tracking-[0.1em] flex items-center gap-2">
-                    <Filter className="w-3 h-3" />
-                    Métricas de Avaliação Vinculadas
-                  </p>
-                  {metasUsuario.length > 0 && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-[8px] font-black text-green-600 dark:text-green-400 uppercase tracking-tighter">SaaS Live</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {indicadoresExibicao.length > 0 ? (
-                    indicadoresExibicao.map((ind, i) => (
-                      <span key={i} className="bg-white dark:bg-white/10 text-slate-700 dark:text-white/90 px-3 py-1.5 rounded-xl font-bold text-[10px] shadow-sm border border-slate-200/50 dark:border-none transition-transform hover:scale-105">
-                        {ind}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-slate-400 italic text-[10px] py-1">
-                      Aguardando configuração de metas...
-                    </span>
-                  )}
+            <div className="w-full lg:max-w-md bg-slate-200/60 dark:bg-white/5 p-4 rounded-2xl border border-slate-300/30 dark:border-white/10 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-black uppercase tracking-[0.1em] flex items-center gap-2">
+                  <BarChart3 className="w-3 h-3" />
+                  Consolidado da Operação
+                </p>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-[8px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-tighter">Live Insight</span>
                 </div>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {indicadoresExibicao.map((ind, i) => {
+                  const upper = ind.toUpperCase();
+                  let count = 0;
+                  let colorClass = "text-slate-600 dark:text-white/70";
+                  let label = ind;
+
+                  if (upper.includes('FDS')) { count = estatisticasMes.qtdeFDS; colorClass = "text-emerald-600 dark:text-emerald-400"; label = "FDS"; }
+                  else if (upper.includes('COMPASS')) { count = estatisticasMes.qtdeCompass; colorClass = "text-purple-600 dark:text-purple-400"; label = "COMPASS"; }
+                  else if (upper.includes('QUEDA')) { count = estatisticasMes.qtdeQuedas; colorClass = "text-rose-600 dark:text-rose-400"; label = "QUEDAS"; }
+                  else if (upper.includes('RGB')) { count = estatisticasMes.qtdeRGB; colorClass = "text-blue-600 dark:text-blue-400"; label = "RGB"; }
+                  else if (upper.includes('COACHING')) { count = estatisticasMes.qtdeCoaching; colorClass = "text-amber-600 dark:text-amber-400"; label = "COA"; }
+
+                  return (
+                    <span key={i} className={cn("bg-white dark:bg-white/10 px-3 py-1.5 rounded-xl font-black text-[10px] shadow-sm border border-slate-200/50 dark:border-none", colorClass)}>
+                      {label}: {count}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -443,8 +446,70 @@ const Dashboard = () => {
       </div>
     )}
 
+      {/* 3. VISÃO MESTAL ANALISTA (LINHA CRESCENTE) */}
+      {isAnalista && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 mt-8">
+           <div className="flex items-center gap-3 px-1">
+             <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
+               <TrendingUp className="w-4 h-4 text-[#FFB800]" />
+             </div>
+             <div className="flex-1">
+               <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
+                 Performances Consolidadas
+               </h2>
+               <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
+                 Linha crescente de avaliações fechadas por gestor de campo.
+               </p>
+             </div>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+             {dadosGraficoAnalista.map((usr, i) => {
+               const total = usr.FDS + usr.RGB + usr.Coaching + usr.Compass + usr.Quedas;
+               const meta = 60; // Base Linear Dinâmica
+               const prog = Math.min((total / meta) * 100, 100);
+               return (
+                 <Card key={i} onClick={() => setFiltroAvaliadorDetalhe(usr.name.toUpperCase())} className="bg-white/40 dark:bg-card/40 backdrop-blur-sm border-border/40 hover:border-[#FFB800]/50 cursor-pointer transition-all shadow-sm group overflow-hidden">
+                   <CardContent className="p-5 flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-black text-sm uppercase truncate text-foreground group-hover:text-[#FFB800] transition-colors">{usr.name}</h3>
+                        <span className="text-[10px] font-black bg-[#FFB800]/10 border border-[#FFB800]/20 px-2 py-0.5 rounded text-[#FFB800]">{total} Avs Fechadas</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-[-5px]">
+                         {usr.FDS > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded uppercase">FDS: {usr.FDS}</span>}
+                         {usr.RGB > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded uppercase">RGB: {usr.RGB}</span>}
+                         {usr.Coaching > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-amber-500/10 text-amber-600 rounded uppercase">COA: {usr.Coaching}</span>}
+                         {usr.Compass > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-purple-500/10 text-purple-600 rounded uppercase">COM: {usr.Compass}</span>}
+                         {usr.Quedas > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-rose-500/10 text-rose-600 rounded uppercase">QUE: {usr.Quedas}</span>}
+                         {(usr.FDS === 0 && usr.RGB === 0 && usr.Coaching === 0 && usr.Compass === 0 && usr.Quedas === 0) && (
+                            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-muted/30 text-muted-foreground/40 rounded uppercase">Sem Atividade</span>
+                         )}
+                      </div>
+                     <div className="space-y-1.5 mt-2">
+                       <div className="flex justify-between text-[9px] font-black uppercase text-muted-foreground">
+                         <span>Linha de Meta Crescente</span>
+                         <span className={cn(prog >= 100 ? "text-green-500 drop-shadow-[0_0_2px_rgba(34,197,94,0.8)]" : "text-[#FFB800]")}>{Math.round(prog)}%</span>
+                       </div>
+                       <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-black/5">
+                         <div 
+                           className={cn("h-full rounded-full transition-all duration-1000", prog >= 100 ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-[#FFB800] shadow-[0_0_8px_rgba(255,184,0,0.4)]")} 
+                           style={{ width: `${prog}%` }} 
+                         />
+                       </div>
+                     </div>
+                   </CardContent>
+                 </Card>
+               );
+             })}
+             {dadosGraficoAnalista.length === 0 && (
+               <p className="text-[11px] font-bold opacity-40 uppercase tracking-widest italic py-10 col-span-3 text-center border border-dashed border-border/50 rounded-2xl">Aguardando Avaliações de Equipe no Período Selecionado.</p>
+             )}
+           </div>
+        </div>
+      )}
+
         {/* 4. GESTÃO DE EQUIPE SECTION */}
-        {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4' || isAnalista) && (
+        {(!isAnalista && (user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4')) && (
           <div className="space-y-6 pt-16 border-t border-muted/30">
             <TeamHierarchyView 
               visitas={visitasHierarchy} 

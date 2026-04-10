@@ -42,7 +42,7 @@ export function AppSidebar() {
   };
 
   const isMaster = user?.nivel === 'Master';
-  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || isMaster;
+  const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0' || user?.nivel === 'Niv5' || isMaster;
   const isSupervisorOrGerente = user?.nivel === 'Niv3' || user?.nivel === 'Niv4' || isMaster;
 
   return (
@@ -50,11 +50,11 @@ export function AppSidebar() {
       {/* HEADER */}
       <SidebarHeader className="p-6 border-b border-sidebar-border/50 flex flex-col items-center justify-center bg-sidebar-accent/10">
         <div className="w-full h-auto flex items-center justify-center mt-2 mb-2">
-          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-md border border-black/5">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-md border border-white/10 dark:border-white/5 transition-all hover:shadow-lg">
             <img 
-              src={user?.empresa_logo || "/logo-gestao-rota.png"} 
-              alt={user?.empresa_nome || "Gestão"} 
-              className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" 
+              src="/logo-gestao-rota.png" 
+              alt="Gestão Rota" 
+              className="w-full h-full object-cover transition-transform hover:scale-110 duration-300" 
             />
           </div>
         </div>
@@ -79,10 +79,11 @@ export function AppSidebar() {
                   // Nível Master não vê nada operacional
                 } else {
                   const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
-                  const isNiv5 = user?.nivel === 'Niv5';
                   
-                  if (isNiv5 && item.title === "Nova Visita") return null;
-                  if ((isAnalista || isNiv5) && !isGestor && (item.title === "Nova Visita")) return null;
+                  // Analistas não podem fazer visitas (são nível de retaguarda)
+                  if (isAnalista && item.title === "Nova Visita") return null;
+                  
+                  // Apenas Analistas e Master acessam a Gestão de Dados
                   if (!isAnalista && item.title === "Gestão de Dados") return null;
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)
@@ -148,7 +149,7 @@ export function AppSidebar() {
         <div className="mt-6 mb-1 flex items-center justify-center">
           <Popover>
             <PopoverTrigger asChild>
-              <img src="/logo-global.png" alt="Desenvolvido por Global Soluções" className="h-6 object-contain opacity-40 hover:opacity-100 transition-opacity duration-300 cursor-pointer brightness-0 dark:brightness-100 dark:invert" />
+              <img src="/logo-global.png" alt="Desenvolvido por Global Soluções" className="h-6 object-contain opacity-40 hover:opacity-100 transition-opacity duration-300 cursor-pointer brightness-0 dark:invert" />
             </PopoverTrigger>
             <PopoverContent className="w-64 bg-zinc-900 border-zinc-700/50 text-white shadow-xl z-50 p-4" side="top" align="center">
               <div className="space-y-2 text-left">

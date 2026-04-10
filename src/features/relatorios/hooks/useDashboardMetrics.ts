@@ -225,14 +225,19 @@ export function useDashboardMetrics(
       META_RGB = 10;
       META_COACHING = 10;
       META_QUEDAS = 10;
+      META_COMPASS = 10;
     } else if (user?.nivel === 'Niv3') {
-      META_FDS = 20; 
+      // Gerente de Vendas: Metas ajustadas conforme solicitação
+      META_COMPASS = 10;
+      META_FDS = 10; 
       META_RGB = 10; 
-      META_COACHING = 20;
+      META_COACHING = 10;
     } else if (user?.nivel === 'Niv4') {
-      META_COACHING = 40;
+      META_COACHING = 10;
       META_FDS = 10;
-      META_RGB = 20;
+      META_RGB = 10;
+      META_COMPASS = 10;
+      META_QUEDAS = 10;
     }
 
     // SOBREPOSIÇÃO POR METAS DINÂMICAS (Banco de Dados)
@@ -292,10 +297,10 @@ export function useDashboardMetrics(
       const vInd = normalizeInd(v.indicador_avaliado);
 
       if (vInd === 'FDS') curr.FDS++;
-      else if (N_TIPO_RGB.includes(vInd)) curr.RGB++;
-      else if (N_COACHING.includes(vInd)) curr.Coaching++;
       else if (N_COMPASS.includes(vInd) || vInd.includes('COMPASS')) curr.Compass++;
       else if (N_QUEDAS.includes(vInd) || vInd.includes('QUEDA')) curr.Quedas++;
+      else if (N_TIPO_RGB.includes(vInd)) curr.RGB++;
+      else if (N_COACHING.includes(vInd)) curr.Coaching++;
     });
 
     return Array.from(mapa.values()).sort((a, b) => 

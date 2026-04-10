@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
-import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao, getEmpresas } from '@/lib/api';
+import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, buscarVisitas, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao, getEmpresas } from '@/lib/api';
 import { format } from 'date-fns';
 import { VisitaModalDialog } from '@/features/relatorios/components/VisitaModalDialog';
 const AdminData = () => {
@@ -49,7 +49,7 @@ const AdminData = () => {
     const [loadingConfig, setLoadingConfig] = useState(false);
 
     const isMaster = user?.nivel === 'Master';
-    const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || isMaster;
+    const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0' || user?.nivel === 'Niv5' || isMaster;
 
     // SaaS Tenant Selector
     const [empresas, setEmpresas] = useState<any[]>([]);
@@ -226,6 +226,58 @@ const AdminData = () => {
         }
     };
 
+    const handleDownloadVisitas = async () => {
+        toast({ title: "Iniciando Download...", description: "Extraindo histórico completo de visitas..." });
+        try {
+            const data = await buscarVisitas(activeUser);
+            if (!data || data.length === 0) {
+                toast({ title: "Ops", description: "Não há visitas ou permissão insufiente.", variant: "destructive" });
+                return;
+            }
+            
+            // Formatando e selecionando colunas ricas
+            const excelData = data.map((v: any) => {
+                const { id, respostas, respostas_json_dynamic, created_at, ...cleanVisita } = v;
+                return {
+                    "DATA": v.data_visita,
+                    "UNIDADE": v.unidade,
+                    "AVALIADOR": v.avaliador,
+                    "CARGO": v.cargo,
+                    "VENDEDOR": v.nome_vendedor || v.vendedor,
+                    "CODIGO_VENDEDOR": v.codigo_vendedor,
+                    "PDV": v.codigo_pdv,
+                    "NOME_FANTASIA": v.nome_fantasia_pdv,
+                    "POTENCIAL": v.potencial_cliente,
+                    "CANAL_IDENTIFICADO": v.canal_identificado,
+                    "CANAL_CADASTRADO": v.canal_cadastrado,
+                    "INDICADOR": v.indicador_avaliado,
+                    "PONTUACAO": v.pontuacao_total,
+                    "OBS_GERAL": v.observacoes,
+                    "PRODUTOS_SEL": v.produtos_selecionados,
+                    "EXEC_SEL": v.execucao_selecionada,
+                    "PONTOS_FORTES": v.pontos_fortes,
+                    "A_DESENVOLVER": v.pontos_desenvolver,
+                    "COACHING": v.passos_coaching,
+                    "STATUS": v.status_aprovacao
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            // Auto ajusta largura das colunas
+            const wscols = Object.keys(excelData[0] || {}).map(() => ({ wch: 20 }));
+            worksheet['!cols'] = wscols;
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Visitas");
+            XLSX.writeFile(workbook, "Relatorio_Visitas_Rota_Unibeer.xlsx");
+
+            toast({ title: "Download Concluído", description: "Histórico transferido para o Excel com sucesso!", className: "bg-green-600 border-none text-white" });
+        } catch (error) {
+            console.error("Erro no download de visitas:", error);
+            toast({ title: "Erro", description: "Falha ao extrair a matriz do banco.", variant: "destructive" });
+        }
+    };
+
     const handleToggleStatus = async (userId: string, currentStatus: boolean, userName: string) => {
         setLoadingAction(userId);
         const success = await toggleUserStatus(userId, currentStatus);
@@ -367,24 +419,23 @@ const AdminData = () => {
                 </TabsList>
 
                 <TabsContent value="bases" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Card PDVS */}
                         <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden relative group hover:border-primary/40 transition-colors">
                             <CardHeader className="bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50 pb-8">
                                 <CardTitle className="flex items-center gap-2 text-xl">
                                     <FileSpreadsheet className="w-6 h-6 text-primary" />
-                                    Base de Clientes (PDVs)
+                                    Base (PDVs)
                                 </CardTitle>
                                 <CardDescription className="font-medium text-muted-foreground/80 mt-2">
-                                    Esta ação <strong>apagará</strong> toda a atual carteira de clientes do aplicativo e <strong>injetará</strong> as novas linhas da sua planilha.
+                                    Substitui a carteira de clientes, unidades e organograma de vendedores/supervisores.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
                                 {loadingPdvs ? (
                                     <div className="flex flex-col items-center gap-4 text-primary animate-pulse">
                                         <Loader2 className="w-12 h-12 animate-spin" />
-                                        <p className="font-bold tracking-tight">Destruindo e Recriando Tabela...</p>
-                                        <span className="text-xs text-muted-foreground">Isso pode levar até 1 minuto. Não feche.</span>
+                                        <p className="font-bold tracking-tight">Recriando Tabela...</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-4 w-full">
@@ -392,11 +443,10 @@ const AdminData = () => {
                                             <UploadCloud className="w-8 h-8 text-primary" />
                                         </div>
                                         <div className="text-center space-y-1">
-                                            <h3 className="font-bold">Faça upload de uma planilha Excel</h3>
-                                            <p className="text-xs text-muted-foreground">O arquivo deve conter NOME_VENDEDOR, FILIAL, NOME _SUPERVISOR</p>
+                                            <h3 className="font-bold">Substituir Planilha</h3>
                                         </div>
-                                        <div className="flex gap-2 w-full max-w-sm mt-4">
-                                            <div className="relative w-full flex-[2]">
+                                        <div className="flex gap-2 w-full mt-4 flex-col">
+                                            <div className="relative w-full">
                                                 <input
                                                     type="file"
                                                     accept=".xlsx, .xls, .csv"
@@ -404,18 +454,18 @@ const AdminData = () => {
                                                     onChange={(e) => handleFileUpload(e, 'pdvs')}
                                                     disabled={loadingPdvs}
                                                 />
-                                                <Button className="w-full pointer-events-none shadow-md">
-                                                    Substituir Arquivo
+                                                <Button className="w-full pointer-events-none shadow-md" variant="secondary">
+                                                    Carregar e Substituir
                                                 </Button>
                                             </div>
                                             <Button
                                                 variant="outline"
-                                                className="flex-1 shadow-sm font-bold bg-secondary/50 hover:bg-secondary border-primary/20"
+                                                className="w-full shadow-sm font-bold border-primary/20"
                                                 onClick={() => handleDownload('pdvs')}
                                                 disabled={loadingPdvs}
                                             >
                                                 <Download className="w-4 h-4 mr-2" />
-                                                Baixar Atual
+                                                Baixar Base Atual
                                             </Button>
                                         </div>
                                     </div>
@@ -428,18 +478,17 @@ const AdminData = () => {
                             <CardHeader className="bg-gradient-to-br from-purple-500/10 to-transparent border-b border-border/50 pb-8">
                                 <CardTitle className="flex items-center gap-2 text-xl text-purple-600 dark:text-purple-400">
                                     <FileSpreadsheet className="w-6 h-6" />
-                                    Base de Produtos FDS
+                                    Matriz FDS
                                 </CardTitle>
                                 <CardDescription className="font-medium text-muted-foreground/80 mt-2">
-                                    Atualize a lista de pontuações, canais e materiais de execução oficiais de FotodeSucesso.
+                                    Atualize materiais de execução do Foto de Sucesso.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
                                 {loadingProdutos ? (
                                     <div className="flex flex-col items-center gap-4 text-purple-600 dark:text-purple-400 animate-pulse">
                                         <Loader2 className="w-12 h-12 animate-spin" />
-                                        <p className="font-bold tracking-tight">Sincronizando Produtos...</p>
-                                        <span className="text-xs text-muted-foreground">Isso pode levar alguns segundos.</span>
+                                        <p className="font-bold tracking-tight">Sincronizando...</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-4 w-full">
@@ -447,11 +496,10 @@ const AdminData = () => {
                                             <UploadCloud className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                                         </div>
                                         <div className="text-center space-y-1">
-                                            <h3 className="font-bold">Faça upload da Matriz Oficial</h3>
-                                            <p className="text-xs text-muted-foreground">Colunas obrigatórias: PRODUTO, CANAL, EXECUCAO, PONTOS</p>
+                                            <h3 className="font-bold">Substituir Matriz FDS</h3>
                                         </div>
-                                        <div className="flex gap-2 w-full max-w-sm mt-4">
-                                            <div className="relative w-full flex-[2]">
+                                        <div className="flex gap-2 w-full mt-4 flex-col">
+                                            <div className="relative w-full">
                                                 <input
                                                     type="file"
                                                     accept=".xlsx, .xls, .csv"
@@ -459,22 +507,53 @@ const AdminData = () => {
                                                     onChange={(e) => handleFileUpload(e, 'produtos')}
                                                     disabled={loadingProdutos}
                                                 />
-                                                <Button className="w-full bg-purple-600 hover:bg-purple-700 pointer-events-none shadow-md text-white">
-                                                    Substituir Arquivo
+                                                <Button className="w-full pointer-events-none shadow-md bg-purple-600 hover:bg-purple-700 text-white border-none">
+                                                    Carregar e Substituir
                                                 </Button>
                                             </div>
                                             <Button
                                                 variant="outline"
-                                                className="flex-1 shadow-sm font-bold bg-secondary/50 hover:bg-secondary border-purple-500/20 text-purple-600 dark:text-purple-400"
+                                                className="w-full shadow-sm font-bold border-purple-500/20 text-purple-600 dark:text-purple-400"
                                                 onClick={() => handleDownload('produtos')}
                                                 disabled={loadingProdutos}
                                             >
                                                 <Download className="w-4 h-4 mr-2" />
-                                                Baixar Atual
+                                                Baixar Base Atual
                                             </Button>
                                         </div>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+
+                        {/* NOVO: Relatório de Visitas */}
+                        <Card className="glass-card bg-card/40 border-emerald-500/30 overflow-hidden relative group hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-500/5">
+                            <CardHeader className="bg-gradient-to-br from-emerald-500/10 to-transparent border-b border-border/50 pb-8">
+                                <CardTitle className="flex items-center gap-2 text-xl text-emerald-600 dark:text-emerald-400">
+                                    <Download className="w-6 h-6" />
+                                    Exportar Visitas
+                                </CardTitle>
+                                <CardDescription className="font-medium text-muted-foreground/80 mt-2">
+                                    Faça o download do histórico completo de todas as visitas realizadas até o momento.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
+                                <div className="flex flex-col items-center gap-4 w-full">
+                                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                        <FileSpreadsheet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <div className="text-center space-y-1 mb-2">
+                                        <h3 className="font-bold">Gerador de Relatórios XLS</h3>
+                                        <p className="text-xs text-muted-foreground">Extrai todas as colunas em formato Excel (XLSX) formatado e limpo.</p>
+                                    </div>
+                                    <Button
+                                        className="w-full shadow-md font-bold bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-md transition-all group-hover:shadow-emerald-500/20"
+                                        onClick={handleDownloadVisitas}
+                                    >
+                                        <Download className="w-5 h-5 mr-3 animate-bounce shadow-emerald-500/50" />
+                                        Baixar Visitas em Excel (XLS)
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -713,11 +792,30 @@ const AdminData = () => {
                                                         <div className="text-xs text-muted-foreground">{visita.cargo}</div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="flex justify-center">
+                                                        <div className="flex justify-center items-center gap-2">
                                                             <Button
                                                                 size="sm"
-                                                                variant="default"
-                                                                className="bg-primary/90 hover:bg-primary text-white"
+                                                                className="bg-green-600 hover:bg-green-700 text-white font-bold h-8"
+                                                                disabled={loadingAction !== null}
+                                                                onClick={() => handleAprovar(visita.id, visita.codigo_pdv)}
+                                                            >
+                                                                {loadingAction === `aprovar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1.5" />}
+                                                                Aprovar
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="text-destructive border-destructive hover:bg-destructive/10 font-bold h-8"
+                                                                disabled={loadingAction !== null}
+                                                                onClick={() => handleRecusar(visita.id, visita.codigo_pdv)}
+                                                            >
+                                                                {loadingAction === `recusar-${visita.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1.5" />}
+                                                                Recusar
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="h-8 font-bold text-xs"
                                                                 onClick={() => setVisitaSelecionada(visita)}
                                                             >
                                                                 👁️ Detalhes

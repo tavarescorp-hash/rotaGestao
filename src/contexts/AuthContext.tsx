@@ -116,7 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const userNivel = profile?.nivel;
       const userUnidade = profile?.unidade || (isMaster ? "TODAS" : "");
-      const userFuncao = profile?.funcao;
+      let userFuncao = profile?.funcao;
+      
+      // Override Visual de Segurança: Força o crachá independentemente do que foi salvo errado no Supabase
+      if (userNivel === 'Niv0' || userNivel === 'Niv5') {
+        userFuncao = "ANALISTA";
+      }
 
       setUser({
         id: sessionUser.id,

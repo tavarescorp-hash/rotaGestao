@@ -191,20 +191,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log("🔐 [Auth] Tentando login para:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return false;
+      
+      if (error) {
+        console.error("❌ [Auth] Erro no Supabase Auth:", {
+          message: error.message,
+          status: error.status,
+          code: error.code
+        });
+        throw error;
+      }
 
       if (data?.user) {
-        const { data: profile } = await supabase.from("profiles").select("ativo").eq("id", data.user.id).single();
+        console.log("✅ [Auth] Autenticação básica ok, verificando perfil...");
+        const { data: profile, error: profileError } = await supabase.from("profiles").select("ativo").eq("id", data.user.id).single();
+        
+        if (profileError && profileError.code !== "PGRST116") {
+          console.warn("⚠️ [Auth] Erro na busca de perfil:", profileError);
+        }
+
         if (profile && profile.ativo === false) {
+          console.error("🚫 [Auth] Usuário desativado ou bloqueado.");
           await supabase.auth.signOut();
-          throw new Error("Usuário desativado ou bloqueado.");
+          throw new Error("Sua conta está desativada. Entre em contato com o suporte.");
         }
       }
 
       return true;
-    } catch (err) {
-      console.error("Login failed", err);
+    } catch (err: any) {
+      console.error("🚨 [Auth] Falha crítica no login:", err.message || err);
       throw err;
     }
   }, []);

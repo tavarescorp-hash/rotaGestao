@@ -66,20 +66,25 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const success = await login(email.trim().toLowerCase(), password);
-      if (success) {
-        // O `user` vai ser atualizado via contexto e o `useEffect` acima fará o redirect correto.
-      } else {
-        toast({
-          title: "Erro de autenticação",
-          description: "Email ou senha incorretos.",
-          variant: "destructive",
-        });
-      }
+      await login(email.trim().toLowerCase(), password);
+      // O `user` vai ser atualizado via contexto e o `useEffect` acima fará o redirect correto.
     } catch (err: any) {
+      console.error("Submit Error:", err);
+      
+      let errorMsg = "E-mail ou senha incorretos.";
+      
+      // Detecção de Erros de Ambiente (Missing Keys)
+      if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) {
+        errorMsg = "Configuração do servidor incompleta (Keys de Ambiente faltando).";
+      } else if (err.message === 'Invalid login credentials' || err.code === 'invalid_credentials') {
+        errorMsg = "E-mail ou senha incorretos.";
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+
       toast({
-        title: "Acesso Negado",
-        description: err.message || "Email ou senha incorretos.",
+        title: "Falha no Acesso",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

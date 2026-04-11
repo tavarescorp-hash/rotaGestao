@@ -157,8 +157,12 @@ export function useDashboardMetrics(
     vendedoresBaseReal.forEach(v => {
       let match = true;
       const supName = normalizeName(v.nome_supervisor);
+      const logadoName = normalizeName(user?.name);
 
-      if (avaliadorFiltro !== "todos") {
+      // NOVO: Se o usuário é supervisor (Niv4) e o filtro é "todos", baseia-se apenas nos seus vendedores
+      if (user?.nivel === 'Niv4' && avaliadorFiltro === "todos") {
+        match = supName === logadoName;
+      } else if (avaliadorFiltro !== "todos") {
         match = supName === avaliadorEscolhido;
       }
 
@@ -233,9 +237,10 @@ export function useDashboardMetrics(
       META_RGB = 10; 
       META_COACHING = 10;
     } else if (user?.nivel === 'Niv4') {
-      META_COACHING = 10;
+      // Para Niv4, Coaching é dinâmico (5 por vendedor) já calculado em META_COACHING inicial
+      // META_COACHING não é sobrescrito aqui para manter o cálculo (vendedoresUnicos * 5)
       META_FDS = 10;
-      META_RGB = 10;
+      META_RGB = 20;
       META_COMPASS = 10;
       META_QUEDAS = 10;
     }

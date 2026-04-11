@@ -303,13 +303,13 @@ const Dashboard = () => {
                             {estatisticasMes.qtdeCompass} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COMPASS}</span>
                           </p>
                         </div>
-                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
                           {Math.round((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100) || 0}%
                         </div>
                       </div>
                       <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
                           style={{ width: `${Math.min((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100, 100) || 0}%` }}
                         />
                       </div>
@@ -329,13 +329,13 @@ const Dashboard = () => {
                             {estatisticasMes.qtdeQuedas} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_QUEDAS}</span>
                           </p>
                         </div>
-                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
                           {Math.round((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100) || 0}%
                         </div>
                       </div>
                       <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
                           style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100, 100) || 0}%` }}
                         />
                       </div>
@@ -355,13 +355,13 @@ const Dashboard = () => {
                             {estatisticasMes.qtdeFDS} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_FDS}</span>
                           </p>
                         </div>
-                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
                           {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100) || 0}%
                         </div>
                       </div>
                       <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
                           style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100) || 0}%` }}
                         />
                       </div>
@@ -381,13 +381,13 @@ const Dashboard = () => {
                             {estatisticasMes.qtdeRGB} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_RGB}</span>
                           </p>
                         </div>
-                        <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded">
+                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
                           {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
                         </div>
                       </div>
                       <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                         <div
-                          className="h-full bg-[#FFB800] rounded-full transition-all duration-1000 shadow-[2px_0_5px_rgba(255,184,0,0.3)]"
+                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
                           style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100) || 0}%` }}
                         />
                       </div>
@@ -408,7 +408,7 @@ const Dashboard = () => {
                           <p className="text-2xl font-black text-foreground dark:text-white">
                             {estatisticasMes.qtdeCoaching} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COACHING}</span>
                           </p>
-                          <div className="bg-[#FFB800]/10 text-[#FFB800] text-xs font-black px-2 py-1 rounded mb-1">
+                          <div className={cn("text-xs font-black px-2 py-1 rounded mb-1", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
                             {Math.round((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100) || 0}%
                           </div>
                         </div>
@@ -416,7 +416,7 @@ const Dashboard = () => {
                       <div className="flex-1 max-w-xs">
                         <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                           <div
-                            className="h-full bg-[#FFB800] rounded-full transition-all duration-1000"
+                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
                             style={{ width: `${Math.min((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100, 100) || 0}%` }}
                           />
                         </div>
@@ -773,6 +773,11 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* FOOTER - Versão do Sistema */}
+      <div className="flex flex-col items-center justify-center pt-10 pb-4 opacity-30 select-none w-full">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Sistema Rota Unibeer</p>
+        <p className="text-[8px] font-bold text-muted-foreground mt-1">Versão 1.2.9 • Build {new Date().toLocaleDateString('pt-BR')}</p>
+      </div>
     </div>
   );
 };

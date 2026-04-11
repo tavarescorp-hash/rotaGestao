@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, X } from 'lucide-react';
@@ -16,6 +16,30 @@ export function ReloadPrompt() {
       console.log('SW registration error', error);
     },
   });
+
+  // Verificação periódica de atualizações (a cada 10 minutos)
+  useEffect(() => {
+    const checkInterval = 10 * 60 * 1000; // 10 minutos
+    
+    const intervalId = setInterval(() => {
+      if (!(!offlineReady && !needRefresh)) return;
+      updateServiceWorker(false); // apenas verifica sem forçar refresh imediato
+    }, checkInterval);
+
+    return () => clearInterval(intervalId);
+  }, [offlineReady, needRefresh, updateServiceWorker]);
+
+  // Verificar atualização sempre que o app voltar para o primeiro plano (focus)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateServiceWorker(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [updateServiceWorker]);
 
   const close = () => {
     setOfflineReady(false);

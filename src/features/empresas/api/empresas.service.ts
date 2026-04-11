@@ -26,14 +26,18 @@ export async function updateEmpresaStatus(id: number, novoStatus: string): Promi
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Erro ao atualizar status da empresa:", error);
     return false;
   }
 }
 
 export async function createEmpresa(empresa: any): Promise<{ success: boolean, message: string, data?: any }> {
   try {
-    const payload = { ...empresa, status_assinatura: 'Ativa' };
+    const payload = { 
+      ...empresa, 
+      status_assinatura: 'Ativa',
+      data_vencimento: empresa.data_vencimento || null,
+      limite_visitas: empresa.limite_visitas || 500
+    };
     const { data, error } = await supabase
       .from('empresas')
       .insert([payload])
@@ -42,8 +46,24 @@ export async function createEmpresa(empresa: any): Promise<{ success: boolean, m
     if (error) throw error;
     return { success: true, message: "Empresa criada com sincronismo ativo!", data: data[0] };
   } catch (error: any) {
-    console.error("Erro ao criar empresa:", error);
     return { success: false, message: error.message };
   }
 }
+
+export async function updateEmpresaBilling(id: number, data: { data_vencimento?: string | null, limite_visitas?: number }): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('empresas')
+      .update(data)
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar cobrança da empresa:", error);
+    return false;
+  }
+}
+
+
 

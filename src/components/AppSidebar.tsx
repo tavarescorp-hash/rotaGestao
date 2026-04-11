@@ -76,7 +76,8 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 // Nível Master de SaaS não mistura operações de rua (ocultar relatórios)
                 if (isMaster) {
-                  // Nível Master não vê nada operacional
+                   // Master só vê o painel de gestão de clientes e dashboard global
+                   if (item.title !== "SaaS Admin") return null;
                 } else {
                   const isGestor = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4';
                   
@@ -88,8 +89,8 @@ export function AppSidebar() {
                   
                   // Acesso liberado à Visita Retroativa para todos os usuários (Niv1, Niv2, Niv3, Niv4)
 
-                   // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
-                  if (item.title === "SaaS Admin") return null;
+                    // Regra SaaS Admin: Apenas nível Master de Arquitetura SaaS
+                   if (item.title === "SaaS Admin" && !isMaster) return null;
                 }
 
                 return (

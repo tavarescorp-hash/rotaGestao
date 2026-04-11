@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Building2, UserPlus, Power } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-// Import API functions (to be created)
-import { getEmpresas, updateEmpresaStatus, createEmpresa, createUserAdminForEmpresa } from "@/lib/api";
+import { getEmpresas, updateEmpresaStatus, createEmpresa, createUserAdminForEmpresa, updateEmpresaBilling } from "@/lib/api";
+import { format, parseISO, isAfter } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CreditCard, Calendar, Target, PlusCircle, Building2, UserPlus, Power } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface Empresa {
   id: number;
@@ -21,6 +23,8 @@ interface Empresa {
   logo_url: string;
   cor_primaria: string;
   status_assinatura: string;
+  data_vencimento?: string;
+  limite_visitas?: number;
   created_at?: string;
 }
 
@@ -37,6 +41,10 @@ export default function SuperAdmin() {
   const [novoAdmin, setNovoAdmin] = useState({ Nome: "", email: "", password: "", unidade: "", empresa_id: 1 });
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [empresaSelecionada, setEmpresaSelecionada] = useState<Empresa | null>(null);
+
+  // Faturamento
+  const [faturamentoData, setFaturamentoData] = useState({ data_vencimento: "", limite_visitas: 500 });
+  const [isBillingDialogOpen, setIsBillingDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user?.nivel === "Master") {
@@ -115,6 +123,36 @@ export default function SuperAdmin() {
     }
   };
 
+  const handleOpenBillingDialog = (empresa: Empresa) => {
+    setEmpresaSelecionada(empresa);
+    setFaturamentoData({
+      data_vencimento: empresa.data_vencimento || "",
+      limite_visitas: empresa.limite_visitas || 500
+    });
+    setIsBillingDialogOpen(true);
+  };
+
+  const handleUpdateBilling = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empresaSelecionada) return;
+
+    const dataFormatted = faturamentoData.data_vencimento === "" ? null : faturamentoData.data_vencimento;
+    
+    const sucesso = await updateEmpresaBilling(empresaSelecionada.id, {
+      ...faturamentoData,
+      data_vencimento: dataFormatted
+    });
+
+
+    if (sucesso) {
+      toast({ title: "Faturamento atualizado!", description: "Dados de cobrança salvos com sucesso." });
+      setIsBillingDialogOpen(false);
+      carregarEmpresas();
+    } else {
+      toast({ title: "Erro", description: "Falha ao atualizar dados de cobrança.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-8 pb-20 fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -178,18 +216,19 @@ export default function SuperAdmin() {
                 <TableHead className="w-[80px]">ID</TableHead>
                 <TableHead>Identidade</TableHead>
                 <TableHead>CNPJ</TableHead>
-                <TableHead>Tema</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Plano/Status</TableHead>
+                <TableHead>Vencimento</TableHead>
+                <TableHead>Uso (Mensal)</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando carteira de clientes...</TableCell></TableRow>
-              ) : empresas.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma empresa encontrada.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando carteira de clientes...</TableCell></TableRow>
+              ) : empresas.filter(e => e.id > 0).length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma empresa cliente encontrada.</TableCell></TableRow>
               ) : (
-                empresas.map((empresa) => (
+                empresas.filter(e => e.id > 0).map((empresa) => (
                   <TableRow key={empresa.id}>
                     <TableCell className="font-mono text-xs">{empresa.id}</TableCell>
                     <TableCell>
@@ -206,29 +245,25 @@ export default function SuperAdmin() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-mono text-sm">{empresa.cnpj || '-'}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full border shadow-sm" style={{ backgroundColor: empresa.cor_primaria || '#B22222' }} />
-                        <span className="text-xs text-muted-foreground uppercase">{empresa.cor_primaria || '#B22222'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <Badge variant={empresa.status_assinatura === 'Ativa' ? 'default' : 'destructive'} className="uppercase font-bold tracking-wider text-[10px]">
                         {empresa.status_assinatura}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenAdminDialog(empresa)} className="h-8">
-                        <UserPlus className="w-4 h-4 mr-2 text-primary" />
-                        Criar Admin
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenBillingDialog(empresa)} className="h-8 w-8 p-0" title="Cobrança">
+                        <CreditCard className="w-4 h-4 text-emerald-600" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenAdminDialog(empresa)} className="h-8 w-8 p-0" title="Criar Admin">
+                        <UserPlus className="w-4 h-4 text-primary" />
                       </Button>
                       <Button
-                        variant={empresa.status_assinatura === 'Ativa' ? 'secondary' : 'default'}
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleToggleStatus(empresa)}
-                        className="h-8 w-28"
+                        className="h-8 w-8 p-0"
+                        title={empresa.status_assinatura === 'Ativa' ? 'Bloquear' : 'Liberar'}
                       >
-                        <Power className="w-4 h-4 mr-2" />
-                        {empresa.status_assinatura === 'Ativa' ? 'Bloquear' : 'Liberar'}
+                        <Power className={cn("w-4 h-4", empresa.status_assinatura === 'Ativa' ? "text-slate-400" : "text-destructive")} />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -266,6 +301,57 @@ export default function SuperAdmin() {
               <Input value={novoAdmin.unidade} onChange={e => setNovoAdmin({ ...novoAdmin, unidade: e.target.value })} placeholder="Ex: Macaé, Campos, todas..." />
             </div>
             <Button type="submit" className="w-full">Gerar Conta Admin</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Modal Financeiro / Cobrança */}
+      <Dialog open={isBillingDialogOpen} onOpenChange={setIsBillingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-emerald-600" />
+              Gestão Financeira: {empresaSelecionada?.nome}
+            </DialogTitle>
+            <DialogDescription>
+              Controle o vencimento e os limites de uso deste cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateBilling} className="space-y-6 pt-4">
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <Label className="text-xs font-black uppercase text-muted-foreground">Próximo Vencimento</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="date" 
+                    value={faturamentoData.data_vencimento} 
+                    onChange={e => setFaturamentoData({ ...faturamentoData, data_vencimento: e.target.value })} 
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="text-xs font-black uppercase text-muted-foreground">Limite de Visitas (Mensal)</Label>
+                <div className="relative">
+                  <Target className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="number" 
+                    value={faturamentoData.limite_visitas} 
+                    onChange={e => {
+                      const val = parseInt(e.target.value);
+                      setFaturamentoData({ ...faturamentoData, limite_visitas: isNaN(val) ? 0 : val });
+                    }} 
+                    className="pl-10"
+                    placeholder="Ex: 500"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">O sistema bloqueará o botão "Nova Visita" assim que o limite for atingido.</p>
+              </div>
+            </div>
+            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 font-black uppercase tracking-widest text-xs h-11">
+              Salvar Alterações de Faturamento
+            </Button>
           </form>
         </DialogContent>
       </Dialog>

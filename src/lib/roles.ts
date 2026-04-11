@@ -3,7 +3,13 @@
 export type NivelHieriaquico = "Niv0" | "Niv1" | "Niv2" | "Niv3" | "Niv4" | "Niv5";
 
 export const INDICADORES_MAP = {
-    "Niv0": [],
+    "Niv0": [
+        "FDS",
+        "Coaching Rotina Básica com Vendedor",
+        "Maiores Potenciais Base Compass em RGB BAR",
+        "Maiores Quedas RGB Mês Anterior",
+        "Foco RGB"
+    ],
     "Niv1": [
         "Maiores Potenciais Base Compass em RGB BAR",
         "Maiores Quedas RGB Mês Anterior"

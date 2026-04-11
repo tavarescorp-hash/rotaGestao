@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2, Search, MapPin } from "lucide-react";
+import { ArrowLeft, Loader2, Search, MapPin, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import StepProdutosExecucao, { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import StepCoaching, { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
 
@@ -28,6 +29,9 @@ const NovaVisita = () => {
     loading,
     isSearchingPdv,
     pdvBuscado,
+    isLimitReached,
+    isBlocked,
+    contagemVisitas,
     handleChange,
     handlePesquisarPdv,
     handleSubmitFinal,
@@ -44,6 +48,27 @@ const NovaVisita = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-6">
+        {isBlocked && (
+          <Alert variant="destructive" className="bg-red-600/10 border-red-500/50 animate-in zoom-in-95 duration-500">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <AlertTitle className="font-black uppercase tracking-tight">Registro Bloqueado</AlertTitle>
+            <AlertDescription className="font-medium text-red-500/90 text-sm">
+              Sua empresa possui <strong>pendências administrativas</strong>. Por segurança, a criação de novas visitas foi temporariamente desativada. Entre em contato com o administrador.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isLimitReached && !isBlocked && user?.nivel !== 'Master' && (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/50 animate-in zoom-in-95 duration-500">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <AlertTitle className="font-black uppercase tracking-tight">Limite Mensal Atingido</AlertTitle>
+            <AlertDescription className="font-medium text-destructive/90 text-sm">
+              Sua empresa já realizou <strong>{contagemVisitas}</strong> visitas este mês (Limite: <strong>{user?.limite_visitas}</strong>). 
+              A criação de novas visitas está bloqueada. Entre em contato com o suporte.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center gap-4">
           <Button
             variant="outline"

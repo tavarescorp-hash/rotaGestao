@@ -1,6 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// src/core/api/supabaseClient.ts
+// Redireciona para a instância central do Supabase para garantir a mesma sessão em todo o app.
+export { supabase } from '@/lib/supabase';

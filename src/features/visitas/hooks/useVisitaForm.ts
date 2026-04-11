@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { enviarVisita, verificarVisitaMensal } from "@/features/visitas/api/visitas.service";
+import { enviarVisita, verificarVisitaMensal, getContagemVisitasMensal } from "@/features/visitas/api/visitas.service";
+import { isAfter, parseISO, endOfDay } from "date-fns";
 import { buscarPdvPorCodigo } from "@/features/pdvs/api/pdvs.service";
 import { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
@@ -15,6 +16,17 @@ export function useVisitaForm() {
   const [loading, setLoading] = useState(false);
   const [isSearchingPdv, setIsSearchingPdv] = useState(false);
   const [pdvBuscado, setPdvBuscado] = useState(false);
+  const [contagemVisitas, setContagemVisitas] = useState(0);
+
+  useEffect(() => {
+    if (user?.empresa_id !== undefined) {
+      getContagemVisitasMensal(user.empresa_id).then(setContagemVisitas);
+    }
+  }, [user?.empresa_id]);
+
+  const isExpired = user?.data_vencimento ? isAfter(new Date(), endOfDay(parseISO(user.data_vencimento))) : false;
+  const isBlocked = (user?.status_assinatura !== "Ativa" || isExpired) && user?.nivel !== "Master";
+  const isLimitReached = user?.limite_visitas ? contagemVisitas >= user.limite_visitas : false;
 
   const initialFormState = {
     data_visita: new Date().toISOString().split("T")[0],
@@ -40,6 +52,24 @@ export function useVisitaForm() {
   };
 
   const handlePesquisarPdv = async () => {
+    if (isBlocked) {
+      toast({
+        title: "Acesso Suspenso",
+        description: "Sua empresa possui pendências administrativas. Entre em contato com o administrador.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isLimitReached && user?.nivel !== 'Master') {
+      toast({
+        title: "Limite Atingido",
+        description: `Sua empresa atingiu o limite mensal de ${user?.limite_visitas} visitas.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!form.data_visita || !user?.unidade || !user?.funcao || !form.codigo_pdv) {
       toast({
         title: "Campos obrigatórios",
@@ -179,6 +209,9 @@ export function useVisitaForm() {
     loading,
     isSearchingPdv,
     pdvBuscado,
+    isLimitReached,
+    isBlocked,
+    contagemVisitas,
     handleChange,
     handlePesquisarPdv,
     handleSubmitFinal,

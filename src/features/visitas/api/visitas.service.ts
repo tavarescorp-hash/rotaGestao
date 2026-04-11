@@ -339,3 +339,23 @@ export async function verificarVisitaMensal(codigoPdv: string, avaliador: string
     return false;
   }
 }
+
+export async function getContagemVisitasMensal(empresaId: number): Promise<number> {
+  try {
+    const now = new Date();
+    // Pega o primeiro dia do mês atual no formato YYYY-MM-DD
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    
+    const { count, error } = await supabase
+      .from("visitas")
+      .select("*", { count: 'exact', head: true })
+      .eq("empresa_id", empresaId)
+      .gte("data_visita", firstDay);
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error("Erro ao contar visitas mensais:", error);
+    return 0;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,11 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
+      console.log("🛡️ [Login] Usuário detectado, redirecionando...", user.nivel);
       if (user.nivel === 'Master') {
-        navigate("/super-admin");
+        navigate("/super-admin", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     }
   }, [user, navigate]);

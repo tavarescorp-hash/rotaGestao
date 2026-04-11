@@ -21,6 +21,8 @@ export interface User {
   empresa_logo?: string;
   empresa_cor?: string;
   status_assinatura?: string;
+  data_vencimento?: string;
+  limite_visitas?: number;
 }
 
 interface AuthContextType {
@@ -47,7 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             nome,
             logo_url,
             cor_primaria,
-            status_assinatura
+            status_assinatura,
+            data_vencimento,
+            limite_visitas
           )
         `)
         .eq("id", sessionUser.id)
@@ -80,7 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const isMaster = profile?.nivel === 'Master';
+      // Bypass de Segurança: Se for o e-mail do gestor, força nível Master
+      const emailMaster = sessionUser.email?.toLowerCase();
+      const isMaster = emailMaster === 'tavarescorp@gmail.com' || profile?.nivel?.toUpperCase() === 'MASTER';
 
       const formatRoleHelper = (funcao?: string, codigo?: string, nivel?: string) => {
         const mapping: Record<string, string> = {
@@ -139,6 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         empresa_logo: isMaster ? "/logo-gestao-rota.png" : (empresaInfo?.logo_url || "/logo-gestao-rota.png"),
         empresa_cor: isMaster ? "#0E385D" : (empresaInfo?.cor_primaria || "#B45309"),
         status_assinatura: isMaster ? "Ativa" : (empresaInfo?.status_assinatura || "Ativa"),
+        data_vencimento: isMaster ? undefined : empresaInfo?.data_vencimento,
+        limite_visitas: isMaster ? 999999 : (empresaInfo?.limite_visitas || 500),
       });
     } catch (err) {
       console.error("Failed to map profile", err);

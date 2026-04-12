@@ -280,6 +280,9 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const uUnidRaw = String(user?.unidade || "");
           const isMasterView = normalizeName(user?.unidade || "") === 'todas' || (user?.unidade || "") === '';
 
+          const loginNormal = normalizeName(user?.name || "");
+          const isMacaeUser = isBranchMatch(user?.unidade, 'm');
+
           const pdvFiltrado = pdvData.filter((p: any) => {
             const matchesId = p.id_supervisor && user?.id && p.id_supervisor === user.id;
             if (matchesId) return true;
@@ -289,24 +292,22 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
             const matchesGerente = nSales.includes(nMatchStr) || nComercial.includes(nMatchStr);
 
             // 1. Prioridade: Se o nome do gerente bate com o filtro (Auditoria), INCLUA independente da filial.
-            // Isso resolve o caso do Diego Manhanini que tem PDVs em Macaé (M) e Campos (C).
             if (matchesGerente) return true;
 
-            // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial original do usuário
+            // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial inteligente
             const matchesFilial = isBranchMatch(user?.unidade, p.filial) || isMasterView;
 
             return matchesFilial;
           });
 
-          // Rescue Force Macaé: Garante que o Diego Manhanini apareça para usuários de Macaé mesmo sem auditoria ativa
-          if (isMacaeUser && pdvData.length > 0) {
-            pdvData.forEach(p => {
-              const isDiegoPdv = normalizeName(p.nome_gerente_vendas || "").includes("diegomanhanini");
-              if (isDiegoPdv && !pdvFiltrado.some(pf => pf.codigo === p.codigo)) {
-                pdvFiltrado.push(p);
-              }
-            });
-          }
+          // Rescue Force: Adiciona PDVs onde o gerente é o usuário logado, garantindo visibilidade total
+          pdvData.forEach(p => {
+            const isTargetGerente = normalizeName(p.nome_gerente_vendas || "").includes(nMatchStr) || 
+                                   normalizeName(p.nome_gerente_comercial || "").includes(nMatchStr);
+            if (isTargetGerente && !pdvFiltrado.some(pf => pf.codigo === p.codigo)) {
+              pdvFiltrado.push(p);
+            }
+          });
 
           const vMap = new Map<string, VendedorAtivo>();
           formatado.forEach(v => vMap.set(v.cod_vendedor || v.nome_vendedor, v));

@@ -255,13 +255,19 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         const uUnidRaw = String(user?.unidade || "");
         const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();
 
+        console.log(`📊 [DEBUG Niv3] Filtrando para ${user?.name}. Filtro: ${nMatch}`);
         formatado = formatado.filter(v => {
-          const matchesGerente = normalizeName(v.gerente).includes(nMatch);
+          const vGerenteNormal = normalizeName(v.gerente);
+          const matchesGerente = vGerenteNormal.includes(nMatch) || nMatch.includes(vGerenteNormal);
+          
           const isMasterView = normalizeName(user?.unidade || "") === 'todas' || normalizeName(user?.unidade || "") === '';
-
           const matchesFilial = isBranchMatch(user?.unidade, v.filial) || isMasterView;
 
-          return matchesGerente || matchesFilial;
+          const res = matchesGerente || matchesFilial;
+          if (vGerenteNormal.includes('DIEGO')) {
+            console.log(`   - Vendedor: ${v.nome_vendedor} | Gerente: ${v.gerente} | Filial: ${v.filial} | MatchName: ${matchesGerente} | MatchFilial: ${matchesFilial} | FINAL: ${res}`);
+          }
+          return res;
         });
       }
 

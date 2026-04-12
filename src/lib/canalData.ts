@@ -176,7 +176,7 @@ export const canalProdutosExecucao: Record<string, CanalConfig> = {
       { nome: "PRAYA LN 330ML NO CARDÁPIO", pontos: 10 },
     ],
   },
-  "Entretenimento Espec": {
+  "Entretenimento Especial": {
     produtos: [
       { nome: "AMSTEL LT 473ML", pontos: 15 },
       { nome: "AMSTEL LN: 330ML/275ML(ULTRA)", pontos: 10 },

@@ -9,7 +9,7 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
     let canalBusca = normalize(canal);
 
     if (canalBusca.includes("entretenimento esp")) {
-      canalBusca = "entretenimento espec";
+      canalBusca = "entretenimento especial";
     }
 
     let data;

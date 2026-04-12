@@ -17,7 +17,7 @@ import { getIndicadoresPorNivel, REQUER_PRODUTOS_EXECUCAO, REQUER_COACHING } fro
 const canalOptions = [
   "Padaria/Confeitaria", "Armazém/Mercearia", "Adega", "Lanchonete",
   "Restaurante C/D", "Restaurante A/B", "Bar C/D", "Bar A/B",
-  "Entretenimento Espec.", "Loja de Conveniência", "Mini C/D", "Mini A/B",
+  "Entretenimento Especial", "Loja de Conveniência", "Mini C/D", "Mini A/B",
   "Super C/D", "Super A/B",
 ];
 

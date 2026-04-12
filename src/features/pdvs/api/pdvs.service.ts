@@ -297,10 +297,13 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
             const nComercial = normalizeName(p.nome_gerente_comercial || "");
             const matchesGerente = nSales.includes(nMatchStr) || nComercial.includes(nMatchStr);
 
-            // 1. Prioridade: Se o nome do gerente bate com o filtro (Auditoria), INCLUA independente da filial.
+            // 1. Prioridade: Se o nome do gerente bate com o filtro (Auditoria), INCLUA
             if (matchesGerente) return true;
 
-            // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial inteligente
+            // 2. Chave Mestra Diego: Se o usuário logado é o Diego, libera a visão total para garantir que nada suma
+            if (loginNormal.includes('diegomanhanini')) return true;
+
+            // 3. Fallback: Se não é auditoria de nome, usa o filtro de filial inteligente
             const matchesFilial = isBranchMatch(user?.unidade, p.filial) || isMasterView;
 
             return matchesFilial;

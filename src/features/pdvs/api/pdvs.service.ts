@@ -230,8 +230,8 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       if (isAnalista) {
         // Analista não filtra nada no JS (Visão de Diretor)
       } else if (user?.nivel === 'Niv4' && supervisorId) {
-        const sMatch = supervisorId.replace(/%/g, '').toUpperCase();
-        formatado = formatado.filter(v => v.nome_supervisor?.toUpperCase().includes(sMatch));
+        const nMatch = normalizeName(supervisorId.replace(/%/g, ''));
+        formatado = formatado.filter(v => normalizeName(v.nome_supervisor).includes(nMatch));
       } else if (user?.nivel === 'Niv2' && gerenteRef) {
         const uUnidRaw = String(user?.unidade || "");
         const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();

@@ -292,15 +292,9 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-background/40 p-2 rounded-xl border border-white/5">
-            <div className="flex flex-col items-center px-3">
-              <span className="text-[10px] uppercase font-semibold text-muted-foreground">Produtos</span>
-              <span className="font-bold text-foreground">{pontuacaoProdutos}</span>
-            </div>
-            <div className="w-px h-8 bg-border/50"></div>
-            <div className="flex items-center justify-center px-4 bg-primary text-primary-foreground rounded-lg h-full shadow-inner">
-              <span className="text-xl font-black">{pontuacaoTotal}</span>
-            </div>
+          <div className="flex items-center gap-3 bg-primary text-primary-foreground rounded-lg h-12 px-6 shadow-lg shadow-primary/20">
+            <span className="text-xs uppercase font-black tracking-widest opacity-80">Pontuação Total</span>
+            <span className="text-2xl font-black">{pontuacaoTotal}</span>
           </div>
         </CardContent>
       </Card>
@@ -395,12 +389,6 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {item.nome}
                       </span>
-                      <Badge
-                        variant="outline"
-                        className={`ml-auto font-bold text-xs shrink-0 ${isChecked ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background/50 text-muted-foreground'}`}
-                      >
-                        {item.pontos} PTS
-                      </Badge>
 
                     </label>
                   );

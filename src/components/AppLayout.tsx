@@ -22,13 +22,13 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full overscroll-none">
+      <div className="h-[100dvh] flex w-full overflow-hidden bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <header className="sticky top-0 z-50 h-16 sm:h-14 flex items-center justify-between border-b border-border px-4 bg-card gap-2 shrink-0">
+          <header className="sticky top-0 z-50 h-14 flex items-center justify-between border-b border-border px-4 bg-card gap-2 shrink-0">
             <div className="flex items-center min-w-0">
               <SidebarTrigger className="shrink-0" />
-              <span className="ml-2 text-xs sm:text-sm font-medium text-muted-foreground truncate">{user?.empresa_nome} — Rota Gestão</span>
+              <span className="ml-2 text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest truncate">{user?.empresa_nome} — Rota Gestão</span>
             </div>
             <ModeToggle />
           </header>

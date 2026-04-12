@@ -111,15 +111,26 @@
     user-select: none;
     -webkit-user-select: none;
 
-    /* iOS e Android: Previnir Pull-to-Refresh */
-    overscroll-behavior-y: none;
+    /* iOS e Android: Previnir Pull-to-Refresh indesejado no topo, mas permitir scroll */
+    overscroll-behavior-y: contain;
+    
+    /* Viewport Dinâmico para Celular */
+    min-height: 100dvh;
+    width: 100%;
+    overflow-x: hidden;
 
     /* iOS PWA Safe Area */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
   
-  /* Allow text selection in inputs and textareas */
+  /* Prevenir zoom automático no iOS ao focar em inputs/selects */
+  @media screen and (max-width: 768px) {
+    input, select, textarea, .select-trigger {
+      font-size: 16px !important;
+    }
+  }
+
   input, textarea {
     user-select: auto;
     -webkit-user-select: auto;

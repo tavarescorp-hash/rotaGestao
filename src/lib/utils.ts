@@ -53,6 +53,7 @@ export function isBranchMatch(val1: string | null | undefined, val2: string | nu
   const isC2 = n2 === 'c' || n2.includes('campos');
   if (isC1 && isC2) return true;
   
-  // Fallback para contenção mútua
-  return n1.includes(n2) || n2.includes(n1);
+  // Se não caiu em Macaé ou Campos, e os nomes não são idênticos, não é match.
+  // Evitamos o includes genérico que causava 'c' (Campos) dar match em 'macae'.
+  return false;
 }

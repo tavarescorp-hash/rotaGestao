@@ -199,7 +199,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
         
         // Regra Híbrida: Mostra se o nome do gerente bater OU se for da mesma unidade (para Niv3 ter visão total)
         const matchesName = !filterNormal || vGerenteNormal.includes(filterNormal) || filterNormal.includes(vGerenteNormal);
-        const matchesUnit = userLevel === 'Niv3' && isBranchMatch(userUnidade, v.filial);
+        const matchesUnit = normalizeName(userLevel).includes('niv3') && isBranchMatch(userUnidade, v.filial);
         
         const isTarget = vGerenteNormal.includes('DIEGO') || 
                        normalizeName(v.nome_supervisor).includes('ANDERSON') || 

@@ -250,7 +250,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
           return matchesGCom || matchesFilial || emptyUnid;
         });
-      } else if (user?.nivel === 'Niv3' && gerenteRef) {
+      } else if (normalizeName(user?.nivel).includes('niv3') && gerenteRef) {
         const nMatch = normalizeName(gerenteRef.replace(/%/g, ''));
         const uUnidRaw = String(user?.unidade || "");
         const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();

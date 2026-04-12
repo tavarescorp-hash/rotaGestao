@@ -210,7 +210,8 @@ export default function SuperAdmin() {
           <CardDescription>Status das assinaturas e parametrizações ativas.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[80px]">ID</TableHead>
@@ -269,8 +270,8 @@ export default function SuperAdmin() {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

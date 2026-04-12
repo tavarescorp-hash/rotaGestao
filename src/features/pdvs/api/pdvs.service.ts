@@ -19,9 +19,10 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     let codigoBuscado = codigo;
 
     if (/^\d+$/.test(codigoBuscado) && user?.unidade) {
-      if (user.unidade.toUpperCase().includes('MACA')) {
+      const unid = user.unidade.toUpperCase();
+      if (unid.includes('MACA') || unid === 'M') {
         codigoBuscado = `M${codigoBuscado}`;
-      } else if (user.unidade.toUpperCase().includes('CAMPOS')) {
+      } else if (unid.includes('CAMPOS') || unid === 'C') {
         codigoBuscado = `C${codigoBuscado}`;
       }
     }

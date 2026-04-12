@@ -270,6 +270,7 @@ export default function SuperAdmin() {
                   </TableRow>
                 ))
               )}
+            </TableBody>
             </Table>
           </div>
         </CardContent>

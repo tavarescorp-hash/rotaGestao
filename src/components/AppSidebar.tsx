@@ -36,8 +36,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 

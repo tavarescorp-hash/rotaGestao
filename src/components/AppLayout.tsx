@@ -10,6 +10,9 @@ import { AlertTriangle } from "lucide-react";
 const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
+
+  if (!user) return <Navigate to="/" replace />;
+
   const isExpired = user.data_vencimento ? isAfter(new Date(), endOfDay(parseISO(user.data_vencimento))) : false;
 
   if (user?.nivel === 'Master' && location.pathname !== '/super-admin') {
@@ -17,8 +20,6 @@ const AppLayout = () => {
   }
 
   const isBlocked = (user.status_assinatura !== "Ativa" || isExpired) && user.nivel !== "Master";
-
-  if (!user) return <Navigate to="/" replace />;
 
   return (
     <SidebarProvider>

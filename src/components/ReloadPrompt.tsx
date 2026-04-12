@@ -21,6 +21,9 @@ export function ReloadPrompt() {
   useEffect(() => {
     const checkInterval = 10 * 60 * 1000; // 10 minutos
     
+    // Verificação imediata ao montar
+    updateServiceWorker(false);
+
     const intervalId = setInterval(() => {
       if (!(!offlineReady && !needRefresh)) return;
       updateServiceWorker(false); // apenas verifica sem forçar refresh imediato

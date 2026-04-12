@@ -194,7 +194,14 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
     vendedores.forEach(v => {
       if (v.nome_supervisor) {
         const vGerenteNormal = normalizeName(v.gerente);
-        if (!filterNormal || vGerenteNormal.includes(filterNormal)) {
+        const vFilialNormal = normalizeName(v.filial);
+        const userUnidNormal = normalizeName(userUnidade || "");
+        
+        // Regra Híbrida: Mostra se o nome do gerente bater OU se for da mesma unidade (para Niv3 ter visão total)
+        const matchesName = !filterNormal || vGerenteNormal.includes(filterNormal);
+        const matchesUnit = userLevel === 'Niv3' && vFilialNormal.includes(userUnidNormal) && !!userUnidNormal;
+        
+        if (matchesName || matchesUnit) {
           nomes.add(v.nome_supervisor.trim());
         }
       }

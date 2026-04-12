@@ -154,7 +154,13 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
     });
 
     const total = fds + rgb + coaching;
-    const meta = type === 'GCOM' ? 80 : type === 'GV' ? 60 : 20;
+    
+    // Unificação de Metas: Niv4 (Supervisor) = 10 FDS + 20 RGB + (5 * nº de vendedores)
+    // Para GV e GCOM mantemos valores de referência estrutural por enquanto (60 e 80)
+    const meta = (type === 'SUP') 
+      ? (10 + 20 + (sellersNaEstrutura.size * 5)) 
+      : (type === 'GV' ? 60 : 80);
+
     return { fds, rgb, coaching, total, progress: Math.min((total / meta) * 100, 100), visitedIds };
   };
 

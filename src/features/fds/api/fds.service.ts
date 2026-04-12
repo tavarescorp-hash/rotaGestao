@@ -8,8 +8,8 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
 
     let canalBusca = normalize(canal);
 
-    if (canalBusca.includes("entretenimento esp")) {
-      canalBusca = "entretenimento especial";
+    if (canalBusca.includes("entretenimento espec")) {
+      canalBusca = "entretenimento espec";
     }
 
     let data;
@@ -52,9 +52,9 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
         const prod = getField(row, 'produto');
         return prod && String(prod).trim() !== "";
       })
-      .map((row: any) => ({ 
-        nome: String(getField(row, 'produto')).trim(), 
-        pontos: parseInt(getField(row, 'pontos')) || 0 
+      .map((row: any) => ({
+        nome: String(getField(row, 'produto')).trim(),
+        pontos: parseInt(getField(row, 'pontos')) || 0
       }));
 
     const produtos = Array.from(new Map(produtosRaw.map(p => [p.nome, p])).values()) as { nome: string, pontos: number }[];
@@ -64,9 +64,9 @@ export async function buscarFdsPorCanal(canal: string): Promise<{ produtos: { no
         const exec = getField(row, 'execucao');
         return exec && String(exec).trim() !== "";
       })
-      .map((row: any) => ({ 
-        nome: String(getField(row, 'execucao')).trim(), 
-        pontos: parseInt(getField(row, 'pontos')) || 0 
+      .map((row: any) => ({
+        nome: String(getField(row, 'execucao')).trim(),
+        pontos: parseInt(getField(row, 'pontos')) || 0
       }));
 
     const execucao = Array.from(new Map(execucaoRaw.map(e => [e.nome, e])).values()) as { nome: string, pontos: number }[];

@@ -43,7 +43,7 @@ const canalOptions = [
   "Restaurante A/B",
   "Bar C/D",
   "Bar A/B",
-  "Entretenimento Especial",
+  "Entretenimento Espec",
   "Loja de Conveniência",
   "Mini C/D",
   "Mini A/B",
@@ -92,14 +92,14 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
       // Limpar campos dependentes se seus pais mudarem
       formQuestions.forEach(q => {
         if (q.dependsOn && q.dependsOn.questionId === id) {
-           // Se a condição dependente não for mais atendida, limpamos o valor
-           const parentVal = valor;
-           const targetVals = Array.isArray(q.dependsOn.valueToMatch) ? q.dependsOn.valueToMatch : [q.dependsOn.valueToMatch];
-           const matchType = q.dependsOn.matchType || 'equals';
-           const matches = matchType === 'equals' ? targetVals.includes(parentVal) : !targetVals.includes(parentVal);
-           if (!matches) {
-              delete novasResp[q.id];
-           }
+          // Se a condição dependente não for mais atendida, limpamos o valor
+          const parentVal = valor;
+          const targetVals = Array.isArray(q.dependsOn.valueToMatch) ? q.dependsOn.valueToMatch : [q.dependsOn.valueToMatch];
+          const matchType = q.dependsOn.matchType || 'equals';
+          const matches = matchType === 'equals' ? targetVals.includes(parentVal) : !targetVals.includes(parentVal);
+          if (!matches) {
+            delete novasResp[q.id];
+          }
         }
       });
       return novasResp;
@@ -108,18 +108,18 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
 
   const isDinamicoValid = formQuestions.every(q => {
     if (!q.required) return true;
-    
+
     // Checar dependência
     if (q.dependsOn) {
       const parentVal = respostasDinamicas[q.dependsOn.questionId];
       const targetVals = Array.isArray(q.dependsOn.valueToMatch) ? q.dependsOn.valueToMatch : [q.dependsOn.valueToMatch];
       const matchType = q.dependsOn.matchType || 'equals';
       const isVisible = matchType === 'equals' ? targetVals.includes(parentVal) : !targetVals.includes(parentVal);
-      
+
       // Só é exigido se estiver visível
       if (!isVisible) return true;
     }
-    
+
     // Se chegou aqui, a pergunta está na tela e é obrigatória
     const val = respostasDinamicas[q.id];
     return val !== undefined && val.trim() !== "";
@@ -156,7 +156,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     }
 
     // Calcular Gaps (Produtos Não Selecionados)
-    const produtosNaoSelecionados = config 
+    const produtosNaoSelecionados = config
       ? config.produtos.map(p => p.nome).filter(nome => !produtosSelecionados.includes(nome))
       : [];
 
@@ -190,13 +190,13 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
       } else if (INDICADORES_TIPO_RGB.includes(tipoVisita)) {
         const focoRgbGlobal = await getConfiguracao('foco_rgb_mes', user);
         const opcoesValidas = ["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"];
-        
+
         if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum' && opcoesValidas.includes(focoRgbGlobal)) {
           setRespostasDinamicas(p => ({ ...p, foco_visita: focoRgbGlobal }));
         } else {
           // Caso venha configuração inválida (ex: "Foco RGB"), reseta.
           if (!opcoesValidas.includes(focoRgbGlobal || "")) {
-             setRespostasDinamicas(p => ({ ...p, foco_visita: "" }));
+            setRespostasDinamicas(p => ({ ...p, foco_visita: "" }));
           }
         }
       }
@@ -343,8 +343,8 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {produto.nome}
                       </span>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`ml-auto font-bold text-xs shrink-0 ${isChecked ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background/50 text-muted-foreground'}`}
                       >
                         {produto.pontos} PTS
@@ -395,8 +395,8 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                       <span className={`text-sm font-semibold flex-1 leading-tight break-words pr-2 ${isChecked ? 'text-foreground' : 'text-foreground/80'}`}>
                         {item.nome}
                       </span>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`ml-auto font-bold text-xs shrink-0 ${isChecked ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background/50 text-muted-foreground'}`}
                       >
                         {item.pontos} PTS
@@ -424,69 +424,69 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
           </CardHeader>
           <CardContent className="pt-6 space-y-8">
             {formQuestions.map(q => {
-               // Dependência condicional (depende de outra resposta para aparecer)
-               if (q.dependsOn) {
-                  const parentVal = respostasDinamicas[q.dependsOn.questionId];
-                  const targetVals = Array.isArray(q.dependsOn.valueToMatch) ? q.dependsOn.valueToMatch : [q.dependsOn.valueToMatch];
-                  const matchType = q.dependsOn.matchType || 'equals';
-                  const isVisible = matchType === 'equals' ? targetVals.includes(parentVal) : !targetVals.includes(parentVal);
-                  if (!isVisible) return null;
-               }
+              // Dependência condicional (depende de outra resposta para aparecer)
+              if (q.dependsOn) {
+                const parentVal = respostasDinamicas[q.dependsOn.questionId];
+                const targetVals = Array.isArray(q.dependsOn.valueToMatch) ? q.dependsOn.valueToMatch : [q.dependsOn.valueToMatch];
+                const matchType = q.dependsOn.matchType || 'equals';
+                const isVisible = matchType === 'equals' ? targetVals.includes(parentVal) : !targetVals.includes(parentVal);
+                if (!isVisible) return null;
+              }
 
-               return (
-                  <div key={q.id} className="space-y-4 pt-4 first:pt-0 first:border-0 border-t border-border/40 animate-in fade-in slide-in-from-top-2">
-                     <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
-                       {q.label} {q.required && <span className="text-destructive ml-1">*</span>}
-                     </Label>
-                     
-                     {q.type === "text" && (
-                       <Input
-                         value={respostasDinamicas[q.id] || ""}
-                         onChange={(e) => handleRespostaChange(q.id, e.target.value)}
-                         className="h-12 bg-background/50"
-                       />
-                     )}
+              return (
+                <div key={q.id} className="space-y-4 pt-4 first:pt-0 first:border-0 border-t border-border/40 animate-in fade-in slide-in-from-top-2">
+                  <Label className="text-sm font-bold text-primary uppercase tracking-widest flex items-center">
+                    {q.label} {q.required && <span className="text-destructive ml-1">*</span>}
+                  </Label>
 
-                     {q.type === "textarea" && (
-                       <Textarea
-                         value={respostasDinamicas[q.id] || ""}
-                         onChange={(e) => handleRespostaChange(q.id, e.target.value)}
-                         className="min-h-[100px] resize-y bg-background/50 focus:ring-primary border-primary/20 shadow-sm"
-                       />
-                     )}
+                  {q.type === "text" && (
+                    <Input
+                      value={respostasDinamicas[q.id] || ""}
+                      onChange={(e) => handleRespostaChange(q.id, e.target.value)}
+                      className="h-12 bg-background/50"
+                    />
+                  )}
 
-                     {q.type === "radio" && q.options && (
-                       <RadioGroup 
-                         value={respostasDinamicas[q.id] || ""} 
-                         onValueChange={(val) => handleRespostaChange(q.id, val)}
-                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-                       >
-                         {q.options.map(opt => (
-                           <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${respostasDinamicas[q.id] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                             <RadioGroupItem value={opt} />
-                             <span className="text-sm font-semibold leading-tight">{opt}</span>
-                           </Label>
-                         ))}
-                       </RadioGroup>
-                     )}
+                  {q.type === "textarea" && (
+                    <Textarea
+                      value={respostasDinamicas[q.id] || ""}
+                      onChange={(e) => handleRespostaChange(q.id, e.target.value)}
+                      className="min-h-[100px] resize-y bg-background/50 focus:ring-primary border-primary/20 shadow-sm"
+                    />
+                  )}
 
-                     {q.type === "select" && q.options && (
-                       <Select 
-                         value={respostasDinamicas[q.id] || ""} 
-                         onValueChange={(val) => handleRespostaChange(q.id, val)}
-                       >
-                         <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
-                           <SelectValue placeholder="Selecione..." />
-                         </SelectTrigger>
-                         <SelectContent>
-                           {q.options.map(opt => (
-                             <SelectItem key={opt} value={opt} className="font-medium cursor-pointer py-3">{opt}</SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
-                     )}
-                  </div>
-               );
+                  {q.type === "radio" && q.options && (
+                    <RadioGroup
+                      value={respostasDinamicas[q.id] || ""}
+                      onValueChange={(val) => handleRespostaChange(q.id, val)}
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                    >
+                      {q.options.map(opt => (
+                        <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${respostasDinamicas[q.id] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                          <RadioGroupItem value={opt} />
+                          <span className="text-sm font-semibold leading-tight">{opt}</span>
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  )}
+
+                  {q.type === "select" && q.options && (
+                    <Select
+                      value={respostasDinamicas[q.id] || ""}
+                      onValueChange={(val) => handleRespostaChange(q.id, val)}
+                    >
+                      <SelectTrigger className="h-12 bg-background/50 focus:ring-primary border-primary/20 font-semibold shadow-sm text-base">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {q.options.map(opt => (
+                          <SelectItem key={opt} value={opt} className="font-medium cursor-pointer py-3">{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              );
             })}
           </CardContent>
         </Card>

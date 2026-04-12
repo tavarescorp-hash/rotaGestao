@@ -92,40 +92,40 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     if (user?.nivel === 'Niv4' && user?.name) {
       const supPdv = normalizeName(pdv.nome_supervisor);
       const supLogado = normalizeName(user.name);
-      
+
       if (supPdv !== supLogado && !supPdv.includes(supLogado) && !supLogado.includes(supPdv)) {
-         throw new Error(`Este PDV está vinculado ao supervisor ${pdv.nome_supervisor || 'outro'}. Você não possui permissão para acessá-lo.`);
+        throw new Error(`Este PDV está vinculado ao supervisor ${pdv.nome_supervisor || 'outro'}. Você não possui permissão para acessá-lo.`);
       }
     }
-    
+
     // Validação de Gestão Nível 3 (Gerente)
     if (user?.nivel === 'Niv3' && user?.name) {
       const gvPdv = normalizeName(pdv.nome_gerente_vendas);
       const gvLogado = normalizeName(user.name);
       const uUser = user.unidade?.toUpperCase();
       const fPdv = pdv.filial?.toUpperCase();
-      const isSameBranch = (uUser?.includes('MACA') && (fPdv === 'M' || fPdv?.includes('MACA'))) ||
-                           (uUser?.includes('CAMPO') && (fPdv === 'C' || fPdv?.includes('CAMPO')));
+      const isSameBranch = (uUser?.includes('MACAE') && (fPdv === 'M' || fPdv?.includes('MACAE'))) ||
+        (uUser?.includes('CAMPOS') && (fPdv === 'C' || fPdv?.includes('CAMPOS')));
 
       if (gvPdv !== gvLogado && !gvPdv.includes(gvLogado) && !gvLogado.includes(gvPdv) && !isSameBranch) {
-         throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
+        throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
       }
     }
 
     const codigoParaVerificar = pdv.cod_vendedor?.toString() || "";
 
-      let forcedData: any = null;
-      if (codigoParaVerificar) {
-        const { data: vData } = await supabase
-          .from('vendedores')
-          .select('supervisores(nome, filial, gerente)')
-          .eq('cod_vendedor', codigoParaVerificar)
-          .single();
+    let forcedData: any = null;
+    if (codigoParaVerificar) {
+      const { data: vData } = await supabase
+        .from('vendedores')
+        .select('supervisores(nome, filial, gerente)')
+        .eq('cod_vendedor', codigoParaVerificar)
+        .single();
 
-        if (vData?.supervisores) {
-          forcedData = vData.supervisores;
-        }
+      if (vData?.supervisores) {
+        forcedData = vData.supervisores;
       }
+    }
 
       return {
         nome_fantasia: pdv.sigla || pdv.razao_social,
@@ -141,12 +141,10 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
         coorden_x: "",
         coorden_y: ""
       };
+    } catch (err) {
+      console.error("Erro em buscarPdvPorCodigo:", err);
+      return null;
     }
-    return null;
-  } catch (err) {
-    console.error("Erro em buscarPdvPorCodigo:", err);
-    return null;
-  }
 }
 
 export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[]> {
@@ -177,7 +175,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const gRef = (gerenteRef?.replace(/%/g, '') || "").toUpperCase();
           const uUnid = (user?.unidade || "").toUpperCase();
 
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isMacaeUser = uUnid.includes("MACAE") || uUnid === "M";
           const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 
@@ -257,7 +255,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const matchesGCom = normalizeName(v.gerente_comercial).includes(nMatch) ||
             normalizeName(v.gerente).includes(nMatch);
 
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isMacaeUser = uUnid.includes("MACAE") || uUnid === "M";
           const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
           const emptyUnid = uUnid === '' || uUnid === 'NULL' || uUnid === 'UNDEFINED';
@@ -275,7 +273,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
         formatado = formatado.filter(v => {
           const matchesGerente = normalizeName(v.gerente).includes(nMatch);
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M";
+          const isMacaeUser = uUnid.includes("MACAE") || uUnid === "M";
           const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C";
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 
@@ -303,7 +301,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const uUnid = uUnidRaw === "null" || uUnidRaw === "undefined" ? "" : uUnidRaw.toUpperCase();
           const loginNormal = normalizeName(user?.name || "");
 
-          const isMacaeUser = uUnid.includes("MACA") || uUnid === "M" || loginNormal.includes("diegomanhanini");
+          const isMacaeUser = uUnid.includes("MACAE") || uUnid === "M" || loginNormal.includes("macae");
           const isCamposUser = uUnid.includes("CAMPOS") || uUnid === "C" || loginNormal.includes("campos");
           const isMasterView = uUnid === 'TODAS' || uUnid === '';
 

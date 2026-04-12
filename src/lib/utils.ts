@@ -43,16 +43,18 @@ export function isBranchMatch(val1: string | null | undefined, val2: string | nu
   
   if (n1 === n2) return true;
   
-  // Tratamento de Macaé (M)
+  // Tratamento rigoroso de Macaé (M)
   const isM1 = n1 === 'm' || n1.includes('macae');
   const isM2 = n2 === 'm' || n2.includes('macae');
   if (isM1 && isM2) return true;
   
-  // Tratamento de Campos (C)
+  // Tratamento rigoroso de Campos (C)
   const isC1 = n1 === 'c' || n1.includes('campos');
   const isC2 = n2 === 'c' || n2.includes('campos');
   if (isC1 && isC2) return true;
   
-  // Fallback para contenção mútua
+  // Se for apenas uma letra e não bateu acima, rejeita (evita 'c' dar match em 'macae')
+  if (n1.length === 1 || n2.length === 1) return false;
+  
   return n1.includes(n2) || n2.includes(n1);
 }

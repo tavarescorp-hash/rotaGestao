@@ -355,12 +355,13 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
               });
             }
           });
+
           formatado = Array.from(vMap.values());
         }
       }
 
       const diegoFound = formatado.filter(v => normalizeName(v.gerente).includes("diegomanhanini"));
-      console.log(`📊 [DEBUG_DIEGO] Registros para Diego Manhanini encontrados: ${diegoFound.length}`);
+      console.log(`📊 [DEBUG_DIEGO] Registros para Diego Manhanini encontrados após Busca Híbrida: ${diegoFound.length}`);
 
       return formatado;
     }

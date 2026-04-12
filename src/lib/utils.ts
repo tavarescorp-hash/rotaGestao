@@ -17,8 +17,8 @@ export function normalizeName(s?: string): string {
   
   // Resolução de Apelidos (Aliases) conhecidos para unificação de base
   if (name.includes("ANDERSON") && (name.includes("ALEXANDRE") || name.includes("LUCIANO"))) return "andersonlucianodesouza";
-  if (name.includes("CLEYTON") && (name.includes("SOUZA") || name.includes("FELIX") || name.includes("SANTOS"))) return "cleytondossantosfelix";
-  if (name.includes("DIEGO") && name.includes("MANHANINI")) return "diegomanhanini";
+  if (name.includes("CLEYTON")) return "cleytondossantosfelix"; // Unificação total para o supervisor de Macaé
+  if (name.includes("DIEGO") && (name.includes("MANHANINI") || name.includes("MAGALHAES"))) return "diegomanhanini";
   if (name.includes("GERENTE") && name.includes("CAMPOS")) return "gerentecampos";
   if (name.includes("CARLOS") && name.includes("TAVARES")) return "carlostavares";
   if (name.includes("GUILHERME") && name.includes("CHAGAS")) return "guilhermedaschagas";

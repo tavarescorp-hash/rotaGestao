@@ -460,12 +460,13 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       const topName = filtroLider?.name || userName || "";
       const isMyOwnView = normalizeName(topName) === normalizeName(userName);
       
-      // Coleta exclusivamente a base de relacionamento afetivo nas avaliações do próprio líder
-      const vendedoresEquipe = Array.from(new Set([
-        ...visitas
-          .filter(v => normalizeName(v.avaliador) === normalizeName(topName) && (v.nome_vendedor || v.vendedor))
-          .map(v => v.nome_vendedor || v.vendedor)
-      ].filter(Boolean))).sort();
+      // Coleta a base oficial de vendedores cadastrados para este supervisor
+      const vendedoresEquipe = Array.from(new Set(
+        vendedores
+          .filter(v => normalizeName(v.nome_supervisor) === normalizeName(topName))
+          .map(v => v.nome_vendedor)
+          .filter(Boolean)
+      )).sort();
 
       return (
         <div className="space-y-10">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { normalizeName } from '@/lib/utils';
+import { normalizeName, isBranchMatch } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -199,7 +199,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
         
         // Regra Híbrida: Mostra se o nome do gerente bater OU se for da mesma unidade (para Niv3 ter visão total)
         const matchesName = !filterNormal || vGerenteNormal.includes(filterNormal);
-        const matchesUnit = userLevel === 'Niv3' && vFilialNormal.includes(userUnidNormal) && !!userUnidNormal;
+        const matchesUnit = userLevel === 'Niv3' && isBranchMatch(userUnidade, v.filial);
         
         if (matchesName || matchesUnit) {
           nomes.add(v.nome_supervisor.trim());

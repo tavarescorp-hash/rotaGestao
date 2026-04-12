@@ -31,3 +31,28 @@ export function normalizeName(s?: string): string {
     .replace(/[^a-z0-9]/gi, "") // Remove espaços e caracteres especiais
     .trim();
 }
+
+/**
+ * Compara duas unidades/filiais de forma resiliente e bi-direcional.
+ * Ex: 'M' dá match com 'MACAÉ', 'CAMPOS' dá match com 'C'.
+ */
+export function isBranchMatch(val1: string | null | undefined, val2: string | null | undefined): boolean {
+  if (!val1 || !val2) return false;
+  const n1 = normalizeName(val1);
+  const n2 = normalizeName(val2);
+  
+  if (n1 === n2) return true;
+  
+  // Tratamento de Macaé (M)
+  const isM1 = n1 === 'm' || n1.includes('macae');
+  const isM2 = n2 === 'm' || n2.includes('macae');
+  if (isM1 && isM2) return true;
+  
+  // Tratamento de Campos (C)
+  const isC1 = n1 === 'c' || n1.includes('campos');
+  const isC2 = n2 === 'c' || n2.includes('campos');
+  if (isC1 && isC2) return true;
+  
+  // Fallback para contenção mútua
+  return n1.includes(n2) || n2.includes(n1);
+}

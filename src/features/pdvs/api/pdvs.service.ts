@@ -1,6 +1,6 @@
 import { supabase } from '@/core/api/supabaseClient';
 import { getAllFromDB, STORES } from '@/lib/indexedDB';
-import { normalizeName } from '@/lib/utils';
+import { normalizeName, isBranchMatch } from '@/lib/utils';
 
 export interface VendedorAtivo {
   nome_vendedor: string;
@@ -102,10 +102,9 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     if (user?.nivel === 'Niv3' && user?.name) {
       const gvPdv = normalizeName(pdv.nome_gerente_vendas);
       const gvLogado = normalizeName(user.name);
-      const uUser = normalizeName(user.unidade || "");
-      const fPdv = normalizeName(pdv.filial || "");
-      const isSameBranch = (uUser.includes('macae') && (fPdv === 'm' || fPdv.includes('macae'))) ||
-        (uUser.includes('campos') && (fPdv === 'c' || fPdv.includes('campos')));
+      const uUnid = user.unidade;
+      const fPdv = pdv.filial;
+      const isSameBranch = isBranchMatch(uUser, fPdv);
 
       if (gvPdv !== gvLogado && !gvPdv.includes(gvLogado) && !gvLogado.includes(gvPdv) && !isSameBranch) {
         throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
@@ -172,16 +171,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const search = user.name.toUpperCase();
           return vend.nome_supervisor?.toUpperCase().includes(search);
         } else if (user?.nivel === 'Niv2' || user?.nivel === 'Niv3') {
-          const uUnid = normalizeName(user?.unidade || "");
-          const isMacaeUser = uUnid.includes("macae") || uUnid === "m";
-          const isCamposUser = uUnid.includes("campos") || uUnid === "c";
-          const isMasterView = uUnid === 'todas' || uUnid === '';
-
-          const matchesGerente = (vend.gerente_comercial?.toUpperCase()?.includes((gerenteRef?.replace(/%/g, '') || "").toUpperCase())) || (vend.gerente?.toUpperCase()?.includes((gerenteRef?.replace(/%/g, '') || "").toUpperCase()));
-
-          const matchesFilial = (isMacaeUser && (normalizeName(vend.filial) === 'm' || normalizeName(vend.filial).includes('macae'))) ||
-            (isCamposUser && (normalizeName(vend.filial) === 'c' || normalizeName(vend.filial).includes('campos'))) ||
-            isMasterView;
+          const matchesFilial = isBranchMatch(user?.unidade, vend.filial) || isMasterView;
 
           return matchesGerente || matchesFilial;
         }
@@ -253,14 +243,10 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const matchesGCom = normalizeName(v.gerente_comercial).includes(nMatch) ||
             normalizeName(v.gerente).includes(nMatch);
 
-          const isMacaeUser = uUnid.includes("macae") || uUnid === "m";
-          const isCamposUser = uUnid.includes("campos") || uUnid === "c";
-          const isMasterView = uUnid === 'todas' || uUnid === '';
-          const emptyUnid = uUnid === '' || uUnid === 'null' || uUnid === 'undefined';
+          const isMasterView = normalizeName(user?.unidade || "") === 'todas' || normalizeName(user?.unidade || "") === '';
+          const emptyUnid = !user?.unidade || normalizeName(user.unidade) === 'null';
 
-          const matchesFilial = (isMacaeUser && (normalizeName(v.filial) === 'm' || normalizeName(v.filial).includes('macae'))) ||
-            (isCamposUser && (normalizeName(v.filial) === 'c' || normalizeName(v.filial).includes('campos'))) ||
-            isMasterView;
+          const matchesFilial = isBranchMatch(user?.unidade, v.filial) || isMasterView;
 
           return matchesGCom || matchesFilial || emptyUnid;
         });
@@ -271,13 +257,9 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
         formatado = formatado.filter(v => {
           const matchesGerente = normalizeName(v.gerente).includes(nMatch);
-          const isMacaeUser = uUnid.includes("macae") || uUnid === "m";
-          const isCamposUser = uUnid.includes("campos") || uUnid === "c";
-          const isMasterView = uUnid === 'todas' || uUnid === '';
+          const isMasterView = normalizeName(user?.unidade || "") === 'todas' || normalizeName(user?.unidade || "") === '';
 
-          const matchesFilial = (isMacaeUser && (normalizeName(v.filial) === 'm' || normalizeName(v.filial).includes('macae'))) ||
-            (isCamposUser && (normalizeName(v.filial) === 'c' || normalizeName(v.filial).includes('campos'))) ||
-            isMasterView;
+          const matchesFilial = isBranchMatch(user?.unidade, v.filial) || isMasterView;
 
           return matchesGerente || matchesFilial;
         });
@@ -296,9 +278,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         if (pdvData && pdvData.length > 0) {
           const nMatchStr = normalizeName(gerenteRef.replace(/%/g, ''));
           const uUnidRaw = String(user?.unidade || "");
-          const isMacaeUser = uUnid.includes("macae") || uUnid === "m" || loginNormal.includes("macae");
-          const isCamposUser = uUnid.includes("campos") || uUnid === "c" || loginNormal.includes("campos");
-          const isMasterView = uUnid === 'todas' || uUnid === '';
+          const isMasterView = normalizeName(user?.unidade || "") === 'todas' || (user?.unidade || "") === '';
 
           const pdvFiltrado = pdvData.filter((p: any) => {
             const matchesId = p.id_supervisor && user?.id && p.id_supervisor === user.id;
@@ -313,9 +293,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
             if (matchesGerente) return true;
 
             // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial original do usuário
-            const matchesFilial = (isMacaeUser && (normalizeName(p.filial) === 'm' || normalizeName(p.filial).includes('macae'))) ||
-              (isCamposUser && (normalizeName(p.filial) === 'c' || normalizeName(p.filial).includes('campos'))) ||
-              isMasterView;
+            const matchesFilial = isBranchMatch(user?.unidade, p.filial) || isMasterView;
 
             return matchesFilial;
           });

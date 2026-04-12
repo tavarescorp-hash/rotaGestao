@@ -75,19 +75,6 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
       query = query.eq('empresa_id', user.empresa_id);
     }
 
-    if (user?.nivel === 'Niv4' && user?.name) {
-      query = query.ilike('nome_supervisor', `%${user.name.toUpperCase()}%`);
-    } else if (user?.nivel === 'Niv3') {
-      const gerenteRef = user?.name || null;
-      const uUnid = (user?.unidade || "").toUpperCase();
-
-      if (uUnid.includes("MACA") || uUnid === "M") {
-        query = query.or(`nome_gerente_vendas.eq."${gerenteRef}",filial.eq.M,filial.ilike.%MACA%`);
-      } else if (uUnid.includes("CAMPOS") || uUnid === "C") {
-        query = query.or(`nome_gerente_vendas.eq."${gerenteRef}",filial.eq.C,filial.ilike.%CAMPOS%`);
-      }
-    }
-
     const { data, error } = await query;
 
     if (error) {
@@ -95,9 +82,37 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
       return null;
     }
 
-    if (data && data.length > 0) {
-      const pdv = data[0];
-      const codigoParaVerificar = pdv.cod_vendedor?.toString() || "";
+    if (!data || data.length === 0) {
+      throw new Error("Cliente não encontrado na base de dados. Verifique o código e a unidade.");
+    }
+
+    const pdv = data[0];
+
+    // Validação de Permissão Nível 4 (Supervisor) com normalização robusta
+    if (user?.nivel === 'Niv4' && user?.name) {
+      const supPdv = normalizeName(pdv.nome_supervisor);
+      const supLogado = normalizeName(user.name);
+      
+      if (supPdv !== supLogado && !supPdv.includes(supLogado) && !supLogado.includes(supPdv)) {
+         throw new Error(`Este PDV está vinculado ao supervisor ${pdv.nome_supervisor || 'outro'}. Você não possui permissão para acessá-lo.`);
+      }
+    }
+    
+    // Validação de Gestão Nível 3 (Gerente)
+    if (user?.nivel === 'Niv3' && user?.name) {
+      const gvPdv = normalizeName(pdv.nome_gerente_vendas);
+      const gvLogado = normalizeName(user.name);
+      const uUser = user.unidade?.toUpperCase();
+      const fPdv = pdv.filial?.toUpperCase();
+      const isSameBranch = (uUser?.includes('MACA') && (fPdv === 'M' || fPdv?.includes('MACA'))) ||
+                           (uUser?.includes('CAMPO') && (fPdv === 'C' || fPdv?.includes('CAMPO')));
+
+      if (gvPdv !== gvLogado && !gvPdv.includes(gvLogado) && !gvLogado.includes(gvPdv) && !isSameBranch) {
+         throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
+      }
+    }
+
+    const codigoParaVerificar = pdv.cod_vendedor?.toString() || "";
 
       let forcedData: any = null;
       if (codigoParaVerificar) {

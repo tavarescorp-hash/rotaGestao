@@ -43,18 +43,16 @@ export function isBranchMatch(val1: string | null | undefined, val2: string | nu
   
   if (n1 === n2) return true;
   
-  // Tratamento de Macaé (M, Maca, Macaé)
-  // Aceita 'm' exato ou qualquer coisa que comece com 'maca'
-  const isM1 = n1 === 'm' || n1.startsWith('maca');
-  const isM2 = n2 === 'm' || n2.startsWith('maca');
+  // Tratamento de Macaé (M)
+  const isM1 = n1 === 'm' || n1.includes('macae');
+  const isM2 = n2 === 'm' || n2.includes('macae');
   if (isM1 && isM2) return true;
   
-  // Tratamento de Campos (C, Camp, Campos)
-  // Aceita 'c' exato ou qualquer coisa que comece com 'camp'
-  const isC1 = n1 === 'c' || n1.startsWith('camp');
-  const isC2 = n2 === 'c' || n2.startsWith('camp');
+  // Tratamento de Campos (C)
+  const isC1 = n1 === 'c' || n1.includes('campos');
+  const isC2 = n2 === 'c' || n2.includes('campos');
   if (isC1 && isC2) return true;
   
-  // Se não caiu em Macaé ou Campos, e os nomes não são idênticos, não é match.
-  return false;
+  // Fallback para contenção mútua
+  return n1.includes(n2) || n2.includes(n1);
 }

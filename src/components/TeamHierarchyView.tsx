@@ -519,6 +519,13 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
                 const id = v.id || `${v.avaliador}-${v.data_visita}-${v.codigo_pdv}-${v.indicador_avaliado}`;
                 if (!stats.visitedIds.has(id)) return false;
 
+                // NOVO: Se clicamos em um vendedor específico, filtra apenas as dele
+                if (drilldown?.vendedorFiltro) {
+                  const vNomeNormalizado = normalizeName(v.nome_vendedor || v.vendedor);
+                  const fNomeNormalizado = normalizeName(drilldown.vendedorFiltro);
+                  if (!vNomeNormalizado.includes(fNomeNormalizado)) return false;
+                }
+
                 const ind = (v.indicador_avaliado || "").toUpperCase();
                 if (drilldown?.indicator === 'FDS') return ind.includes('FDS');
                 if (drilldown?.indicator === 'RGB') return (INDICADORES_TIPO_RGB.some(i => ind.includes(i.toUpperCase())) || ind.includes('RGB'));

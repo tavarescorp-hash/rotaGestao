@@ -139,9 +139,10 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
     visitas.forEach(v => {
       const avaliador = normalizeName(v.avaliador);
-      const vendedor = normalizeName(v.nome_vendedor || v.vendedor);
       
-      if (leadersNaEstrutura.has(avaliador) || sellersNaEstrutura.has(vendedor)) {
+      // Filtro de Pureza: Só contabiliza no card o que for atividade do próprio líder (ou seus sub-líderes)
+      // Evita que auditorias do GV (Niv3) "contaminem" os números do Supervisor (Niv4)
+      if (leadersNaEstrutura.has(avaliador)) {
         const id = v.id || `${v.avaliador}-${v.data_visita}-${v.codigo_pdv}-${v.indicador_avaliado}`;
         if (!visitedIds.has(id)) {
           visitedIds.add(id);

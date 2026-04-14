@@ -477,11 +477,17 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       const vendedoresEquipe = Array.from(new Set([
         ...vendedores
           .filter(v => normalizeName(v.nome_supervisor) === normalizeName(topName))
-          .filter(v => normalizeName(v.nome_vendedor) !== normalizeName(userName))
           .map(v => v.nome_vendedor)
           .filter(Boolean),
         ...vendedoresAvaliados
-      ])).sort();
+      ]))
+      .filter(nome => {
+        const n = normalizeName(nome);
+        return n !== normalizeName(topName) && 
+               n !== normalizeName(userName) && 
+               !n.includes('welberson');
+      })
+      .sort();
 
       return (
         <div className="space-y-10">

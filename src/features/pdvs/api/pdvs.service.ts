@@ -326,8 +326,9 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         const isCampos = uUnid.includes('campos') || uUnid === 'c';
 
         // Aprimoramento: Busca resiliente por curingas (ex: Cleyton%Souza matches Cleyton de Souza)
-        const searchWildcard = nMatchStr.split(' ').filter(x => x.length > 2).join('%');
-        const finalMatch = searchWildcard || nMatchStr;
+        const rawNameForDB = (user?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        const searchWildcard = rawNameForDB.split(' ').filter((x: string) => x.length > 2).join('%');
+        const finalMatch = searchWildcard || rawNameForDB;
 
         // Construímos um filtro OR cirúrgico e ESTRITAMENTE NOMINAL
         // Não usamos mais 'filial.eq.M' em OR porque isso estourava o limite de 1000 registros da API

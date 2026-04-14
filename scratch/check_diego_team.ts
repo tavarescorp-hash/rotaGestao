@@ -16,7 +16,24 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkDiegoTeam() {
-  console.log("🚀 Consultando a equipe do Diego Manhanini...");
+  console.log("🚀 Consultando a equipe...");
+
+  // 0. Buscar Perfil de Campos (Cargo Vago)
+  const emailVago = 'cargo.vago@unibeer.com.br';
+  const { data: profileVago, error: errProfile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', emailVago)
+    .single();
+
+  if (errProfile) {
+    console.log(`⚠️  Aviso: Perfil ${emailVago} não encontrado ou erro:`, errProfile.message);
+  } else {
+    console.log(`\n✅ PERFIL ENCONTRADO (${emailVago}):`);
+    console.log(`- Nome no Banco: "${profileVago.Nome}"`);
+    console.log(`- Unidade: ${profileVago.unidade}`);
+    console.log(`- Nível: ${profileVago.nivel}`);
+  }
 
   // 1. Buscar na tabela de supervisores
   const { data: sups, error: errSups } = await supabase

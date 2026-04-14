@@ -267,18 +267,26 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
       if ((user?.nivel === 'Niv1' || user?.nivel === 'Niv0' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || isAnalista) && gerenteRef) {
         // Buscamos os PDVs (DataLake) para complementar a hierarquia (Rescue Force)
+        const nMatchStr = normalizeName(gerenteRef.replace(/%/g, ''));
+        const uUnid = normalizeName(user?.unidade || "");
+        const isMacae = uUnid.includes('macae') || uUnid === 'm';
+        const isCampos = uUnid.includes('campos') || uUnid === 'c';
+
+        // Construímos um filtro OR cirúrgico para não depender de limites cegos
+        let orFilter = `nome_gerente_vendas.ilike.%${nMatchStr}%,nome_gerente_comercial.ilike.%${nMatchStr}%`;
+        if (isMacae) orFilter += `,filial.eq.M,filial.ilike.%MACAE%`;
+        if (isCampos) orFilter += `,filial.eq.C,filial.ilike.%CAMPOS%`;
+
         let dlQuery = supabase.from("pdvs")
           .select('cod_vendedor, codigo, nome_vendedor, nome_supervisor, id_supervisor, cod_supervisor, filial, nome_gerente_vendas, nome_gerente_comercial')
-          .limit(4000);
+          .or(orFilter);
 
         if (user?.empresa_id) dlQuery = dlQuery.eq('empresa_id', user.empresa_id);
 
         const { data: pdvData, error: errRescue } = await dlQuery;
 
         if (pdvData && pdvData.length > 0) {
-          const nMatchStr = normalizeName(gerenteRef.replace(/%/g, ''));
-          const uUnidRaw = String(user?.unidade || "");
-          const isMasterView = normalizeName(user?.unidade || "") === 'todas' || (user?.unidade || "") === '';
+          const isMasterView = uUnid === 'todas' || uUnid === '';
 
           const pdvFiltrado = pdvData.filter((p: any) => {
             const matchesId = p.id_supervisor && user?.id && p.id_supervisor === user.id;

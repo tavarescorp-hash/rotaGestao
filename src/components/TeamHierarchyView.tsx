@@ -202,7 +202,8 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
         const matchesUnit = userLevel === 'Niv3' && isBranchMatch(userUnidade, v.filial);
         
         if (matchesName || matchesUnit) {
-          nomes.add(v.nome_supervisor.trim());
+          const isMe = normalizeName(v.nome_supervisor) === normalizeName(userName);
+          if (!isMe) nomes.add(v.nome_supervisor.trim());
         }
       }
     });
@@ -471,6 +472,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       const vendedoresEquipe = Array.from(new Set(
         vendedores
           .filter(v => normalizeName(v.nome_supervisor) === normalizeName(topName))
+          .filter(v => normalizeName(v.nome_vendedor) !== normalizeName(userName))
           .map(v => v.nome_vendedor)
           .filter(Boolean)
       )).sort();

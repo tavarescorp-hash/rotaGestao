@@ -257,9 +257,12 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           .limit(100);
 
         if (dataVts && dataVts.length > 0) {
+          const nMe = normalizeName(user?.name || "");
           dataVts.forEach((v: any) => {
              const vKey = v.codigo_vendedor || v.nome_vendedor;
-             if (vKey && !formatado.some(f => f.nome_vendedor === v.nome_vendedor)) {
+             const isMeVnd = normalizeName(v.nome_vendedor || "") === nMe;
+             
+             if (vKey && !formatado.some(f => f.nome_vendedor === v.nome_vendedor) && !isMeVnd) {
                 formatado.push({
                   cod_vendedor: vKey,
                   nome_vendedor: v.nome_vendedor,
@@ -383,9 +386,12 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           const vMap = new Map<string, VendedorAtivo>();
           formatado.forEach(v => vMap.set(v.cod_vendedor || v.nome_vendedor, v));
 
+          const nMe = normalizeName(user?.name || "");
           pdvFiltrado.forEach(p => {
             const vKey = p.cod_vendedor || p.codigo;
-            if (!vMap.has(vKey)) {
+            const isMeVnd = normalizeName(p.nome_vendedor || "") === nMe;
+
+            if (!vMap.has(vKey) && !isMeVnd) {
               vMap.set(vKey, {
                 cod_vendedor: vKey,
                 nome_vendedor: p.nome_vendedor || "VENDEDOR " + (vKey || ""),

@@ -284,15 +284,21 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         });
       }
 
-      if ((user?.nivel === 'Niv1' || user?.nivel === 'Niv0' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || isAnalista) && gerenteRef) {
+      if ((user?.nivel === 'Niv4' || user?.nivel === 'Niv1' || user?.nivel === 'Niv0' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || isAnalista)) {
         // Buscamos os PDVs (DataLake) para complementar a hierarquia (Rescue Force)
-        const nMatchStr = normalizeName(gerenteRef.replace(/%/g, ''));
+        const nMatchStr = normalizeName(user?.name || "");
         const uUnid = normalizeName(user?.unidade || "");
         const isMacae = uUnid.includes('macae') || uUnid === 'm';
         const isCampos = uUnid.includes('campos') || uUnid === 'c';
 
-        // Construímos um filtro OR cirúrgico para não depender de limites cegos
+        // Construímos um filtro OR cirúrgico
+        // Para supervisores (Niv4), buscamos especificamente quem tem eles como nome_supervisor
         let orFilter = `nome_gerente_vendas.ilike.%${nMatchStr}%,nome_gerente_comercial.ilike.%${nMatchStr}%`;
+        
+        if (user?.nivel === 'Niv4') {
+          orFilter = `nome_supervisor.ilike.%${nMatchStr}%`;
+        }
+        
         if (isMacae) orFilter += `,filial.eq.M,filial.ilike.%MACAE%`;
         if (isCampos) orFilter += `,filial.eq.C,filial.ilike.%CAMPOS%`;
 
@@ -313,15 +319,20 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
 
             const nSales = normalizeName(p.nome_gerente_vendas || "");
             const nComercial = normalizeName(p.nome_gerente_comercial || "");
+            const nSup = normalizeName(p.nome_supervisor || "");
+            
             const matchesGerente = nSales.includes(nMatchStr) || nComercial.includes(nMatchStr);
+            const matchesSup = nSup.includes(nMatchStr);
 
-            // 1. Prioridade: Se o nome do gerente bate com o filtro (Auditoria), INCLUA independente da filial.
-            // Isso resolve o caso do Diego Manhanini que tem PDVs em Macaé (M) e Campos (C).
-            if (matchesGerente) return true;
+            // 1. Prioridade: Se o nome do líder bate com o filtro, INCLUA.
+            if (user?.nivel === 'Niv4') {
+              if (matchesSup) return true;
+            } else {
+              if (matchesGerente) return true;
+            }
 
-            // 2. Fallback: Se não é auditoria de nome, usa o filtro de filial original do usuário
+            // 2. Fallback: Unidade
             const matchesFilial = isBranchMatch(user?.unidade, p.filial) || isMasterView;
-
             return matchesFilial;
           });
 

@@ -104,7 +104,7 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
       const gvLogado = normalizeName(user.name);
       const uUnid = user.unidade;
       const fPdv = pdv.filial;
-      const isSameBranch = isBranchMatch(uUser, fPdv);
+      const isSameBranch = isBranchMatch(uUnid, fPdv);
 
       if (gvPdv !== gvLogado && !gvPdv.includes(gvLogado) && !gvLogado.includes(gvPdv) && !isSameBranch) {
         throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
@@ -232,7 +232,8 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       if (dataSups) {
         dataSups.forEach((s: any) => {
           const supKey = `SUP-${s.id}`;
-          const isMe = normalizeName(s.nome) === normalizeName(user?.name);
+          const isMe = normalizeName(s.nome) === normalizeName(user?.name) || 
+                       (user?.email && normalizeName(s.nome).includes(normalizeName(user.email.split('@')[0])));
           if (!formatado.some(f => f.nome_supervisor === s.nome) && !isMe) {
             formatado.push({
               cod_vendedor: supKey,

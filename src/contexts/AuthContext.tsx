@@ -118,9 +118,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return `${cargoBase}${codigo ? ` ${codigo}` : ""}`;
       };
 
-      const rawName = (profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "").toUpperCase();
+      let rawName = (profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "").toUpperCase();
       
       const userNivel = profile?.nivel;
+
+      // 🔍 Busca de Nome Oficial para Niv3/Niv4 para garantir match com PDVs e Visitas
+      if (userNivel === 'Niv3' || userNivel === 'Niv4') {
+        try {
+          // Busca por e-mail ou prefixo de e-mail na tabela de supervisores
+          const emailLogin = sessionUser.email?.toLowerCase() || "";
+          const loginPrefix = emailLogin.split('@')[0];
+          
+          const { data: sData } = await supabase
+            .from('supervisores')
+            .select('nome')
+            .or(`nome.ilike.%${loginPrefix}%`);
+
+          if (sData && sData.length > 0) {
+            console.log(`🏷️ [Auth Sync] Nome oficial resgatado: ${sData[0].nome}`);
+            rawName = sData[0].nome.toUpperCase();
+          }
+        } catch (e) {
+          console.warn("⚠️ [Auth Sync] Falha ao resgatar nome oficial:", e);
+        }
+      }
+      
       const userUnidade = profile?.unidade || (isMaster ? "TODAS" : "");
       let userFuncao = profile?.funcao;
       

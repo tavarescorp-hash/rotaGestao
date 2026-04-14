@@ -168,6 +168,8 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     onSubmit(produtosSelecionados, execucaoSelecionada, pontuacaoTotal, rgbData, fdsData, produtosNaoSelecionados, execucaoNaoSelecionada, respostasDinamicas);
   };
 
+  const [lockedQuestions, setLockedQuestions] = useState<string[]>([]);
+
   useEffect(() => {
     const loadConfig = async () => {
       setIsFetchingConfig(true);
@@ -183,16 +185,20 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
     };
 
     const loadGlobalConfigurations = async () => {
+      let locks: string[] = [];
       if (INDICADORES_COMPASS_LOCKED.includes(tipoVisita)) {
         setRespostasDinamicas(p => ({ ...p, foco_visita: "RGB - Maiores COMPASS não compradores" }));
+        locks.push("foco_visita");
       } else if (INDICADORES_QUEDAS_LOCKED.includes(tipoVisita)) {
         setRespostasDinamicas(p => ({ ...p, foco_visita: "RGB - Maiores quedas" }));
+        locks.push("foco_visita");
       } else if (INDICADORES_TIPO_RGB.includes(tipoVisita)) {
         const focoRgbGlobal = await getConfiguracao('foco_rgb_mes', user);
         const opcoesValidas = ["RGB - Maiores clientes", "RGB - Maiores quedas", "RGB - Maiores COMPASS não compradores"];
 
         if (focoRgbGlobal && focoRgbGlobal !== 'Nenhum' && opcoesValidas.includes(focoRgbGlobal)) {
           setRespostasDinamicas(p => ({ ...p, foco_visita: focoRgbGlobal }));
+          locks.push("foco_visita"); // Trava a alteração para o supervisor!
         } else {
           // Caso venha configuração inválida (ex: "Foco RGB"), reseta.
           if (!opcoesValidas.includes(focoRgbGlobal || "")) {
@@ -200,6 +206,7 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
           }
         }
       }
+      setLockedQuestions(locks);
     };
 
     // Reseta as seleções toda vez que o canal ou o tipo de visita mudam
@@ -446,15 +453,25 @@ const StepProdutosExecucao = ({ canalCadastrado, tipoVisita, onSubmit, loading }
                   {q.type === "radio" && q.options && (
                     <RadioGroup
                       value={respostasDinamicas[q.id] || ""}
-                      onValueChange={(val) => handleRespostaChange(q.id, val)}
+                      onValueChange={(val) => {
+                        if (!lockedQuestions.includes(q.id)) {
+                           handleRespostaChange(q.id, val);
+                        }
+                      }}
                       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                      disabled={lockedQuestions.includes(q.id)}
                     >
-                      {q.options.map(opt => (
-                        <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${respostasDinamicas[q.id] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
-                          <RadioGroupItem value={opt} />
-                          <span className="text-sm font-semibold leading-tight">{opt}</span>
-                        </Label>
-                      ))}
+                      {q.options.map(opt => {
+                        const isLocked = lockedQuestions.includes(q.id);
+                        return (
+                          <Label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${isLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'} ${respostasDinamicas[q.id] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-transparent bg-background/40 hover:bg-muted"}`}>
+                            <RadioGroupItem value={opt} disabled={isLocked} />
+                            <span className="text-sm font-semibold leading-tight">{opt}
+                               {isLocked && respostasDinamicas[q.id] === opt && <span className="ml-2 text-[10px] text-primary">(Configurado)</span>}
+                            </span>
+                          </Label>
+                        );
+                      })}
                     </RadioGroup>
                   )}
 

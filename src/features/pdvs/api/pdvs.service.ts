@@ -166,11 +166,14 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       console.log("🌐 Sem internet. Buscando Vendedores no Cache Local (Novo Modelo)...");
       const cacheVendedores = await getAllFromDB(STORES.VENDEDORES_CACHE);
 
+      const nMatch = normalizeName(user?.name);
       return cacheVendedores.filter(vend => {
         if (user?.nivel === 'Niv4' && user?.name) {
           const search = user.name.toUpperCase();
           return vend.nome_supervisor?.toUpperCase().includes(search);
         } else if (user?.nivel === 'Niv2' || user?.nivel === 'Niv3') {
+          const matchesGerente = normalizeName(vend.gerente).includes(nMatch);
+          const isMasterView = normalizeName(user?.unidade || "") === 'todas' || normalizeName(user?.unidade || "") === '';
           const matchesFilial = isBranchMatch(user?.unidade, vend.filial) || isMasterView;
 
           return matchesGerente || matchesFilial;
@@ -195,23 +198,20 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         queryVend = queryVend.eq('empresa_id', user.empresa_id);
       }
 
-      // Filtramos em JS para evitar erro 42703 (coluna inexistente) e ser resiliente a variações de esquema
-      let data: any[] | null = null;
-      let error: any = null;
-
+      const { data: dataSups, error: errSups } = await supabase.from('supervisores').select('*');
+      
       const res = await queryVend;
-      data = res.data;
-      error = res.error;
+      let data = res.data;
+      let error = res.error;
 
-      console.log(`📊 [DEBUG HIERARQUIA] Resultado SQL: ${data?.length || 0} vnds | Erro:`, error);
+      console.log(`📊 [DEBUG HIERARQUIA] Resultado SQL: ${data?.length || 0} vnds | ${dataSups?.length || 0} sups | Erro:`, error);
 
-
-      if (error) {
+      if (error && !dataSups) {
         console.error("Erro ao buscar vendedores ativos SQL BASE:", error);
-        // Em vez de matar o processo e esconder a equipe, repassa um array vazio para forçar a ação do DATALAKE RESCUE.
         data = [];
       }
 
+      // 1. Criar base de vendedores (via Tabela Vendedores)
       let formatado: VendedorAtivo[] = (data as any[]).map((r: any) => {
         const s = r.supervisores || {};
         return {
@@ -219,13 +219,32 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           nome_vendedor: r.nome,
           nome_supervisor: s.nome || "",
           codigo_sup: s.id?.toString() || "",
+          id_supervisor: s.id?.toString() || "",
           municipio: r.cidade || "",
           filial: s.filial || "",
           gerente: s.gerente || "",
-          // Tenta encontrar o Gerente Comercial em qualquer coluna que ele possa estar
           gerente_comercial: s.gerente_comercial || s.nome_gerente_comercial || r.nome_gerente_comercial || s.gerente_com || ""
         };
       });
+
+      // 2. Injetar Supervisores (Garante que o Supervisor apareça mesmo sem vendedores vinculados ainda)
+      if (dataSups) {
+        dataSups.forEach((s: any) => {
+          const supKey = `SUP-${s.id}`;
+          if (!formatado.some(f => f.nome_supervisor === s.nome)) {
+            formatado.push({
+              cod_vendedor: supKey,
+              nome_vendedor: `[ESTRUTURA] ${s.nome}`,
+              nome_supervisor: s.nome,
+              codigo_sup: s.id?.toString(),
+              id_supervisor: s.id?.toString(),
+              filial: s.filial,
+              gerente: s.gerente,
+              gerente_comercial: s.gerente_comercial || s.nome_gerente_comercial || ""
+            });
+          }
+        });
+      }
 
       const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0';
 
@@ -307,7 +326,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           });
 
           // Rescue Force Macaé: Garante que o Diego Manhanini apareça para usuários de Macaé mesmo sem auditoria ativa
-          if (isMacaeUser && pdvData.length > 0) {
+          if (isMacae && pdvData.length > 0) {
             pdvData.forEach(p => {
               const isDiegoPdv = normalizeName(p.nome_gerente_vendas || "").includes("diegomanhanini");
               if (isDiegoPdv && !pdvFiltrado.some(pf => pf.codigo === p.codigo)) {
@@ -339,9 +358,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         }
       }
 
-      const diegoFound = formatado.filter(v => normalizeName(v.gerente).includes("diegomanhanini"));
-      console.log(`📊 [DEBUG_DIEGO] Registros para Diego Manhanini encontrados após Busca Híbrida: ${diegoFound.length}`);
-
+      console.log(`📊 [DEBUG_DIEGO] Registros finais para o componente: ${formatado.length} (Filtro Diego: ${formatado.filter(v => normalizeName(v.gerente).includes("diegomanhanini")).length})`);
       return formatado;
     }
   } catch (error) {

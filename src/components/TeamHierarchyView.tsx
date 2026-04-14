@@ -132,8 +132,14 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
 
       if (match) {
         if (vSel) sellersNaEstrutura.add(vSel);
-        if (vSup) leadersNaEstrutura.add(vSup);
-        if (vGv) leadersNaEstrutura.add(vGv);
+        // Só adiciona como líder se for uma camada ABAIXO do tipo do card
+        if (type === 'GCOM') {
+          if (vGv) leadersNaEstrutura.add(vGv);
+          if (vSup) leadersNaEstrutura.add(vSup);
+        } else if (type === 'GV') {
+          if (vSup) leadersNaEstrutura.add(vSup);
+        }
+        // Se o tipo for SUP, não adicionamos mais ninguém (apenas o próprio nRef já adicionado no topo)
       }
     });
 

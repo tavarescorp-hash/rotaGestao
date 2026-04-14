@@ -228,13 +228,15 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
       });
 
       // 2. Injetar Supervisores (Garante que o Supervisor apareça mesmo sem vendedores vinculados ainda)
+      // Bloqueamos a injeção do próprio usuário logado para evitar o "Auto-Card" redundante
       if (dataSups) {
         dataSups.forEach((s: any) => {
           const supKey = `SUP-${s.id}`;
-          if (!formatado.some(f => f.nome_supervisor === s.nome)) {
+          const isMe = normalizeName(s.nome) === normalizeName(user?.name);
+          if (!formatado.some(f => f.nome_supervisor === s.nome) && !isMe) {
             formatado.push({
               cod_vendedor: supKey,
-              nome_vendedor: s.nome, // Removido prefixo [ESTRUTURA]
+              nome_vendedor: s.nome, 
               nome_supervisor: s.nome,
               codigo_sup: s.id?.toString(),
               id_supervisor: s.id?.toString(),
@@ -244,6 +246,34 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
             });
           }
         });
+      }
+
+      // 3. Resgate por Atividade (Visitas Realizadas): Garante que vendedores avaliados apareçam na lista
+      if (user?.name || user?.id) {
+        const { data: dataVts } = await supabase
+          .from('visitas')
+          .select('nome_vendedor, codigo_vendedor, filial, municipio, avaliador')
+          .or(`id_avaliador.eq.${user?.id || 'null'},avaliador.eq.${user?.name || 'null'}`)
+          .limit(100);
+
+        if (dataVts && dataVts.length > 0) {
+          dataVts.forEach((v: any) => {
+             const vKey = v.codigo_vendedor || v.nome_vendedor;
+             if (vKey && !formatado.some(f => f.nome_vendedor === v.nome_vendedor)) {
+                formatado.push({
+                  cod_vendedor: vKey,
+                  nome_vendedor: v.nome_vendedor,
+                  nome_supervisor: user.name, // Se ele avaliou, ele é o supervisor de fato nessa visão
+                  codigo_sup: user.id?.toString(),
+                  id_supervisor: user.id?.toString(),
+                  filial: v.filial || "",
+                  municipio: v.municipio || "",
+                  gerente: "",
+                  gerente_comercial: ""
+                });
+             }
+          });
+        }
       }
 
       const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0';

@@ -234,7 +234,7 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
           if (!formatado.some(f => f.nome_supervisor === s.nome)) {
             formatado.push({
               cod_vendedor: supKey,
-              nome_vendedor: `[ESTRUTURA] ${s.nome}`,
+              nome_vendedor: s.nome, // Removido prefixo [ESTRUTURA]
               nome_supervisor: s.nome,
               codigo_sup: s.id?.toString(),
               id_supervisor: s.id?.toString(),
@@ -291,12 +291,16 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         const isMacae = uUnid.includes('macae') || uUnid === 'm';
         const isCampos = uUnid.includes('campos') || uUnid === 'c';
 
+        // Aprimoramento: Busca resiliente por curingas (ex: Cleyton%Souza matches Cleyton de Souza)
+        const searchWildcard = nMatchStr.split(' ').filter(x => x.length > 2).join('%');
+        const finalMatch = searchWildcard || nMatchStr;
+
         // Construímos um filtro OR cirúrgico
         // Para supervisores (Niv4), buscamos especificamente quem tem eles como nome_supervisor
-        let orFilter = `nome_gerente_vendas.ilike.%${nMatchStr}%,nome_gerente_comercial.ilike.%${nMatchStr}%`;
+        let orFilter = `nome_gerente_vendas.ilike.%${finalMatch}%,nome_gerente_comercial.ilike.%${finalMatch}%`;
         
         if (user?.nivel === 'Niv4') {
-          orFilter = `nome_supervisor.ilike.%${nMatchStr}%`;
+          orFilter = `nome_supervisor.ilike.%${finalMatch}%`;
         }
         
         if (isMacae) orFilter += `,filial.eq.M,filial.ilike.%MACAE%`;

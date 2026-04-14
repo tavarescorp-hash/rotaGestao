@@ -467,14 +467,21 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
       const topName = filtroLider?.name || userName || "";
       const isMyOwnView = normalizeName(topName) === normalizeName(userName);
       
-      // Coleta a base oficial de vendedores cadastrados para este supervisor
-      const vendedoresEquipe = Array.from(new Set(
-        vendedores
+      // Coleta a base oficial de vendedores (via Banco ou extração dinâmica de quem de fato foi avaliado)
+      // Resolvemos o problema da "Cadeia Tática" resgatando automaticamente qualquer vendedor que possua avaliação do supervisor
+      const vendedoresAvaliados = visitas
+        .filter(v => normalizeName(v.avaliador) === normalizeName(topName) || normalizeName(v.nome_supervisor) === normalizeName(topName))
+        .map(v => v.nome_vendedor || v.vendedor)
+        .filter(Boolean);
+
+      const vendedoresEquipe = Array.from(new Set([
+        ...vendedores
           .filter(v => normalizeName(v.nome_supervisor) === normalizeName(topName))
           .filter(v => normalizeName(v.nome_vendedor) !== normalizeName(userName))
           .map(v => v.nome_vendedor)
-          .filter(Boolean)
-      )).sort();
+          .filter(Boolean),
+        ...vendedoresAvaliados
+      ])).sort();
 
       return (
         <div className="space-y-10">

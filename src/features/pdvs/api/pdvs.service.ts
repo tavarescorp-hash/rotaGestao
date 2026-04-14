@@ -329,16 +329,14 @@ export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[
         const searchWildcard = nMatchStr.split(' ').filter(x => x.length > 2).join('%');
         const finalMatch = searchWildcard || nMatchStr;
 
-        // Construímos um filtro OR cirúrgico
-        // Para supervisores (Niv4), buscamos especificamente quem tem eles como nome_supervisor
+        // Construímos um filtro OR cirúrgico e ESTRITAMENTE NOMINAL
+        // Não usamos mais 'filial.eq.M' em OR porque isso estourava o limite de 1000 registros da API
+        // e causava "cortes" aleatórios na equipe de Macaé.
         let orFilter = `nome_gerente_vendas.ilike.%${finalMatch}%,nome_gerente_comercial.ilike.%${finalMatch}%`;
         
         if (user?.nivel === 'Niv4') {
           orFilter = `nome_supervisor.ilike.%${finalMatch}%`;
         }
-        
-        if (isMacae) orFilter += `,filial.eq.M,filial.ilike.%MACAE%`;
-        if (isCampos) orFilter += `,filial.eq.C,filial.ilike.%CAMPOS%`;
 
         let dlQuery = supabase.from("pdvs")
           .select('cod_vendedor, codigo, nome_vendedor, nome_supervisor, id_supervisor, cod_supervisor, filial, nome_gerente_vendas, nome_gerente_comercial')

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { enviarVisita, buscarPdvPorCodigo, verificarVisitaMensal } from "@/lib/api";
+import { getUsers } from "@/features/usuarios/api/usuarios.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,8 +35,6 @@ const canalOptions = [
 
 const potencialOptions = ["Diamante", "Ouro", "Prata", "Bronze"];
 
-
-
 import { getIndicadoresPorNivel, REQUER_PRODUTOS_EXECUCAO, REQUER_COACHING } from "@/lib/roles";
 
 const VisitaRetroativa = () => {
@@ -45,6 +44,16 @@ const VisitaRetroativa = () => {
   const [loading, setLoading] = useState(false);
   const [isSearchingPdv, setIsSearchingPdv] = useState(false);
   const [pdvBuscado, setPdvBuscado] = useState(false);
+
+  const isAnalista = Boolean(user?.name?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0');
+  const [usuariosDb, setUsuariosDb] = useState<any[]>([]);
+  const [analistaOverrideId, setAnalistaOverrideId] = useState<string>("");
+
+  useEffect(() => {
+    if (isAnalista) {
+      getUsers(user).then(data => setUsuariosDb(data));
+    }
+  }, [isAnalista, user]);
 
   const [form, setForm] = useState({
     data_visita: new Date().toISOString().split("T")[0],
@@ -161,11 +170,24 @@ const VisitaRetroativa = () => {
     empresa_id?: number;
   }) => {
     setLoading(true);
+    let avaliadorNome = user?.name || "";
+    let avaliadorCargo = user?.funcao || "";
+    let avaliadorUnidade = user?.unidade || "";
+
+    if (isAnalista && analistaOverrideId) {
+       const uObj = usuariosDb.find(u => u.id === analistaOverrideId);
+       if (uObj) {
+           avaliadorNome = uObj.Nome || uObj.name || avaliadorNome;
+           avaliadorCargo = uObj.funcao || avaliadorCargo;
+           avaliadorUnidade = uObj.unidade || avaliadorUnidade;
+       }
+    }
+
     const result = await enviarVisita({
       data_visita: form.data_visita,
-      unidade: user?.unidade || "",
-      avaliador: user?.name || "",
-      cargo: user?.funcao || "",
+      unidade: avaliadorUnidade,
+      avaliador: avaliadorNome,
+      cargo: avaliadorCargo,
       indicador_avaliado: form.tipo_visita,
       observacoes: payload.observacoes || "",
       codigo_pdv: form.codigo_pdv,
@@ -280,7 +302,16 @@ const VisitaRetroativa = () => {
                     <MapPin className="w-4 h-4 text-primary" />
                     Código do Cliente <span className="text-destructive ml-1">*</span>
                   </span>
-                  {(user?.nivel === 'Niv1' || user?.nivel === 'Niv2') && (
+                  {(() => {
+                    let isTodas = false;
+                    if (isAnalista && analistaOverrideId) {
+                      const uObj = usuariosDb.find(u => u.id === analistaOverrideId);
+                      isTodas = uObj && (String(uObj.unidade).toUpperCase().includes('TODAS') || String(uObj.nivel) === 'Niv1' || String(uObj.nivel) === 'Niv2');
+                    } else {
+                      isTodas = user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || String(user?.unidade).toUpperCase().includes('TODAS');
+                    }
+                    return isTodas;
+                  })() && (
                     <div className="bg-muted/50 p-1 rounded-xl border border-border/50 flex items-center shadow-inner">
                       <RadioGroup 
                         value={form.filial} 
@@ -369,13 +400,28 @@ const VisitaRetroativa = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Responsável</Label>
-                  <p className="text-sm font-black text-foreground truncate uppercase">{user?.name || ""}</p>
+                  {isAnalista ? (
+                    <Select value={analistaOverrideId} onValueChange={(v) => { setAnalistaOverrideId(v); setPdvBuscado(false); }}>
+                      <SelectTrigger className="h-8 text-xs font-bold w-full uppercase">
+                        <SelectValue placeholder="Escolher Usuário..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px]">
+                        {usuariosDb.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs uppercase font-medium">{u.Nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm font-black text-foreground truncate uppercase">{user?.name || ""}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Unidade</Label>
                   <div className="flex">
                     <Badge variant="outline" className="bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-200/50 font-bold text-[10px] px-2 py-0.5 rounded-md uppercase">
-                      {user?.unidade === 'TODAS' ? "TODAS AS UNIDADES" : (user?.unidade || "Não definida")}
+                      {isAnalista && analistaOverrideId 
+                        ? (usuariosDb.find(u => u.id === analistaOverrideId)?.unidade === 'Todas' ? "TODAS AS UNIDADES" : usuariosDb.find(u => u.id === analistaOverrideId)?.unidade || "Não definida") 
+                        : (user?.unidade === 'TODAS' ? "TODAS AS UNIDADES" : (user?.unidade || "Não definida"))}
                     </Badge>
                   </div>
                 </div>
@@ -383,7 +429,9 @@ const VisitaRetroativa = () => {
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Cargo / Função</Label>
                   <div className="flex">
                     <Badge className="bg-[#FFB800] text-black font-black text-[10px] px-2 py-0.5 rounded-md border-none uppercase tracking-wider">
-                      {user?.formattedRole}
+                      {isAnalista && analistaOverrideId 
+                         ? usuariosDb.find(u => u.id === analistaOverrideId)?.funcao || "---"
+                         : user?.formattedRole}
                     </Badge>
                   </div>
                 </div>

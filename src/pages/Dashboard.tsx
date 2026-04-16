@@ -192,13 +192,15 @@ const Dashboard = () => {
         </div>
 
         <div className="flex gap-3 shrink-0">
-          <Button
-            onClick={() => navigate("/nova-visita")}
-            className="bg-[#FFB800] hover:bg-[#FFB800]/90 text-black font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-[0_4px_12px_rgba(255,184,0,0.3)] transition-all flex-1 sm:flex-none"
-          >
-            <Plus className="w-3.5 h-3.5 mr-2" />
-            Nova Visita
-          </Button>
+          {!isAnalista && (
+            <Button
+              onClick={() => navigate("/nova-visita")}
+              className="bg-[#FFB800] hover:bg-[#FFB800]/90 text-black font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-[0_4px_12px_rgba(255,184,0,0.3)] transition-all flex-1 sm:flex-none"
+            >
+              <Plus className="w-3.5 h-3.5 mr-2" />
+              Nova Visita
+            </Button>
+          )}
 
           <Button
             variant="secondary"

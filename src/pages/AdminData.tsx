@@ -254,6 +254,7 @@ const AdminData = () => {
                     "PONTUACAO": v.pontuacao_total,
                     "OBS_GERAL": v.observacoes,
                     "PRODUTOS_SEL": v.produtos_selecionados,
+                    "PRODUTOS_NAO_SEL": v.produtos_nao_selecionados,
                     "EXEC_SEL": v.execucao_selecionada,
                     "PONTOS_FORTES": v.pontos_fortes,
                     "A_DESENVOLVER": v.pontos_desenvolver,

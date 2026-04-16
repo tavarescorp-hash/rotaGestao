@@ -168,7 +168,7 @@ const Dashboard = () => {
 
       {/* FERRAMENTAS DE FILTRO E SINCRONIZAÇÃO */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-[#0A0F1E]/60 p-4 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="flex-1 sm:flex-none justify-start text-left bg-card dark:bg-card/40 border-border dark:border-border/10 font-bold text-[10px] h-10 px-4 rounded-xl">
@@ -191,11 +191,11 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        <div className="flex gap-3 shrink-0">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto shrink-0">
           {!isAnalista && (
             <Button
               onClick={() => navigate("/nova-visita")}
-              className="bg-[#FFB800] hover:bg-[#FFB800]/90 text-black font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-[0_4px_12px_rgba(255,184,0,0.3)] transition-all flex-1 sm:flex-none"
+              className="bg-[#FFB800] hover:bg-[#FFB800]/90 text-black font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-[0_4px_12px_rgba(255,184,0,0.3)] transition-all w-full sm:w-auto"
             >
               <Plus className="w-3.5 h-3.5 mr-2" />
               Nova Visita
@@ -206,7 +206,7 @@ const Dashboard = () => {
             variant="secondary"
             onClick={carregarVisitas}
             disabled={loading}
-            className="font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-sm hover:shadow-md transition-all flex-1 sm:flex-none"
+            className="font-black text-[10px] h-10 px-6 rounded-xl uppercase tracking-widest shadow-sm hover:shadow-md transition-all w-full sm:w-auto"
           >
             <RefreshCw className={`w-3 h-3 mr-2 ${loading ? "animate-spin" : ""}`} />
             Sincronizar Dados

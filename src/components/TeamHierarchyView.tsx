@@ -422,7 +422,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
                Organograma de Gestão
             </h4>
             
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
                {listaGerentes.map(n => <CompactCard key={n} name={n} type="GV" />)}
             </div>
           </div>
@@ -454,7 +454,7 @@ export function TeamHierarchyView({ vendedores, visitas, userLevel, userName, us
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 px-2 flex items-center justify-center gap-3">
                Estrutura Operacional
             </h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                {listaSupervisores.map(n => <CompactCard key={n} name={n} type="SUP" />)}
             </div>
           </div>

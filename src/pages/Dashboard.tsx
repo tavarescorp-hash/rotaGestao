@@ -89,10 +89,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (indicadoresExibicao.length === 0 && !loading) {
-      console.warn("⚠️ Nenhuma métrica vinculada encontrada para:", { 
-        name: user?.name, 
-        nivel: user?.nivel, 
-        funcao: user?.funcao 
+      console.warn("⚠️ Nenhuma métrica vinculada encontrada para:", {
+        name: user?.name,
+        nivel: user?.nivel,
+        funcao: user?.funcao
       });
     }
   }, [indicadoresExibicao, user, loading]);
@@ -269,278 +269,278 @@ const Dashboard = () => {
       {!isAnalista && (
         <div className="space-y-6">
           <div className="flex items-center gap-3 px-1">
-          <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
-            <Calendar className="w-4 h-4 text-[#FFB800]" />
+            <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
+              <Calendar className="w-4 h-4 text-[#FFB800]" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
+                Meus Indicadores
+              </h2>
+              <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
+                Acompanhamento de suas avaliações neste período.
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
-              Meus Indicadores
-            </h2>
-            <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
-              Acompanhamento de suas avaliações neste período.
-            </p>
-          </div>
-        </div>
 
-        {(() => {
-          const showFDS = indicadoresExibicao.some(i => i.toUpperCase().includes('FDS'));
-          const showRGB = indicadoresExibicao.some(i => i.toUpperCase() === 'RGB' || i.toUpperCase().includes('FOCO RGB'));
-          const showCoaching = indicadoresExibicao.some(i => i.toUpperCase().includes('COACHING'));
-          const showCompass = indicadoresExibicao.some(i => i.toUpperCase().includes('COMPASS'));
-          const showQuedas = indicadoresExibicao.some(i => i.toUpperCase().includes('QUEDA'));
+          {(() => {
+            const showFDS = indicadoresExibicao.some(i => i.toUpperCase().includes('FDS'));
+            const showRGB = indicadoresExibicao.some(i => i.toUpperCase() === 'RGB' || i.toUpperCase().includes('FOCO RGB'));
+            const showCoaching = indicadoresExibicao.some(i => i.toUpperCase().includes('COACHING'));
+            const showCompass = indicadoresExibicao.some(i => i.toUpperCase().includes('COMPASS'));
+            const showQuedas = indicadoresExibicao.some(i => i.toUpperCase().includes('QUEDA'));
 
-          const totalCards = [showFDS, showRGB, showCoaching, showCompass, showQuedas].filter(Boolean).length;
-          const colSpanCard = totalCards <= 2 ? "md:col-span-2" : "md:col-span-1";
+            const totalCards = [showFDS, showRGB, showCoaching, showCompass, showQuedas].filter(Boolean).length;
+            const colSpanCard = totalCards <= 2 ? "md:col-span-2" : "md:col-span-1";
 
-          return (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-              {showCompass && (
-                <Card onClick={() => setFiltroIndicadorModal('COMPASS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores potenciais base compass em RGB BAR</h3>
-                          <p className="text-2xl font-black text-foreground dark:text-white">
-                            {estatisticasMes.qtdeCompass} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COMPASS}</span>
-                          </p>
-                        </div>
-                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
-                          {Math.round((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100) || 0}%
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
-                        <div
-                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
-                          style={{ width: `${Math.min((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {showQuedas && (
-                <Card onClick={() => setFiltroIndicadorModal('QUEDAS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores quedas RGB mês anterior</h3>
-                          <p className="text-2xl font-black text-foreground dark:text-white">
-                            {estatisticasMes.qtdeQuedas} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_QUEDAS}</span>
-                          </p>
-                        </div>
-                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
-                          {Math.round((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100) || 0}%
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
-                        <div
-                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
-                          style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {showFDS && (
-                <Card onClick={() => setFiltroIndicadorModal('FDS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">FDS</h3>
-                          <p className="text-2xl font-black text-foreground dark:text-white">
-                            {estatisticasMes.qtdeFDS} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_FDS}</span>
-                          </p>
-                        </div>
-                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
-                          {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100) || 0}%
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
-                        <div
-                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
-                          style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {showRGB && (
-                <Card onClick={() => setFiltroIndicadorModal('RGB')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">RGB</h3>
-                          <p className="text-2xl font-black text-foreground dark:text-white">
-                            {estatisticasMes.qtdeRGB} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_RGB}</span>
-                          </p>
-                        </div>
-                        <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
-                          {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
-                        <div
-                          className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
-                          style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100) || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {showCoaching && (
-                <Card onClick={() => setFiltroIndicadorModal('COACHING')} className="md:col-span-2 bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden flex flex-col transition-all duration-300 shadow-xl relative">
-                  <CardContent className="p-6 flex-1 flex flex-col">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                      <div>
-                        <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em] flex items-center gap-2">
-                          COACHING <span className="text-[8px] opacity-40 font-bold">({estatisticasMes.detalhesCoaching.length} Vnds)</span>
-                        </h3>
-                        <div className="flex items-end gap-3 mt-1">
-                          <p className="text-2xl font-black text-foreground dark:text-white">
-                            {estatisticasMes.qtdeCoaching} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COACHING}</span>
-                          </p>
-                          <div className={cn("text-xs font-black px-2 py-1 rounded mb-1", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
-                            {Math.round((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100) || 0}%
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                {showCompass && (
+                  <Card onClick={() => setFiltroIndicadorModal('COMPASS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores potenciais base compass em RGB BAR</h3>
+                            <p className="text-2xl font-black text-foreground dark:text-white">
+                              {estatisticasMes.qtdeCompass} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COMPASS}</span>
+                            </p>
+                          </div>
+                          <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
+                            {Math.round((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100) || 0}%
                           </div>
                         </div>
-                      </div>
-                      <div className="flex-1 max-w-xs">
                         <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                           <div
-                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
-                            style={{ width: `${Math.min((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100, 100) || 0}%` }}
+                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
+                            style={{ width: `${Math.min((estatisticasMes.qtdeCompass / Math.max(estatisticasMes.META_COMPASS, 1)) * 100, 100) || 0}%` }}
                           />
                         </div>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                    {/* Individual Vendor List Inside Card */}
-                    <div className="border-t border-muted dark:border-white/5 pt-4 space-y-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
-                      <div className="flex items-center justify-between px-1 mb-2">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50">Vendedor</span>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 text-right">Realizado / Meta</span>
-                      </div>
-                      {estatisticasMes.detalhesCoaching.slice(0, 5).map((vend, idx) => (
-                        <div key={idx} className="space-y-2 group/vend">
-                          <div className="flex justify-between items-center px-1">
-                            <span className="text-[10px] font-bold text-foreground/80 group-hover/vend:text-foreground transition-colors uppercase tracking-tight">{vend.nome}</span>
-                            <span className="text-[10px] font-black text-[#FFB800]">{vend.atual} / {vend.meta}</span>
+                {showQuedas && (
+                  <Card onClick={() => setFiltroIndicadorModal('QUEDAS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">Maiores quedas RGB mês anterior</h3>
+                            <p className="text-2xl font-black text-foreground dark:text-white">
+                              {estatisticasMes.qtdeQuedas} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_QUEDAS}</span>
+                            </p>
                           </div>
-                          <div className="h-2 w-full bg-muted/60 dark:bg-black/30 rounded-full overflow-hidden p-[1px]">
+                          <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
+                            {Math.round((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100) || 0}%
+                          </div>
+                        </div>
+                        <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
+                            style={{ width: `${Math.min((estatisticasMes.qtdeQuedas / Math.max(estatisticasMes.META_QUEDAS, 1)) * 100, 100) || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showFDS && (
+                  <Card onClick={() => setFiltroIndicadorModal('FDS')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">FDS</h3>
+                            <p className="text-2xl font-black text-foreground dark:text-white">
+                              {estatisticasMes.qtdeFDS} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_FDS}</span>
+                            </p>
+                          </div>
+                          <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
+                            {Math.round((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100) || 0}%
+                          </div>
+                        </div>
+                        <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
+                            style={{ width: `${Math.min((estatisticasMes.qtdeFDS / estatisticasMes.META_FDS) * 100, 100) || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showRGB && (
+                  <Card onClick={() => setFiltroIndicadorModal('RGB')} className={cn("bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden transition-all duration-300 group shadow-lg", colSpanCard)}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em]">RGB</h3>
+                            <p className="text-2xl font-black text-foreground dark:text-white">
+                              {estatisticasMes.qtdeRGB} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_RGB}</span>
+                            </p>
+                          </div>
+                          <div className={cn("text-xs font-black px-2 py-1 rounded", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
+                            {Math.round((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100) || 0}%
+                          </div>
+                        </div>
+                        <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
+                            style={{ width: `${Math.min((estatisticasMes.qtdeRGB / estatisticasMes.META_RGB) * 100, 100) || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showCoaching && (
+                  <Card onClick={() => setFiltroIndicadorModal('COACHING')} className="md:col-span-2 bg-white dark:bg-[#0F172A]/40 border-black/5 dark:border-white/5 hover:border-[#FFB800]/30 cursor-pointer overflow-hidden flex flex-col transition-all duration-300 shadow-xl relative">
+                    <CardContent className="p-6 flex-1 flex flex-col">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                          <h3 className="text-[10px] font-black text-muted-foreground dark:text-white/40 uppercase tracking-[0.1em] flex items-center gap-2">
+                            COACHING <span className="text-[8px] opacity-40 font-bold">({estatisticasMes.detalhesCoaching.length} Vnds)</span>
+                          </h3>
+                          <div className="flex items-end gap-3 mt-1">
+                            <p className="text-2xl font-black text-foreground dark:text-white">
+                              {estatisticasMes.qtdeCoaching} <span className="text-sm font-bold text-muted-foreground/30">/ {estatisticasMes.META_COACHING}</span>
+                            </p>
+                            <div className={cn("text-xs font-black px-2 py-1 rounded mb-1", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500/10 text-green-500" : "bg-[#FFB800]/10 text-[#FFB800]")}>
+                              {Math.round((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100) || 0}%
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1 max-w-xs">
+                          <div className="h-2 w-full bg-muted dark:bg-black/40 rounded-full overflow-hidden border border-black/5 p-[1.5px]">
                             <div
-                              className={cn("h-full rounded-full transition-all duration-1000", vend.atual >= vend.meta ? 'bg-green-500' : 'bg-[#FFB800] shadow-[1px_0_5px_rgba(255,184,0,0.2)]')}
-                              style={{ width: `${Math.min((vend.atual / vend.meta) * 100, 100)}%` }}
+                              className={cn("h-full rounded-full transition-all duration-1000", (estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) >= 1 ? "bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.4)]" : "bg-[#FFB800] shadow-[2px_0_5px_rgba(255,184,0,0.3)]")}
+                              style={{ width: `${Math.min((estatisticasMes.qtdeCoaching / estatisticasMes.META_COACHING) * 100, 100) || 0}%` }}
                             />
                           </div>
                         </div>
-                      ))}
-                      {estatisticasMes.detalhesCoaching.length === 0 && (
-                        <p className="text-[10px] italic text-muted-foreground/30 text-center py-4">Nenhum dado individual registrado.</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          );
-        })()}
-      </div>
-    )}
+                      </div>
+
+                      {/* Individual Vendor List Inside Card */}
+                      <div className="border-t border-muted dark:border-white/5 pt-4 space-y-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
+                        <div className="flex items-center justify-between px-1 mb-2">
+                          <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50">Vendedor</span>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50 text-right">Realizado / Meta</span>
+                        </div>
+                        {estatisticasMes.detalhesCoaching.slice(0, 5).map((vend, idx) => (
+                          <div key={idx} className="space-y-2 group/vend">
+                            <div className="flex justify-between items-center px-1">
+                              <span className="text-[10px] font-bold text-foreground/80 group-hover/vend:text-foreground transition-colors uppercase tracking-tight">{vend.nome}</span>
+                              <span className="text-[10px] font-black text-[#FFB800]">{vend.atual} / {vend.meta}</span>
+                            </div>
+                            <div className="h-2 w-full bg-muted/60 dark:bg-black/30 rounded-full overflow-hidden p-[1px]">
+                              <div
+                                className={cn("h-full rounded-full transition-all duration-1000", vend.atual >= vend.meta ? 'bg-green-500' : 'bg-[#FFB800] shadow-[1px_0_5px_rgba(255,184,0,0.2)]')}
+                                style={{ width: `${Math.min((vend.atual / vend.meta) * 100, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        {estatisticasMes.detalhesCoaching.length === 0 && (
+                          <p className="text-[10px] italic text-muted-foreground/30 text-center py-4">Nenhum dado individual registrado.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* 3. VISÃO MESTAL ANALISTA (LINHA CRESCENTE) */}
       {isAnalista && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 mt-8">
-           <div className="flex items-center gap-3 px-1">
-             <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
-               <TrendingUp className="w-4 h-4 text-[#FFB800]" />
-             </div>
-             <div className="flex-1">
-               <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
-                 Performances Consolidadas
-               </h2>
-               <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
-                 Linha crescente de avaliações fechadas por gestor de campo.
-               </p>
-             </div>
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-             {dadosGraficoAnalista.map((usr, i) => {
-               const total = usr.FDS + usr.RGB + usr.Coaching + usr.Compass + usr.Quedas;
-               const meta = 60; // Base Linear Dinâmica
-               const prog = Math.min((total / meta) * 100, 100);
-               return (
-                 <Card key={i} onClick={() => setFiltroAvaliadorDetalhe(usr.name.toUpperCase())} className="bg-white/40 dark:bg-card/40 backdrop-blur-sm border-border/40 hover:border-[#FFB800]/50 cursor-pointer transition-all shadow-sm group overflow-hidden">
-                   <CardContent className="p-5 flex flex-col gap-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-black text-sm uppercase truncate text-foreground group-hover:text-[#FFB800] transition-colors">{usr.name}</h3>
-                        <span className="text-[10px] font-black bg-[#FFB800]/10 border border-[#FFB800]/20 px-2 py-0.5 rounded text-[#FFB800]">{total} Avs Fechadas</span>
+          <div className="flex items-center gap-3 px-1">
+            <div className="w-8 h-8 rounded-lg bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/30 shadow-sm">
+              <TrendingUp className="w-4 h-4 text-[#FFB800]" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-black uppercase tracking-widest text-[#FFB800] leading-tight">
+                Performances Consolidadas
+              </h2>
+              <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase opacity-70">
+                Linha crescente de avaliações fechadas por gestor de campo.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {dadosGraficoAnalista.map((usr, i) => {
+              const total = usr.FDS + usr.RGB + usr.Coaching + usr.Compass + usr.Quedas;
+              const meta = 60; // Base Linear Dinâmica
+              const prog = Math.min((total / meta) * 100, 100);
+              return (
+                <Card key={i} onClick={() => setFiltroAvaliadorDetalhe(usr.name.toUpperCase())} className="bg-white/40 dark:bg-card/40 backdrop-blur-sm border-border/40 hover:border-[#FFB800]/50 cursor-pointer transition-all shadow-sm group overflow-hidden">
+                  <CardContent className="p-5 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-sm uppercase truncate text-foreground group-hover:text-[#FFB800] transition-colors">{usr.name}</h3>
+                      <span className="text-[10px] font-black bg-[#FFB800]/10 border border-[#FFB800]/20 px-2 py-0.5 rounded text-[#FFB800]">{total} Avs Fechadas</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-[-5px]">
+                      {usr.FDS > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded uppercase">FDS: {usr.FDS}</span>}
+                      {usr.RGB > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded uppercase">RGB: {usr.RGB}</span>}
+                      {usr.Coaching > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-amber-500/10 text-amber-600 rounded uppercase">COA: {usr.Coaching}</span>}
+                      {usr.Compass > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-purple-500/10 text-purple-600 rounded uppercase">COM: {usr.Compass}</span>}
+                      {usr.Quedas > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-rose-500/10 text-rose-600 rounded uppercase">QUE: {usr.Quedas}</span>}
+                      {(usr.FDS === 0 && usr.RGB === 0 && usr.Coaching === 0 && usr.Compass === 0 && usr.Quedas === 0) && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 bg-muted/30 text-muted-foreground/40 rounded uppercase">Sem Atividade</span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 mt-2">
+                      <div className="flex justify-between text-[9px] font-black uppercase text-muted-foreground">
+                        <span>Linha de Meta Crescente</span>
+                        <span className={cn(prog >= 100 ? "text-green-500 drop-shadow-[0_0_2px_rgba(34,197,94,0.8)]" : "text-[#FFB800]")}>{Math.round(prog)}%</span>
                       </div>
-                      <div className="flex flex-wrap gap-1.5 mt-[-5px]">
-                         {usr.FDS > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded uppercase">FDS: {usr.FDS}</span>}
-                         {usr.RGB > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded uppercase">RGB: {usr.RGB}</span>}
-                         {usr.Coaching > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-amber-500/10 text-amber-600 rounded uppercase">COA: {usr.Coaching}</span>}
-                         {usr.Compass > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-purple-500/10 text-purple-600 rounded uppercase">COM: {usr.Compass}</span>}
-                         {usr.Quedas > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-rose-500/10 text-rose-600 rounded uppercase">QUE: {usr.Quedas}</span>}
-                         {(usr.FDS === 0 && usr.RGB === 0 && usr.Coaching === 0 && usr.Compass === 0 && usr.Quedas === 0) && (
-                            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-muted/30 text-muted-foreground/40 rounded uppercase">Sem Atividade</span>
-                         )}
+                      <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-black/5">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-1000", prog >= 100 ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-[#FFB800] shadow-[0_0_8px_rgba(255,184,0,0.4)]")}
+                          style={{ width: `${prog}%` }}
+                        />
                       </div>
-                     <div className="space-y-1.5 mt-2">
-                       <div className="flex justify-between text-[9px] font-black uppercase text-muted-foreground">
-                         <span>Linha de Meta Crescente</span>
-                         <span className={cn(prog >= 100 ? "text-green-500 drop-shadow-[0_0_2px_rgba(34,197,94,0.8)]" : "text-[#FFB800]")}>{Math.round(prog)}%</span>
-                       </div>
-                       <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-black/5">
-                         <div 
-                           className={cn("h-full rounded-full transition-all duration-1000", prog >= 100 ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-[#FFB800] shadow-[0_0_8px_rgba(255,184,0,0.4)]")} 
-                           style={{ width: `${prog}%` }} 
-                         />
-                       </div>
-                     </div>
-                   </CardContent>
-                 </Card>
-               );
-             })}
-             {dadosGraficoAnalista.length === 0 && (
-               <p className="text-[11px] font-bold opacity-40 uppercase tracking-widest italic py-10 col-span-3 text-center border border-dashed border-border/50 rounded-2xl">Aguardando Avaliações de Equipe no Período Selecionado.</p>
-             )}
-           </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {dadosGraficoAnalista.length === 0 && (
+              <p className="text-[11px] font-bold opacity-40 uppercase tracking-widest italic py-10 col-span-3 text-center border border-dashed border-border/50 rounded-2xl">Aguardando Avaliações de Equipe no Período Selecionado.</p>
+            )}
+          </div>
         </div>
       )}
 
-        {/* 4. GESTÃO DE EQUIPE SECTION */}
-        {(!isAnalista && (user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4')) && (
-          <div className="space-y-6 pt-16 border-t border-muted/30">
-            <TeamHierarchyView 
-              visitas={visitasHierarchy} 
-              vendedores={usuarioFiltro === "todos" ? vendedoresBaseReal : vendedoresBaseReal.filter(v => 
-                v.nome_vendedor?.toUpperCase() === usuarioFiltro.toUpperCase() || 
-                v.nome_supervisor?.toUpperCase() === usuarioFiltro.toUpperCase() ||
-                v.gerente?.toUpperCase() === usuarioFiltro.toUpperCase() ||
-                v.gerente_comercial?.toUpperCase() === usuarioFiltro.toUpperCase()
-              )} 
-              userLevel={user?.nivel} 
-              userName={user?.name} 
-              userId={user?.id}
-              userUnidade={unidade === "todas" ? user?.unidade : unidade} 
-              userFuncao={user?.funcao}
-              searchTerm={usuarioFiltro}
-              onSelectVisita={setSelectedVisita}
-            />
-          </div>
-        )}
+      {/* 4. GESTÃO DE EQUIPE SECTION */}
+      {(!isAnalista && (user?.nivel === 'Niv1' || user?.nivel === 'Niv2' || user?.nivel === 'Niv3' || user?.nivel === 'Niv4')) && (
+        <div className="space-y-6 pt-16 border-t border-muted/30">
+          <TeamHierarchyView
+            visitas={visitasHierarchy}
+            vendedores={usuarioFiltro === "todos" ? vendedoresBaseReal : vendedoresBaseReal.filter(v =>
+              v.nome_vendedor?.toUpperCase() === usuarioFiltro.toUpperCase() ||
+              v.nome_supervisor?.toUpperCase() === usuarioFiltro.toUpperCase() ||
+              v.gerente?.toUpperCase() === usuarioFiltro.toUpperCase() ||
+              v.gerente_comercial?.toUpperCase() === usuarioFiltro.toUpperCase()
+            )}
+            userLevel={user?.nivel}
+            userName={user?.name}
+            userId={user?.id}
+            userUnidade={unidade === "todas" ? user?.unidade : unidade}
+            userFuncao={user?.funcao}
+            searchTerm={usuarioFiltro}
+            onSelectVisita={setSelectedVisita}
+          />
+        </div>
+      )}
 
       {/* Modais Customizados */}
       <VisitaModalDialog selectedVisita={selectedVisita} onClose={() => setSelectedVisita(null)} />
@@ -635,7 +635,7 @@ const Dashboard = () => {
               <Users className="w-6 h-6 text-white" />
             </div>
           </div>
-          
+
           <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-card/50">
             <div className="grid grid-cols-1 gap-4">
               {(() => {
@@ -652,9 +652,9 @@ const Dashboard = () => {
                 const avsDaLideranca = filtradas.filter(
                   v => matchCargo(v.cargo?.trim().toUpperCase() || "", filtroPiramideModal)
                 );
-                
+
                 const resumoSellers: Record<string, { fds: number, rgb: number, coaching: number, compass: number, quedas: number, total: number }> = {};
-                
+
                 const normalizeInd = (s?: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() : "";
                 const listN = (arr: string[]) => arr.map(id => normalizeInd(id));
                 const N_COMPASS = listN(INDICADORES_COMPASS_LOCKED);
@@ -679,19 +679,19 @@ const Dashboard = () => {
                 const sortedUsers = Object.entries(resumoSellers).sort((a, b) => b[1].total - a[1].total);
 
                 if (sortedUsers.length === 0) {
-                   return <p className="text-center text-muted-foreground/50 py-10 font-bold uppercase tracking-widest text-xs">Nenhum Usuário Vinculado.</p>;
+                  return <p className="text-center text-muted-foreground/50 py-10 font-bold uppercase tracking-widest text-xs">Nenhum Usuário Vinculado.</p>;
                 }
 
                 return sortedUsers.map(([nome, d], idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     onClick={() => {
-                       setFiltroAvaliadorDetalhe(nome);
+                      setFiltroAvaliadorDetalhe(nome);
                     }}
                     className="bg-white dark:bg-[#0F172A]/80 border dark:border-white/5 shadow-sm rounded-xl p-4 flex flex-col sm:flex-row gap-4 justify-between items-center hover:border-[#38BDF8]/50 transition-colors cursor-pointer group hover:bg-[#38BDF8]/5 dark:hover:bg-[#38BDF8]/10 relative"
                   >
                     <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#38BDF8]/20 group-hover:text-[#38BDF8] transition-colors hidden sm:block" />
-                    
+
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                       <div className="min-w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center font-black text-xs text-slate-500 dark:text-white/40 uppercase">
                         {nome.substring(0, 2)}
@@ -701,7 +701,7 @@ const Dashboard = () => {
                         <p className="text-[10px] font-bold text-muted-foreground uppercase">{d.total} Avaliações Realizadas</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto custom-scrollbar mt-2 sm:mt-0">
                       {d.fds > 0 && <span className="bg-[#FFB800]/10 text-[#FFB800] border border-[#FFB800]/20 text-[9px] font-black px-2 py-1 rounded">FDS: {d.fds}</span>}
                       {d.coaching > 0 && <span className="bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 text-[9px] font-black px-2 py-1 rounded">COACHING: {d.coaching}</span>}
@@ -731,11 +731,11 @@ const Dashboard = () => {
               </DialogDescription>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-3">
             {(() => {
               if (!filtroAvaliadorDetalhe) return null;
-              
+
               const mFiltradas = filtradas.filter(
                 v => (v.avaliador?.toUpperCase() || "NÃO IDENTIFICADO") === filtroAvaliadorDetalhe
               );
@@ -777,7 +777,7 @@ const Dashboard = () => {
       </Dialog>
       {/* FOOTER - Versão do Sistema */}
       <div className="flex flex-col items-center justify-center pt-10 pb-4 opacity-30 select-none w-full">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Sistema Rota Unibeer</p>
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Sistema Gestão de Rota</p>
         <p className="text-[8px] font-bold text-muted-foreground mt-1">Versão 1.2.9 • Build {new Date().toLocaleDateString('pt-BR')}</p>
       </div>
     </div>

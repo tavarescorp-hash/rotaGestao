@@ -170,6 +170,8 @@ const NovaVisita = () => {
                         setPdvBuscado(false);
                       }}
                       placeholder="Pesquisar código..."
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       className="h-14 bg-background/50 dark:bg-muted/10 text-foreground shadow-sm font-bold pl-12 border-border/50 focus-visible:border-primary/50 text-xl tracking-wider rounded-xl transition-all focus-within:shadow-md focus-within:shadow-primary/5"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {

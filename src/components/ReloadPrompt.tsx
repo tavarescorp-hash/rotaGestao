@@ -17,6 +17,14 @@ export function ReloadPrompt() {
     },
   });
 
+  // Efeito para Forçar Update Automático (Zero Friction)
+  useEffect(() => {
+    if (needRefresh) {
+      console.log('🔄 Nova versão detectada! Atualizando sistema automaticamente...');
+      updateServiceWorker(true);
+    }
+  }, [needRefresh, updateServiceWorker]);
+
   // Verificação periódica de atualizações (a cada 10 minutos)
   useEffect(() => {
     const checkInterval = 10 * 60 * 1000; // 10 minutos

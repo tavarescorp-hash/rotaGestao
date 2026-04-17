@@ -17,7 +17,7 @@ const Login = () => {
   // Estado Dinâmico do Tenant (SaaS)
   const [tenantStyle, setTenantStyle] = useState({
     logo_url: "/logo-gestao-rota.png",
-    cor_primaria: "#0E385D", // Dark Blue to contrast with white text
+    cor_primaria: "#21415eff", // Dark Blue to contrast with white text
     nome: "Gestão de Rota"
   });
 
@@ -71,9 +71,9 @@ const Login = () => {
       // O `user` vai ser atualizado via contexto e o `useEffect` acima fará o redirect correto.
     } catch (err: any) {
       console.error("Submit Error:", err);
-      
+
       let errorMsg = "E-mail ou senha incorretos.";
-      
+
       // Detecção de Erros de Ambiente (Missing Keys)
       if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) {
         errorMsg = "Configuração do servidor incompleta (Keys de Ambiente faltando).";

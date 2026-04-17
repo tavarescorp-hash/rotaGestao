@@ -279,6 +279,8 @@ const VisitaManual = () => {
                     setPdvBuscado(false);
                   }}
                   placeholder="Pesquisar código..."
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="h-12 bg-background dark:bg-muted/30 text-base shadow-sm font-semibold"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {

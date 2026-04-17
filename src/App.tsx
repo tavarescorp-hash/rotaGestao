@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import Bloqueada from "./pages/Bloqueada";
 import { OfflineSyncManager } from "./components/OfflineSyncManager";
 import { ReloadPrompt } from "./components/ReloadPrompt";
+import { PwaInstallBanner } from "./components/PwaInstallBanner";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Sonner />
           <OfflineSyncManager />
           <ReloadPrompt />
+          <PwaInstallBanner />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Login />} />

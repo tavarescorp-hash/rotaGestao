@@ -16,8 +16,9 @@ export interface VendedorAtivo {
 
 export async function buscarPdvPorCodigo(codigo: string, user?: any) {
   try {
-    let codigoBuscado = codigo;
+    let codigoBuscado = codigo.toUpperCase();
 
+    // Lógica de prefixo automático baseada na unidade do usuário se for apenas números
     if (/^\d+$/.test(codigoBuscado) && user?.unidade) {
       const unid = normalizeName(user.unidade || "");
       if (unid.includes('macae') || unid === 'm') {
@@ -30,11 +31,14 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     if (!navigator.onLine) {
       console.log("🌐 Sem internet. Buscando PDV no Cache Local IndexedDB...");
       const cachePdvs = await getAllFromDB(STORES.PDVS_CACHE);
-      const dataOff = cachePdvs.find(row => row.codigo === codigoBuscado);
+      // Busca exata ou sem o primeiro caractere (caso o cache não tenha o prefixo C/M)
+      const dataOff = cachePdvs.find(row => 
+        row.codigo === codigoBuscado || 
+        row.codigo === codigoBuscado.substring(1)
+      );
 
       if (dataOff) {
         const codigoParaVerificar = dataOff.cod_vendedor?.toString() || "";
-
         let forcedData = null;
         try {
           const cacheVendedores = await getAllFromDB(STORES.VENDEDORES_CACHE);
@@ -49,27 +53,31 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
         } catch (e) { }
 
         return {
-          nome_fantasia: dataOff.sigla || dataOff.razao_social,
-          categoria: dataOff.porte,
-          canal_cadastrado: dataOff.canal,
-          filial: forcedData?.filial || dataOff.filial,
-          municipio: "",
-          codigo_vendedor: dataOff.cod_vendedor,
-          nome_vendedor: dataOff.nome_vendedor,
-          nome_supervisor: forcedData?.nome || dataOff.nome_supervisor,
-          supervisor: forcedData ? "" : (dataOff.cod_supervisor ? dataOff.cod_supervisor.toString() : ""),
-          gerente: forcedData?.gerente || dataOff.nome_gerente_vendas,
-          coorden_x: "",
-          coorden_y: ""
+          data: {
+            nome_fantasia: dataOff.sigla || dataOff.razao_social,
+            categoria: dataOff.porte,
+            canal_cadastrado: dataOff.canal,
+            filial: forcedData?.filial || dataOff.filial,
+            municipio: "",
+            codigo_vendedor: dataOff.cod_vendedor,
+            nome_vendedor: dataOff.nome_vendedor,
+            nome_supervisor: forcedData?.nome || dataOff.nome_supervisor,
+            supervisor: forcedData ? "" : (dataOff.cod_supervisor ? dataOff.cod_supervisor.toString() : ""),
+            gerente: forcedData?.gerente || dataOff.nome_gerente_vendas,
+            coorden_x: "",
+            coorden_y: ""
+          },
+          error: null
         };
       }
-      return null;
+      return { data: null, error: "Cliente não encontrado no cache offline. Sincronize os dados quando estiver online." };
     }
 
+    // Busca no Supabase
     let query = supabase
       .from("pdvs")
       .select('filial, codigo, cod_vendedor, nome_vendedor, cod_supervisor, nome_supervisor, cod_gerente, nome_gerente_vendas, nome_gerente_comercial, rota, canal, cnpj_cpf, sigla, razao_social, porte')
-      .eq('codigo', codigoBuscado);
+      .or(`codigo.eq.${codigoBuscado},codigo.eq.${codigoBuscado.substring(1)}`); // Tenta com e sem prefixo
 
     if (user?.empresa_id) {
       query = query.eq('empresa_id', user.empresa_id);
@@ -78,42 +86,40 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Erro banco:", error);
-      return null;
+      return { data: null, error: `Erro na busca: ${error.message}` };
     }
 
     if (!data || data.length === 0) {
-      throw new Error("Cliente não encontrado na base de dados. Verifique o código e a unidade.");
+      return { data: null, error: "Cliente não encontrado na base de dados. Verifique o código e a unidade." };
     }
 
     const pdv = data[0];
 
-    // Validação de Permissão Nível 4 (Supervisor) com normalização robusta
+    // Validação de Permissão Nível 4 (Supervisor)
     if (user?.nivel === 'Niv4' && user?.name) {
-      const supPdv = normalizeName(pdv.nome_supervisor);
+      const supPdv = normalizeName(pdv.nome_supervisor || "");
       const supLogado = normalizeName(user.name);
 
       if (supPdv !== supLogado && !supPdv.includes(supLogado) && !supLogado.includes(supPdv)) {
-        throw new Error(`Este PDV está vinculado ao supervisor ${pdv.nome_supervisor || 'outro'}. Você não possui permissão para acessá-lo.`);
+        return { data: null, error: `Permissão Negada: Este PDV pertence ao supervisor ${pdv.nome_supervisor || 'outro'}.` };
       }
     }
 
     // Validação de Gestão Nível 3 (Gerente)
     if (user?.nivel === 'Niv3' && user?.name) {
-      const gvPdv = normalizeName(pdv.nome_gerente_vendas);
+      const gvPdv = normalizeName(pdv.nome_gerente_vendas || "");
       const gvLogado = normalizeName(user.name);
-      const uUnid = user.unidade;
-      const fPdv = pdv.filial;
-      const isSameBranch = isBranchMatch(uUnid, fPdv);
+      
+      const isSameBranch = isBranchMatch(user.unidade, pdv.filial);
 
       if (gvPdv !== gvLogado && !gvPdv.includes(gvLogado) && !gvLogado.includes(gvPdv) && !isSameBranch) {
-        throw new Error("Este PDV não pertence à sua estrutura de gestão ou unidade.");
+        return { data: null, error: "Este PDV não pertence à sua estrutura de gestão ou unidade." };
       }
     }
 
     const codigoParaVerificar = pdv.cod_vendedor?.toString() || "";
-
     let forcedData: any = null;
+    
     if (codigoParaVerificar) {
       const { data: vData } = await supabase
         .from('vendedores')
@@ -126,7 +132,8 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
       }
     }
 
-      return {
+    return {
+      data: {
         nome_fantasia: pdv.sigla || pdv.razao_social,
         categoria: pdv.porte,
         canal_cadastrado: pdv.canal,
@@ -139,11 +146,12 @@ export async function buscarPdvPorCodigo(codigo: string, user?: any) {
         gerente: forcedData?.gerente || pdv.nome_gerente_vendas,
         coorden_x: "",
         coorden_y: ""
-      };
-    } catch (err) {
-      console.error("Erro em buscarPdvPorCodigo:", err);
-      return null;
-    }
+      },
+      error: null
+    };
+  } catch (err: any) {
+    return { data: null, error: err.message || "Erro inesperado ao buscar cliente." };
+  }
 }
 
 export async function buscarVendedoresAtivos(user?: any): Promise<VendedorAtivo[]> {

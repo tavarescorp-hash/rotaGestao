@@ -70,14 +70,19 @@ const Dashboard = () => {
       ]);
       setVisitas(dataVisitas);
       setVendedoresBaseReal(dataVendedores);
-      if (dataMetas.length > 0) {
-        console.log("✅ [SaaS Meta Sync] Metas encontradas no Supabase:", dataMetas);
-      } else {
-        console.warn("ℹ️ [SaaS Meta Sync] Nenhuma meta customizada no Supabase para este user_id:", user?.id);
-      }
       setMetasUsuario(dataMetas);
+      
+      toast({
+        title: "Sincronização Concluída",
+        description: "Os dados do dashboard foram atualizados com sucesso.",
+      });
     } catch (error) {
       console.error("❌ [SaaS Meta Sync] Erro ao carregar dados do Supabase:", error);
+      toast({
+        title: "Erro na Sincronização",
+        description: "Não foi possível carregar os dados. Verifique sua conexão.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

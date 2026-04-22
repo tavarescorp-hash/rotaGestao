@@ -16,7 +16,7 @@ export async function getEmpresas() {
   }
 }
 
-export async function updateEmpresaStatus(id: number, novoStatus: string): Promise<boolean> {
+export async function updateEmpresaStatus(id: number, novoStatus: string): Promise<{success: boolean, error?: any}> {
   try {
     const { error } = await supabase
       .from('empresas')
@@ -24,9 +24,10 @@ export async function updateEmpresaStatus(id: number, novoStatus: string): Promi
       .eq('id', id);
 
     if (error) throw error;
-    return true;
+    return { success: true };
   } catch (error) {
-    return false;
+    console.error("DEBUG: Erro ao atualizar status da empresa:", error);
+    return { success: false, error };
   }
 }
 

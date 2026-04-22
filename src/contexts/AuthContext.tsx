@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let rawName = (profile?.Nome || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "").toUpperCase();
       
-      const userNivel = profile?.nivel;
+      const userNivel = isMaster ? "Master" : profile?.nivel;
 
       // 🔍 Busca de Nome Oficial para Niv3/Niv4 para garantir match com PDVs e Visitas
       if (userNivel === 'Niv3' || userNivel === 'Niv4') {

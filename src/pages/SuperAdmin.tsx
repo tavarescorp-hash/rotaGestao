@@ -65,13 +65,13 @@ export default function SuperAdmin() {
 
   const handleToggleStatus = async (empresa: Empresa) => {
     const novoStatus = empresa.status_assinatura === "Ativa" ? "Inadimplente" : "Ativa";
-    const sucesso = await updateEmpresaStatus(empresa.id, novoStatus);
+    const result = await updateEmpresaStatus(empresa.id, novoStatus);
 
-    if (sucesso) {
+    if (result.success) {
       toast({ title: "Status atualizado!", description: `A empresa ${empresa.nome} agora está ${novoStatus}.` });
       carregarEmpresas();
     } else {
-      toast({ title: "Erro", description: "Não foi possível alterar o status.", variant: "destructive" });
+      toast({ title: "Erro", description: result.error?.message || "Não foi possível alterar o status.", variant: "destructive" });
     }
   };
 

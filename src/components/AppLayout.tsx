@@ -21,6 +21,10 @@ const AppLayout = () => {
 
   const isBlocked = (user.status_assinatura !== "Ativa" || isExpired) && user.nivel !== "Master";
 
+  if (isBlocked && location.pathname !== '/bloqueio') {
+    return <Navigate to="/bloqueio" replace />;
+  }
+
   return (
     <SidebarProvider>
       <div className="h-[100dvh] flex w-full overflow-hidden bg-background">

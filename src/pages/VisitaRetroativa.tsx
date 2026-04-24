@@ -111,7 +111,7 @@ const VisitaRetroativa = () => {
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
       const isGerente = user?.nivel === 'Niv3';
 
-      const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
+      const { data: pdvData, error: searchError } = await buscarPdvPorCodigo(codigoBusca, user);
       if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
 
@@ -138,8 +138,8 @@ const VisitaRetroativa = () => {
           ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", codigo_vendedor: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
         }));
         toast({
-          title: "Cliente não encontrado",
-          description: "O código não foi encontrado na base de dados. Não é possível prosseguir.",
+          title: "Busca não concluída",
+          description: searchError || "O código não foi encontrado na base de dados.",
           variant: "destructive",
         });
       }

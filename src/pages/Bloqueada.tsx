@@ -2,13 +2,17 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Building2, AlertTriangle, ShieldX, Headset } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { isAfter, parseISO, endOfDay } from "date-fns";
 
 export default function Bloqueada() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Se a empresa está ativa, manda de volta pro app normal
-  if (user?.status_assinatura === "Ativa" || user?.nivel === "Master") {
+  const isExpired = user?.data_vencimento ? isAfter(new Date(), endOfDay(parseISO(user.data_vencimento))) : false;
+  const isBlocked = (user?.status_assinatura !== "Ativa" || isExpired) && user?.nivel !== "Master";
+
+  // Se a empresa NÃO está bloqueada, manda de volta pro app normal
+  if (!isBlocked && user) {
     return <Navigate to="/dashboard" replace />;
   }
 

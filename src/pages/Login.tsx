@@ -17,7 +17,7 @@ const Login = () => {
   // Estado Dinâmico do Tenant (SaaS)
   const [tenantStyle, setTenantStyle] = useState({
     logo_url: "/logo-gestao-rota.png",
-    cor_primaria: "#21415eff", // Dark Blue to contrast with white text
+    cor_primaria: "#0E385D", // Dark Blue to contrast with white text
     nome: "Gestão de Rota"
   });
 
@@ -36,11 +36,22 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleEmailBlur = async () => {
-    if (!email || !email.includes('@')) return;
+  // Debounce automático para buscar o Tenant enquanto digita
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (email && email.includes('@')) {
+        buscarTenant(email);
+      }
+    }, 600); // Espera 600ms após o usuário parar de digitar
+
+    return () => clearTimeout(timer);
+  }, [email]);
+
+  const buscarTenant = async (emailDigitado: string) => {
+    if (!emailDigitado || !emailDigitado.includes('@')) return;
 
     // Forçar Gestão de Rota (Default) para o CEO/Master
-    if (email.trim().toLowerCase() === 'tavarescorp@gmail.com') {
+    if (emailDigitado.trim().toLowerCase() === 'tavarescorp@gmail.com') {
       setTenantStyle({
         logo_url: "/logo-gestao-rota.png",
         cor_primaria: "#0E385D", // Nova cor temática do botão baseada na logo postada
@@ -50,16 +61,29 @@ const Login = () => {
     }
 
     try {
-      const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: email.trim().toLowerCase() });
-      if (!error && data) {
+      console.log("🔍 Buscando tenant para o e-mail:", emailDigitado.trim().toLowerCase());
+      const { data, error } = await supabase.rpc('get_tenant_by_email', { user_email: emailDigitado.trim().toLowerCase() });
+      console.log("📦 Resposta do RPC:", { data, error });
+      
+      if (error) {
+        console.error("❌ Erro no RPC:", error);
+      }
+      
+      if (!error && data && data.length > 0) {
+        // Como o RPC retorna TABLE, os dados vem como Array. Pegamos o primeiro item.
+        const tenantInfo = Array.isArray(data) ? data[0] : data;
+        console.log("🎨 Aplicando cores do Tenant:", tenantInfo);
+        
         setTenantStyle({
-          logo_url: data.logo_url || "/logo-gestao-rota.png",
-          cor_primaria: data.cor_primaria || "#0E385D",
-          nome: data.nome || "Gestão de Rota"
+          logo_url: tenantInfo.logo_url || "/logo-gestao-rota.png",
+          cor_primaria: tenantInfo.cor_primaria || "#0E385D",
+          nome: tenantInfo.nome || "Gestão de Rota"
         });
+      } else {
+        console.log("⚠️ Nenhum tenant encontrado para este e-mail.");
       }
     } catch (err) {
-      // Falha silenciosa: mantém estilo global
+      console.error("❌ Falha na requisição RPC:", err);
     }
   };
 
@@ -140,7 +164,6 @@ const Login = () => {
               placeholder="nome@empresa.com.br"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onBlur={handleEmailBlur}
               required
               className="h-12 bg-zinc-800/80 border-white/10 text-white placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:bg-zinc-800 transition-all duration-300 rounded-xl px-4"
               style={{ '--tw-ring-color': tenantStyle.cor_primaria, borderColor: tenantStyle.cor_primaria } as any}

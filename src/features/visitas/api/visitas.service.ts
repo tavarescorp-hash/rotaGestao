@@ -144,7 +144,7 @@ export async function enviarVisita(visita: Visita): Promise<{ success: boolean; 
   }
 }
 
-export async function buscarVisitas(user?: any): Promise<Visita[]> {
+export async function buscarVisitas(user?: any, mes?: string, ano?: string): Promise<Visita[]> {
   try {
     if (!navigator.onLine) {
       console.log("🌐 Sem internet. Buscando Visitas no Cache Local...");
@@ -165,6 +165,13 @@ export async function buscarVisitas(user?: any): Promise<Visita[]> {
 
     if (user?.empresa_id) {
       query = query.eq('empresa_id', user.empresa_id);
+    }
+
+    if (mes && ano) {
+      const dataInicio = `${ano}-${mes}-01`;
+      const ultimoDia = new Date(parseInt(ano), parseInt(mes), 0).getDate();
+      const dataFim = `${ano}-${mes}-${ultimoDia.toString().padStart(2, '0')}`;
+      query = query.gte("data_visita", dataInicio).lte("data_visita", dataFim);
     }
 
     // Niv1 (Diretor) e Niv2 (GCom - Eduardo Breda) não têm filtros de unidade/nome na SQL (pegam tudo da empresa_id)

@@ -60,18 +60,19 @@ const VisitaManual = () => {
     nome_vendedor: "",
     coorden_x: "",
     coorden_y: "",
-    coorden_y: "",
   });
 
   const [dicasRgb, setDicasRgb] = useState<any[]>([]);
 
   useEffect(() => {
-    if (form.tipo_visita === 'RGB' && user?.funcao?.toUpperCase().includes('SUPERVISOR')) {
-      getDicaRotaHoje(user).then(dicas => setDicasRgb(dicas));
+    const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR') || user?.nivel === 'Master' || user?.nivel === 'Niv4';
+    // Removemos a restrição do tipo_visita para mostrar a dica antes do usuário escolher a visita
+    if (isSupervisor && form.data_visita) {
+      getDicaRotaHoje(user, form.data_visita).then(dicas => setDicasRgb(dicas));
     } else {
       setDicasRgb([]);
     }
-  }, [form.tipo_visita, user]);
+  }, [user, form.data_visita]);
 
   const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
@@ -123,9 +124,10 @@ const VisitaManual = () => {
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
       const isGerente = user?.nivel === 'Niv3';
 
-      const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
-      if (pdvData) {
-
+      const response = await buscarPdvPorCodigo(codigoBusca, user);
+      
+      if (response && response.data && !response.error) {
+        const pdvData = response.data;
         setForm((prev) => ({
           ...prev,
           nome_fantasia_pdv: pdvData.nome_fantasia || "",
@@ -149,8 +151,8 @@ const VisitaManual = () => {
           ...prev, nome_fantasia_pdv: "", canal_cadastrado: "", potencial_cliente: "", filial: "", municipio: "", codigo_vendedor: "", nome_vendedor: "", coorden_x: "", coorden_y: ""
         }));
         toast({
-          title: "Cliente não encontrado",
-          description: "O código não foi encontrado na base de dados. Não é possível prosseguir.",
+          title: "Atenção",
+          description: response?.error || "O código não foi encontrado na base de dados.",
           variant: "destructive",
         });
       }
@@ -314,9 +316,50 @@ const VisitaManual = () => {
                   )}
                   <span className="ml-2 hidden sm:inline font-bold">Pesquisar</span>
                 </Button>
-              </div>
             </div>
           </div>
+
+          {/* ALERTA INTELIGENTE RGB - AGORA APARECE ANTES MESMO DE DIGITAR O CÓDIGO */}
+          {dicasRgb.length > 0 && (
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[40px] rounded-full pointer-events-none" />
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div className="space-y-3 w-full">
+                    <h4 className="font-bold text-amber-600 dark:text-amber-500 text-lg flex items-center gap-2">
+                      💡 Dica de Rota Inteligente
+                    </h4>
+                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                      O sistema detectou clientes na rota desta data que precisam de atenção na execução RGB:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                      {dicasRgb.map((dica, idx) => (
+                        <div key={idx} className="bg-background/80 border border-amber-500/40 p-3 rounded-lg flex flex-col cursor-pointer hover:bg-amber-500/20 hover:scale-[1.02] transition-all"
+                          onClick={() => {
+                            // Auto preenche o código
+                            setForm(prev => ({ ...prev, codigo_pdv: dica.codigo }));
+                            toast({ title: "Código Aplicado", description: "O código sugerido foi copiado para o campo de busca.", className: "bg-amber-500 text-white font-bold" });
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-black text-foreground text-base">{dica.codigo}</span>
+                            <Badge className="bg-amber-500 text-white hover:bg-amber-600 border-none text-[10px] px-1.5 py-0 font-bold uppercase">Prioridade</Badge>
+                          </div>
+                          <span className="text-xs font-bold text-muted-foreground truncate">{dica.nome_fantasia}</span>
+                          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1 italic leading-tight bg-amber-500/10 px-2 py-0.5 rounded-sm inline-block w-fit">
+                            Vendedor: {dica.motivo}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 1 - Dados da Visita */}
           <Card className="glass-card bg-card/40 border-primary/10 shadow-md">
@@ -429,45 +472,7 @@ const VisitaManual = () => {
                   </div>
                 )}
 
-                {/* ALERTA INTELIGENTE RGB */}
-                {dicasRgb.length > 0 && form.tipo_visita === 'RGB' && (
-                  <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[40px] rounded-full pointer-events-none" />
-                      <div className="flex items-start gap-4 relative z-10">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
-                          <AlertTriangle className="w-5 h-5 text-amber-500" />
-                        </div>
-                        <div className="space-y-3 w-full">
-                          <h4 className="font-bold text-amber-600 dark:text-amber-500 text-lg flex items-center gap-2">
-                            💡 Dica de Rota Inteligente
-                          </h4>
-                          <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-                            O sistema detectou clientes na sua rota de <strong>HOJE</strong> que precisam de atenção na execução RGB:
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                            {dicasRgb.map((dica, idx) => (
-                              <div key={idx} className="bg-background/60 border border-amber-500/30 p-3 rounded-lg flex flex-col cursor-pointer hover:bg-amber-500/10 transition-colors"
-                                onClick={() => {
-                                  // Auto preenche o código
-                                  setForm(prev => ({ ...prev, codigo_pdv: dica.codigo }));
-                                  toast({ title: "Código Aplicado", description: "O código sugerido foi copiado para o campo de busca.", className: "bg-amber-500 text-white" });
-                                }}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-black text-foreground">{dica.codigo}</span>
-                                  <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 border-none text-[10px] px-1.5 py-0">Queda</Badge>
-                                </div>
-                                <span className="text-xs font-bold text-muted-foreground truncate">{dica.nome_fantasia}</span>
-                                <span className="text-[10px] font-medium text-amber-600/80 dark:text-amber-500/80 mt-1 italic leading-tight">Motivo: {dica.motivo}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* O ALERTA INTELIGENTE RGB FOI MOVIDO PARA O TOPO DA PÁGINA */}
               </CardContent>
             </Card>
           )}

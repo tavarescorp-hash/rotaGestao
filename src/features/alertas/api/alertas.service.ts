@@ -30,6 +30,7 @@ export async function uploadAlertasRGB(fileData: any[], user: any): Promise<bool
       fds: String(row['FDS'] || row['fds'] || ''),
       vend: String(row['VEND'] || row['vend'] || ''),
       rota: String(row['ROTA'] || row['rota'] || ''),
+      supervisor_id: String(row['SUPERVISOR_ID'] || row['supervisor_id'] || row['COD_SUPERVISOR'] || row['cod_supervisor'] || ''),
       empresa_id: user.empresa_id
     })).filter(row => row.clientes !== ''); // Ignora linhas sem código (CLIENTES)
 
@@ -49,7 +50,7 @@ export async function uploadAlertasRGB(fileData: any[], user: any): Promise<bool
   }
 }
 
-export async function getDicaRotaHoje(user: any): Promise<any[]> {
+export async function getDicaRotaHoje(user: any, dataDesejada?: string): Promise<any[]> {
   if (!user || !user.empresa_id || !navigator.onLine) return [];
 
   // Supervisores, Master e Niv4 recebem a dica (Niv4 adicionado para você conseguir testar)
@@ -58,64 +59,50 @@ export async function getDicaRotaHoje(user: any): Promise<any[]> {
 
   // Descobrir qual o dia da semana atual (0 = Domingo, 1 = Segunda, 2 = Terça...)
   const diasSemanaSiglas = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
-  const diaAtual = new Date().getDay();
+  
+  let dateObj = new Date();
+  if (dataDesejada) {
+      dateObj = new Date(`${dataDesejada}T12:00:00`); // Fixa o meio dia para evitar fuso horário puxando pro dia anterior
+  }
+  
+  const diaAtual = dateObj.getDay();
   const siglaHoje = diasSemanaSiglas[diaAtual]; // Ex: 'SEX'
   
-  console.log(`[RGB Alerta] Buscando para dia: ${siglaHoje}, user.codigo: ${user.codigo}`);
+  console.log(`[RGB Alerta] Buscando para dia: ${siglaHoje} (Data base: ${dataDesejada || 'Hoje'}), user.codigo: ${user.codigo}`);
 
   try {
-    // Passo 1: Buscar TODOS os alertas RGB da empresa
-    const { data: alertas, error: errAlertas } = await supabase
+    console.log(`[RGB Alerta] Parâmetros de Busca: Empresa: ${user.empresa_id}, Dia: ${siglaHoje}, Supervisor_ID buscado: ${user.codigo}`);
+
+    // Passo 1: Buscar os alertas RGB da empresa filtrando direto pela rota (dia da semana) e supervisor
+    let queryAlertas = supabase
       .from('alertas_rgb')
-      .select('clientes, base_ouro_preto, pedidos, fds, vend')
-      .eq('empresa_id', user.empresa_id);
-
-    if (errAlertas || !alertas || alertas.length === 0) return [];
-
-    const codigosComAlerta = alertas.map(a => a.clientes);
-    console.log(`[RGB Alerta] Códigos com queda:`, codigosComAlerta);
-
-    // Passo 2: Buscar PDVs que estão na Rota de HOJE e que estão na lista de alertas
-    let query = supabase
-      .from('pdvs')
-      .select('codigo, razao_social, sigla, cod_supervisor')
+      .select('clientes, base_ouro_preto, pedidos, fantasia, fds, vend, rota, supervisor_id')
       .eq('empresa_id', user.empresa_id)
-      .ilike('rota', `%${siglaHoje}%`) // Tem a sigla em qualquer lugar da string
-      .in('codigo', codigosComAlerta);
+      .ilike('rota', `%${siglaHoje}%`);
 
-    // Se for supervisor, filtra apenas a carteira dele. Se for Master ou Niv4, vê de todos para poder testar.
-    if (user.nivel !== 'Master' && user.nivel !== 'Niv4') {
-      query = query.eq('cod_supervisor', user.codigo);
+    // Filtro inteligente: Tenta usar o código, senão usa o ID do usuário (como está no Excel do Carlos)
+    if (user.codigo) {
+      queryAlertas = queryAlertas.eq('supervisor_id', String(user.codigo));
+    } else {
+      queryAlertas = queryAlertas.eq('supervisor_id', user.id);
     }
 
-    const { data: pdvsNaRota, error: errPdvs } = await query;
+    const { data: alertas, error: errAlertas } = await queryAlertas;
 
-    if (errPdvs) {
-      console.error("[RGB Alerta] Erro PDVs:", errPdvs);
+    if (errAlertas) {
+      console.error("[RGB Alerta] Erro na tabela alertas_rgb:", errAlertas);
+      return [];
     }
 
-    console.log(`[RGB Alerta] PDVs encontrados na rota de hoje e com alerta:`, pdvsNaRota);
+    if (!alertas || alertas.length === 0) {
+      return [];
+    }
 
-    if (!pdvsNaRota || pdvsNaRota.length === 0) return [];
-
-    // Fazer o "join" manual das dicas com os nomes dos PDVs
-    const dicasCompletas = pdvsNaRota.map(pdv => {
-      const alertaRef = alertas.find(a => a.clientes === pdv.codigo);
-      // Aqui definimos qual informação vai aparecer pro supervisor.
-      // Vamos mostrar a "BASE OURO PRETO" ou "PEDIDOS".
-      let motivo = '';
-      if (alertaRef?.base_ouro_preto && alertaRef.base_ouro_preto !== 'undefined' && alertaRef.base_ouro_preto.trim() !== '') {
-          motivo = `Base Ouro: ${alertaRef.base_ouro_preto}`;
-      } else if (alertaRef?.pedidos && alertaRef.pedidos !== 'undefined' && alertaRef.pedidos.trim() !== '') {
-          motivo = `Pedidos: ${alertaRef.pedidos}`;
-      } else {
-          motivo = 'Queda identificada (Ver base)';
-      }
-
+    const dicasCompletas = alertas.map(a => {
       return {
-        codigo: pdv.codigo,
-        nome_fantasia: pdv.sigla || pdv.razao_social,
-        motivo: motivo
+        codigo: a.clientes,
+        nome_fantasia: a.fantasia || `Cliente ${a.clientes}`,
+        motivo: a.vend || 'N/I', // Agora passamos o código do vendedor aqui
       };
     });
 

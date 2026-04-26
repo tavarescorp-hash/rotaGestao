@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo-gestao-rota.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo-gestao-rota.png'],
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
@@ -32,14 +32,20 @@ export default defineConfig(({ mode }) => ({
         orientation: 'portrait',
         icons: [
           {
-            src: 'logo-gestao-rota.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'logo-gestao-rota.png',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }

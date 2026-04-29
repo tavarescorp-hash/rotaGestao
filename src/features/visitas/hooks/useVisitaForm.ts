@@ -7,6 +7,8 @@ import { isAfter, parseISO, endOfDay } from "date-fns";
 import { buscarPdvPorCodigo } from "@/features/pdvs/api/pdvs.service";
 import { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
+import { getDicaRotaHoje } from "@/features/alertas/api/alertas.service";
+import { getBrasiliaDateStr } from "@/lib/utils";
 
 export function useVisitaForm() {
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export function useVisitaForm() {
   const [isSearchingPdv, setIsSearchingPdv] = useState(false);
   const [pdvBuscado, setPdvBuscado] = useState(false);
   const [contagemVisitas, setContagemVisitas] = useState(0);
+  const [dicasRgb, setDicasRgb] = useState<any[]>([]);
 
   useEffect(() => {
     if (user?.empresa_id !== undefined) {
@@ -24,12 +27,14 @@ export function useVisitaForm() {
     }
   }, [user?.empresa_id]);
 
+
+
   const isExpired = user?.data_vencimento ? isAfter(new Date(), endOfDay(parseISO(user.data_vencimento))) : false;
   const isBlocked = (user?.status_assinatura !== "Ativa" || isExpired) && user?.nivel !== "Master";
   const isLimitReached = user?.limite_visitas ? contagemVisitas >= user.limite_visitas : false;
 
   const initialFormState = {
-    data_visita: new Date().toISOString().split("T")[0],
+    data_visita: getBrasiliaDateStr(),
     tipo_visita: "",
     observacoes: "",
     codigo_pdv: "",
@@ -46,6 +51,18 @@ export function useVisitaForm() {
   };
 
   const [form, setForm] = useState(initialFormState);
+
+  // Sugestão inteligente de clientes RGB para supervisores (mesma lógica da Visita Retroativa)
+  // IMPORTANTE: esse useEffect deve ficar DEPOIS da declaração de `form` para ter acesso a form.data_visita
+  useEffect(() => {
+    const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR') || user?.nivel === 'Master' || user?.nivel === 'Niv4';
+    if (isSupervisor && form.data_visita) {
+      getDicaRotaHoje(user, form.data_visita).then(dicas => setDicasRgb(dicas));
+    } else {
+      setDicasRgb([]);
+    }
+  // Usa propriedades primitivas como dependências para evitar loop de re-render
+  }, [user?.funcao, user?.nivel, user?.id, form.data_visita]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -213,6 +230,7 @@ export function useVisitaForm() {
     isLimitReached,
     isBlocked,
     contagemVisitas,
+    dicasRgb,
     handleChange,
     handlePesquisarPdv,
     handleSubmitFinal,

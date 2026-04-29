@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Loader2, Search, MapPin, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import StepProdutosExecucao, { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import StepCoaching, { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
 
@@ -23,6 +24,7 @@ const canalOptions = [
 
 const NovaVisita = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     user,
     form,
@@ -32,6 +34,7 @@ const NovaVisita = () => {
     isLimitReached,
     isBlocked,
     contagemVisitas,
+    dicasRgb,
     handleChange,
     handlePesquisarPdv,
     handleSubmitFinal,
@@ -197,6 +200,48 @@ const NovaVisita = () => {
                 </div>
               </div>
             </div>
+
+            {/* ALERTA INTELIGENTE RGB - sugestão de clientes por dia da semana */}
+            {dicasRgb.length > 0 && (
+              <div className="px-4 sm:px-6 pb-4 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[40px] rounded-full pointer-events-none" />
+                  <div className="flex items-start gap-4 relative z-10">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
+                      <AlertTriangle className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div className="space-y-3 w-full">
+                      <h4 className="font-bold text-amber-600 dark:text-amber-500 text-lg flex items-center gap-2">
+                        💡 Dica de Rota Inteligente
+                      </h4>
+                      <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                        O sistema detectou clientes na rota de hoje que precisam de atenção na execução RGB:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                        {dicasRgb.map((dica, idx) => (
+                          <div key={idx} className="bg-background/80 border border-amber-500/40 p-3 rounded-lg flex flex-col cursor-pointer hover:bg-amber-500/20 hover:scale-[1.02] transition-all"
+                            onClick={() => {
+                              handleChange("codigo_pdv", dica.codigo);
+                              setPdvBuscado(false);
+                              toast({ title: "Código Aplicado", description: "O código sugerido foi copiado para o campo de busca.", className: "bg-amber-500 text-white font-bold" });
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-black text-foreground text-base">{dica.codigo}</span>
+                              <Badge className="bg-amber-500 text-white hover:bg-amber-600 border-none text-[10px] px-1.5 py-0 font-bold uppercase">Prioridade</Badge>
+                            </div>
+                            <span className="text-xs font-bold text-muted-foreground truncate">{dica.nome_fantasia}</span>
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1 italic leading-tight bg-amber-500/10 px-2 py-0.5 rounded-sm inline-block w-fit">
+                              Vendedor: {dica.motivo}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">

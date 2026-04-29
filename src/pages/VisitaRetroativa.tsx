@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { enviarVisita, buscarPdvPorCodigo, verificarVisitaMensal } from "@/lib/api";
 import { getDicaRotaHoje } from "@/features/alertas/api/alertas.service";
+import { getBrasiliaDateStr } from "@/lib/utils";
 import { getUsers } from "@/features/usuarios/api/usuarios.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ const VisitaRetroativa = () => {
   }, [isAnalista, user]);
 
   const [form, setForm] = useState({
-    data_visita: new Date().toISOString().split("T")[0],
+    data_visita: getBrasiliaDateStr(),
     tipo_visita: "",
     observacoes: "",
     codigo_pdv: "",
@@ -246,7 +247,7 @@ const VisitaRetroativa = () => {
 
     if (result.success) {
       setForm({
-        data_visita: new Date().toISOString().split("T")[0],
+        data_visita: getBrasiliaDateStr(),
         tipo_visita: "",
         observacoes: "",
         codigo_pdv: "",
@@ -305,7 +306,7 @@ const VisitaRetroativa = () => {
                 <Input
                   type="date"
                   value={form.data_visita}
-                  max={new Date().toISOString().split("T")[0]}
+                  max={getBrasiliaDateStr()}
                   onChange={(e) => handleChange("data_visita", e.target.value)}
                   className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm font-semibold"
                 />

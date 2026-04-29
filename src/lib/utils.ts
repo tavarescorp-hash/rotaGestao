@@ -5,6 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Retorna a data atual no fuso horário de Brasília (America/Sao_Paulo) no formato YYYY-MM-DD.
+ * NUNCA use new Date().toISOString().split("T")[0] — isso usa UTC e avança o dia
+ * às 21h de Brasília (UTC-3), causando data errada à noite.
+ */
+export function getBrasiliaDateStr(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 /** 
  * Normaliza nomes para comparação robusta.
  * Remove acentos, partículas de ligação (de, da, do, das, dos) e espaços.

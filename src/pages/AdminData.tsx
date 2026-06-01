@@ -61,7 +61,8 @@ const AdminData = () => {
 
     // SaaS Tenant Selector
     const [empresas, setEmpresas] = useState<any[]>([]);
-    const [selectedEmpresaId, setSelectedEmpresaId] = useState<number>(user?.empresa_id || 1);
+    // Usa ?? em vez de || para não tratar empresa_id=0 (Master) como falsy
+    const [selectedEmpresaId, setSelectedEmpresaId] = useState<number>(user?.empresa_id ?? 0);
     
     // O usuário "Ativo" para a tela de AdminData. Se for Master, ele age em nome da Empresa Selecionada
     const activeUser = isMaster && selectedEmpresaId ? { ...user, empresa_id: selectedEmpresaId } : user;
@@ -70,7 +71,8 @@ const AdminData = () => {
         if (isMaster) {
             getEmpresas().then(data => {
                 setEmpresas(data);
-                if (data.length > 0 && selectedEmpresaId === 0) {
+                // Seleciona a primeira empresa se nenhuma estiver selecionada (0 = sem seleção, estado inicial do Master)
+                if (data.length > 0 && (selectedEmpresaId === 0 || !data.find((e: any) => e.id === selectedEmpresaId))) {
                     setSelectedEmpresaId(data[0].id);
                 }
             });

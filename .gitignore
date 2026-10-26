@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+_backup_nextjs
+unibeerBase.csv
+Base_PDVS_Atual.csv
+Base_PDVS_Atual.xlsx
 
 # Editor directories and files
 .vscode/*

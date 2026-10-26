@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { enviarVisita, buscarPdvPorCodigo, verificarVisitaMensal } from "@/lib/api";
-import { getDicaRotaHoje } from "@/features/alertas/api/alertas.service";
-import { getBrasiliaDateStr } from "@/lib/utils";
 import { getUsers } from "@/features/usuarios/api/usuarios.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2, Search, MapPin, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Search, MapPin, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import StepProdutosExecucao, { RgbSubmitData } from "@/features/visitas/components/StepProdutosExecucao";
 import StepCoaching, { CoachingSubmitData } from "@/features/visitas/components/StepCoaching";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const canalOptions = [
   "Padaria/Confeitaria",
@@ -50,6 +53,14 @@ const VisitaRetroativa = () => {
   const isAnalista = Boolean(user?.name?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0');
   const [usuariosDb, setUsuariosDb] = useState<any[]>([]);
   const [analistaOverrideId, setAnalistaOverrideId] = useState<string>("");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const parseDateSafe = (dateStr: string) => {
+    if (!dateStr) return undefined;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    if (!year || !month || !day) return undefined;
+    return new Date(year, month - 1, day);
+  };
 
   useEffect(() => {
     if (isAnalista) {
@@ -58,7 +69,7 @@ const VisitaRetroativa = () => {
   }, [isAnalista, user]);
 
   const [form, setForm] = useState({
-    data_visita: getBrasiliaDateStr(),
+    data_visita: new Date().toISOString().split("T")[0],
     tipo_visita: "",
     observacoes: "",
     codigo_pdv: "",
@@ -73,18 +84,6 @@ const VisitaRetroativa = () => {
     coorden_x: "",
     coorden_y: "",
   });
-
-  const [dicasRgb, setDicasRgb] = useState<any[]>([]);
-
-  useEffect(() => {
-    const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR') || user?.nivel === 'Master' || user?.nivel === 'Niv4';
-    // Removemos a restrição do tipo_visita para mostrar a dica antes do usuário escolher a visita
-    if (isSupervisor && form.data_visita) {
-      getDicaRotaHoje(user, form.data_visita).then(dicas => setDicasRgb(dicas));
-    } else {
-      setDicasRgb([]);
-    }
-  }, [user, form.data_visita]);
 
   const tipoVisitaOptions = getIndicadoresPorNivel(user?.nivel);
 
@@ -125,10 +124,8 @@ const VisitaRetroativa = () => {
       const isSupervisor = user?.funcao?.toUpperCase().includes('SUPERVISOR');
       const isGerente = user?.nivel === 'Niv3';
 
-      const response = await buscarPdvPorCodigo(codigoBusca, user);
-      
-      if (response && response.data && !response.error) {
-        const pdvData = response.data;
+      const pdvData = await buscarPdvPorCodigo(codigoBusca, user);
+      if (pdvData) {
         // Obter nome em caixa alta para comparação insensível
 
         setForm((prev) => ({
@@ -247,7 +244,7 @@ const VisitaRetroativa = () => {
 
     if (result.success) {
       setForm({
-        data_visita: getBrasiliaDateStr(),
+        data_visita: new Date().toISOString().split("T")[0],
         tipo_visita: "",
         observacoes: "",
         codigo_pdv: "",
@@ -303,13 +300,42 @@ const VisitaRetroativa = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 relative z-10 border-b border-border/40">
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-foreground flex items-center">Data da Visita <span className="text-destructive ml-1">*</span></Label>
-                <Input
-                  type="date"
-                  value={form.data_visita}
-                  max={getBrasiliaDateStr()}
-                  onChange={(e) => handleChange("data_visita", e.target.value)}
-                  className="h-12 bg-background dark:bg-muted/30 focus-visible:ring-primary shadow-sm font-semibold"
-                />
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "w-full h-12 justify-between text-left font-semibold text-sm px-4 bg-background dark:bg-muted/30 border border-input focus-visible:ring-2 focus-visible:ring-primary shadow-sm rounded-xl cursor-pointer hover:border-primary/60 transition-all",
+                        !form.data_visita && "text-muted-foreground"
+                      )}
+                    >
+                      <span className="text-sm font-semibold tracking-wide">
+                        {form.data_visita ? (
+                          format(parseDateSafe(form.data_visita) || new Date(), "dd/MM/yyyy")
+                        ) : (
+                          "Selecione uma data"
+                        )}
+                      </span>
+                      <CalendarIcon className="h-5 w-5 text-muted-foreground opacity-80" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-card border border-border shadow-2xl rounded-2xl" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={parseDateSafe(form.data_visita)}
+                      onSelect={(date) => {
+                        if (date) {
+                          handleChange("data_visita", format(date, "yyyy-MM-dd"));
+                          setIsCalendarOpen(false);
+                        }
+                      }}
+                      disabled={(date) => date > new Date()}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-3">
@@ -414,49 +440,7 @@ const VisitaRetroativa = () => {
               </div>
             </div>
 
-            {/* ALERTA INTELIGENTE RGB - AGORA APARECE ANTES MESMO DE DIGITAR O CÓDIGO */}
-            {dicasRgb.length > 0 && (
-              <div className="px-4 sm:px-6 pb-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[40px] rounded-full pointer-events-none" />
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
-                      <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    </div>
-                    <div className="space-y-3 w-full">
-                      <h4 className="font-bold text-amber-600 dark:text-amber-500 text-lg flex items-center gap-2">
-                        💡 Dica de Rota Inteligente
-                      </h4>
-                      <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-                        O sistema detectou clientes na rota desta data que precisam de atenção na execução RGB:
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                        {dicasRgb.map((dica, idx) => (
-                          <div key={idx} className="bg-background/80 border border-amber-500/40 p-3 rounded-lg flex flex-col cursor-pointer hover:bg-amber-500/20 hover:scale-[1.02] transition-all"
-                            onClick={() => {
-                              // Auto preenche o código
-                              setForm(prev => ({ ...prev, codigo_pdv: dica.codigo }));
-                              toast({ title: "Código Aplicado", description: "O código sugerido foi copiado para o campo de busca.", className: "bg-amber-500 text-white font-bold" });
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-black text-foreground text-base">{dica.codigo}</span>
-                              <Badge className="bg-amber-500 text-white hover:bg-amber-600 border-none text-[10px] px-1.5 py-0 font-bold uppercase">Prioridade</Badge>
-                            </div>
-                            <span className="text-xs font-bold text-muted-foreground truncate">{dica.nome_fantasia}</span>
-                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1 italic leading-tight bg-amber-500/10 px-2 py-0.5 rounded-sm inline-block w-fit">
-                              Vendedor: {dica.motivo}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10 border-t border-border/40">
+            <CardContent className="p-4 sm:p-6 bg-background/5 relative z-10">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Responsável</Label>
@@ -603,8 +587,6 @@ const VisitaRetroativa = () => {
                     );
                   })}
                 </RadioGroup>
-
-                {/* O ALERTA INTELIGENTE RGB FOI MOVIDO PARA O TOPO DA PÁGINA */}
               </CardContent>
             </Card>
           )}

@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from 'xlsx';
 import { uploadBasePDVs, uploadProdutosFDS, getUsers, toggleUserStatus, createUserAdmin, downloadBasePDVs, downloadProdutosFDS, buscarVisitasPendentes, buscarVisitas, aprovarVisita, recusarVisita, getConfiguracao, setConfiguracao, getEmpresas } from '@/lib/api';
-import { uploadAlertasRGB } from '@/features/alertas/api/alertas.service';
 import { format } from 'date-fns';
 import { VisitaModalDialog } from '@/features/relatorios/components/VisitaModalDialog';
 const AdminData = () => {
@@ -23,7 +22,6 @@ const AdminData = () => {
     // Estados Bases
     const [loadingPdvs, setLoadingPdvs] = useState(false);
     const [loadingProdutos, setLoadingProdutos] = useState(false);
-    const [loadingAlertas, setLoadingAlertas] = useState(false);
 
     // Estados Usuários
     const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -50,19 +48,12 @@ const AdminData = () => {
     const [configFocoRgb, setConfigFocoRgb] = useState<string>('');
     const [loadingConfig, setLoadingConfig] = useState(false);
 
-    // Filtros de Download
-    const dataAtual = new Date();
-    const [downloadMes, setDownloadMes] = useState(String(dataAtual.getMonth() + 1).padStart(2, '0'));
-    const [downloadAno, setDownloadAno] = useState(String(dataAtual.getFullYear()));
-    const [isDownloadingVisitas, setIsDownloadingVisitas] = useState(false);
-
     const isMaster = user?.nivel === 'Master';
     const isAnalista = user?.funcao?.toUpperCase().includes('ANALISTA') || user?.nivel === 'Niv0' || user?.nivel === 'Niv5' || isMaster;
 
     // SaaS Tenant Selector
     const [empresas, setEmpresas] = useState<any[]>([]);
-    // Usa ?? em vez de || para não tratar empresa_id=0 (Master) como falsy
-    const [selectedEmpresaId, setSelectedEmpresaId] = useState<number>(user?.empresa_id ?? 0);
+    const [selectedEmpresaId, setSelectedEmpresaId] = useState<number>(user?.empresa_id || 1);
     
     // O usuário "Ativo" para a tela de AdminData. Se for Master, ele age em nome da Empresa Selecionada
     const activeUser = isMaster && selectedEmpresaId ? { ...user, empresa_id: selectedEmpresaId } : user;
@@ -71,8 +62,7 @@ const AdminData = () => {
         if (isMaster) {
             getEmpresas().then(data => {
                 setEmpresas(data);
-                // Seleciona a primeira empresa se nenhuma estiver selecionada (0 = sem seleção, estado inicial do Master)
-                if (data.length > 0 && (selectedEmpresaId === 0 || !data.find((e: any) => e.id === selectedEmpresaId))) {
+                if (data.length > 0 && selectedEmpresaId === 0) {
                     setSelectedEmpresaId(data[0].id);
                 }
             });
@@ -211,33 +201,6 @@ const AdminData = () => {
         }
     };
 
-    const handleUploadAlertas = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setLoadingAlertas(true);
-        try {
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data);
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rawData = XLSX.utils.sheet_to_json(worksheet);
-
-            const success = await uploadAlertasRGB(rawData, activeUser);
-
-            if (success) {
-                toast({ title: "Alertas Atualizados", description: "O mapa de quedas (RGB) foi programado para a rua.", className: "bg-green-600 text-white" });
-            } else {
-                toast({ title: "Ops!", description: "A função de upload retornou falso. Verifique os logs.", variant: "destructive" });
-            }
-        } catch (error: any) {
-            console.error("Erro no upload de alertas:", error);
-            toast({ title: "Erro Detalhado do Banco", description: String(error?.message || error), variant: "destructive" });
-        } finally {
-            setLoadingAlertas(false);
-            event.target.value = '';
-        }
-    };
-
     const handleDownload = async (type: 'pdvs' | 'produtos') => {
         const downloadFunc = type === 'pdvs' ? downloadBasePDVs : downloadProdutosFDS;
         const fileName = type === 'pdvs' ? 'Base_PDVS_Atual.xlsx' : 'Base_ProdutosFDS_Atual.xlsx';
@@ -260,16 +223,13 @@ const AdminData = () => {
         } catch (error) {
             console.error("Erro no download:", error);
             toast({ title: "Erro", description: "Falha ao gerar o arquivo Excel.", variant: "destructive" });
-        } finally {
-            setIsDownloadingVisitas(false);
         }
     };
 
     const handleDownloadVisitas = async () => {
-        setIsDownloadingVisitas(true);
-        toast({ title: "Iniciando Download...", description: `Extraindo visitas de ${downloadMes}/${downloadAno}...` });
+        toast({ title: "Iniciando Download...", description: "Extraindo histórico completo de visitas..." });
         try {
-            const data = await buscarVisitas(activeUser, downloadMes, downloadAno);
+            const data = await buscarVisitas(activeUser);
             if (!data || data.length === 0) {
                 toast({ title: "Ops", description: "Não há visitas ou permissão insufiente.", variant: "destructive" });
                 return;
@@ -460,7 +420,7 @@ const AdminData = () => {
                 </TabsList>
 
                 <TabsContent value="bases" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Card PDVS */}
                         <Card className="glass-card bg-card/40 border-primary/20 overflow-hidden relative group hover:border-primary/40 transition-colors">
                             <CardHeader className="bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50 pb-8">
@@ -567,50 +527,6 @@ const AdminData = () => {
                             </CardContent>
                         </Card>
 
-                        {/* Card Alertas RGB */}
-                        <Card className="glass-card bg-card/40 border-amber-500/20 overflow-hidden relative group hover:border-amber-500/40 transition-colors">
-                            <CardHeader className="bg-gradient-to-br from-amber-500/10 to-transparent border-b border-border/50 pb-8">
-                                <CardTitle className="flex items-center gap-2 text-xl text-amber-600 dark:text-amber-500">
-                                    <AlertTriangle className="w-6 h-6" />
-                                    Alertas RGB (Quedas)
-                                </CardTitle>
-                                <CardDescription className="font-medium text-muted-foreground/80 mt-2">
-                                    Substitua a lista de clientes com Queda de Volume. Colunas: 'codigo' e 'motivo'.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[220px]">
-                                {loadingAlertas ? (
-                                    <div className="flex flex-col items-center gap-4 text-amber-500 animate-pulse">
-                                        <Loader2 className="w-12 h-12 animate-spin" />
-                                        <p className="font-bold tracking-tight">Processando Dicas...</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-4 w-full">
-                                        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                            <UploadCloud className="w-8 h-8 text-amber-600 dark:text-amber-500" />
-                                        </div>
-                                        <div className="text-center space-y-1">
-                                            <h3 className="font-bold">Substituir Dicas</h3>
-                                        </div>
-                                        <div className="flex gap-2 w-full mt-4 flex-col">
-                                            <div className="relative w-full">
-                                                <input
-                                                    type="file"
-                                                    accept=".xlsx, .xls, .csv"
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                    onChange={handleUploadAlertas}
-                                                    disabled={loadingAlertas}
-                                                />
-                                                <Button className="w-full pointer-events-none shadow-md bg-amber-500 hover:bg-amber-600 text-white border-none">
-                                                    Subir Planilha
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
                         {/* NOVO: Relatório de Visitas */}
                         <Card className="glass-card bg-card/40 border-emerald-500/30 overflow-hidden relative group hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-500/5">
                             <CardHeader className="bg-gradient-to-br from-emerald-500/10 to-transparent border-b border-border/50 pb-8">
@@ -631,45 +547,12 @@ const AdminData = () => {
                                         <h3 className="font-bold">Gerador de Relatórios XLS</h3>
                                         <p className="text-xs text-muted-foreground">Extrai todas as colunas em formato Excel (XLSX) formatado e limpo.</p>
                                     </div>
-                                    <div className="flex w-full gap-2 mb-2">
-                                        <Select value={downloadMes} onValueChange={setDownloadMes}>
-                                            <SelectTrigger className="w-[140px] bg-background">
-                                                <SelectValue placeholder="Mês" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="01">Janeiro</SelectItem>
-                                                <SelectItem value="02">Fevereiro</SelectItem>
-                                                <SelectItem value="03">Março</SelectItem>
-                                                <SelectItem value="04">Abril</SelectItem>
-                                                <SelectItem value="05">Maio</SelectItem>
-                                                <SelectItem value="06">Junho</SelectItem>
-                                                <SelectItem value="07">Julho</SelectItem>
-                                                <SelectItem value="08">Agosto</SelectItem>
-                                                <SelectItem value="09">Setembro</SelectItem>
-                                                <SelectItem value="10">Outubro</SelectItem>
-                                                <SelectItem value="11">Novembro</SelectItem>
-                                                <SelectItem value="12">Dezembro</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Select value={downloadAno} onValueChange={setDownloadAno}>
-                                            <SelectTrigger className="flex-1 bg-background">
-                                                <SelectValue placeholder="Ano" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="2024">2024</SelectItem>
-                                                <SelectItem value="2025">2025</SelectItem>
-                                                <SelectItem value="2026">2026</SelectItem>
-                                                <SelectItem value="2027">2027</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
                                     <Button
                                         className="w-full shadow-md font-bold bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-md transition-all group-hover:shadow-emerald-500/20"
                                         onClick={handleDownloadVisitas}
-                                        disabled={isDownloadingVisitas}
                                     >
-                                        {isDownloadingVisitas ? <Loader2 className="w-5 h-5 mr-3 animate-spin" /> : <Download className="w-5 h-5 mr-3 animate-bounce shadow-emerald-500/50" />}
-                                        {isDownloadingVisitas ? "Gerando Arquivo..." : "Baixar Visitas em Excel (XLS)"}
+                                        <Download className="w-5 h-5 mr-3 animate-bounce shadow-emerald-500/50" />
+                                        Baixar Visitas em Excel (XLS)
                                     </Button>
                                 </div>
                             </CardContent>
